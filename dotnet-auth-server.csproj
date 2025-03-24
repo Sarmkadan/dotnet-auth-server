@@ -11,7 +11,7 @@
     <Authors>Vladyslav Zaiets</Authors>
     <Description>Minimal OAuth2/OIDC authorization server for .NET</Description>
     <RepositoryUrl>https://github.com/sarmkadan/dotnet-auth-server</RepositoryUrl>
-    <License>MIT</License>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
