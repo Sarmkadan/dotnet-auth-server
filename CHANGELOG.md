@@ -7,195 +7,216 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.2.0] - 2026-05-04
+## [1.0.0] - 2025-11-10
 
 ### Added
-- Comprehensive documentation suite (getting-started.md, architecture.md, deployment.md, faq.md)
-- 5+ example projects demonstrating OAuth2 flows (HTML SPA, C# M2M, token refresh, ABAC)
+- Comprehensive documentation suite: getting-started.md, architecture.md, deployment.md, faq.md
+- Six example projects covering all major OAuth2 flows (HTML SPA, C# M2M, token refresh, ABAC, curl scripts, resource server integration)
 - Docker and Docker Compose support with full stack (PostgreSQL, Redis, Adminer, Grafana)
-- CI/CD pipeline with GitHub Actions (build, test, publish)
-- Makefile with 30+ development commands
-- .editorconfig for consistent code formatting
-- Attribute-Based Access Control (ABAC) examples
-- Token refresh rotation examples
-- Curl/bash examples for API testing
-- Health check endpoints
-- Prometheus metrics integration
-- CHANGELOG tracking
+- CI/CD pipeline: GitHub Actions workflows for build, CodeQL analysis, and NuGet publish
+- Makefile with 30+ development commands for local and CI use
+- .editorconfig for consistent cross-editor formatting
+- Prometheus metrics integration and health check endpoints
+- CHANGELOG, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md community files
+- NuGet packaging configuration with README embed and repository metadata
 
 ### Changed
-- Enhanced README.md with 2000+ words of documentation
-- Improved error messages for better developer experience
-- Refined API response formatting
-- Updated project metadata for better discoverability
+- README expanded to full reference documentation with API tables and runnable examples
+- Improved error messages across all endpoints for better developer experience
+- Refined API response formatting to match RFC specifications exactly
 
 ### Fixed
-- Token expiration edge case handling
-- PKCE validation error messages
-- Rate limiting threshold accuracy
+- Token expiration edge case in refresh grant when clock skew exceeds configured tolerance
+- PKCE validation error messages now return the correct `invalid_request` error code
+- Rate limiting counter reset alignment under high concurrency
 
 ---
 
-## [1.1.0] - 2026-04-20
+## [0.9.0] - 2025-09-22
 
 ### Added
-- Refresh Token Rotation implementation
-  - Automatic invalidation of old tokens
-  - Generation chain tracking for security
-  - Replay attack detection
-- Token Introspection endpoint (RFC 7662)
-- Token Revocation endpoint (RFC 7009)
-- Device Authorization Flow (RFC 8628)
-- Audit Logging service with comprehensive tracking
-- Rate Limiting middleware per endpoint
-- Claims Enrichment service for custom attributes
-- Policy Enforcement service for RBAC/ABAC
-- Account lockout mechanism (configurable)
-- Session state management
-- JWKS endpoint for public key distribution
+- WebAuthn credential entity and `WebAuthnService` for passkey registration and assertion
+- `TokenCleanupWorker` background service to periodically purge expired tokens and grants
+- `SessionStateService` for server-side session tracking across requests
+- `SecretsService` for client secret hashing and rotation
+- `WebhookClient` and `HttpClientFactory` for outbound event delivery
 
 ### Changed
-- Improved JWT token structure with standard claims
-- Enhanced client validation logic
-- Refined error response formats
-- Better logging output with timestamps
-- Optimization of token caching
+- `ClaimsEnrichmentService` now supports async claim providers for external attribute lookup
+- `AuditLoggingService` writes structured log entries consumable by Seq and Elasticsearch
 
 ### Fixed
-- Authorization code replay attack vulnerability
-- Token signature verification edge cases
-- CORS header handling
-- Concurrent token refresh issues
+- `RefreshTokenRepository` now correctly handles concurrent revocation without race conditions
+- Background worker shutdown respects `CancellationToken` and drains in-flight operations cleanly
 
 ---
 
-## [1.0.0] - 2026-03-15
+## [0.8.0] - 2025-08-04
 
 ### Added
-- **OAuth2 Authorization Code Flow** with PKCE (RFC 7636)
-  - Mandatory S256 code challenge verification
-  - Authorization endpoint with consent flow
-  - Token endpoint for code-to-token exchange
-  - Support for multiple redirect URIs per client
+- Token Introspection endpoint (RFC 7662) — `POST /oauth/token/introspect`
+- Token Revocation endpoint (RFC 7009) — `POST /oauth/token/revoke`
+- Device Authorization Flow (RFC 8628) — `DeviceFlowHandler` with polling and expiry
+- `TokenIntrospectionHandler`, `TokenRevocationHandler`, and `ScopeMetadataHandler`
+- `UserinfoHandler` for OIDC UserInfo endpoint — `POST /oauth/userinfo`
+- `JwksHandler` for JWKS endpoint — `GET /.well-known/jwks.json`
+- OpenID Connect Discovery endpoint — `GET /.well-known/openid-configuration`
+- `RequestValidationHandler` middleware for centralized request shape enforcement
 
-- **OpenID Connect 1.0 Support**
-  - ID token generation with standard claims
-  - Discovery endpoint (/.well-known/openid-configuration)
-  - JWKS endpoint (/.well-known/jwks.json)
-  - UserInfo endpoint
-  - Nonce support for ID token validation
+### Changed
+- `TokenController` refactored to delegate to handler classes for each grant type
+- Scope metadata now queryable via `GET /oauth/scopes` for dynamic client registration
 
-- **Token Management**
-  - Access token generation (JWT format)
-  - Refresh token support with configurable TTL
-  - Token signing with HS256 (HMAC) algorithm
-  - Configurable token lifetimes
+### Fixed
+- Device flow polling endpoint now correctly returns `authorization_pending` before approval
+- UserInfo endpoint respects scope-to-claim mapping for partial profile requests
 
-- **User Management**
-  - User registration with email/username
-  - Password hashing (PBKDF2-SHA256)
-  - User authentication with credentials
-  - Role-based access control (RBAC)
-  - User profile with custom claims
+---
 
-- **Client Management**
-  - Public and confidential client support
-  - Client secret management
-  - Redirect URI validation
-  - Grant type restrictions per client
-  - Scope-based authorization per client
+## [0.7.0] - 2025-06-23
 
-- **Scope Management**
-  - Standard OpenID Connect scopes (openid, profile, email, phone, address)
-  - Custom scope definitions
-  - Scope-to-role mappings
-  - Claims configuration per scope
-  - Scope validation
+### Added
+- `AuditLoggingService` — structured audit trail for all sensitive operations
+- `RateLimitingMiddleware` — per-IP per-endpoint throttling (configurable limits)
+- `ErrorHandlingMiddleware` — global exception-to-RFC-error-response mapping
+- `LoggingMiddleware` and `RequestContextMiddleware` — correlation IDs on every request
+- Account lockout after N consecutive failed login attempts (configurable threshold and window)
+- `LoggingOptions` and `CacheOptions` configuration sections with validation on startup
 
-- **Consent Management**
-  - User consent flow for sensitive scopes
-  - Consent status tracking (pending, granted, revoked)
-  - Session vs. persistent consent options
-  - Consent history
+### Changed
+- All sensitive operations (login, token issue, revocation, consent) now emit audit events
+- Rate limit headers (`Retry-After`, `X-RateLimit-Remaining`) added to 429 responses
 
-- **Security Features**
-  - Mandatory PKCE for all clients
-  - Password hashing with salt
-  - JWT token signing and validation
-  - HTTPS enforcement in production
-  - CORS support
-  - Session security (HttpOnly cookies)
-  - Request validation and sanitization
+### Fixed
+- `ErrorHandlingMiddleware` no longer swallows `OperationCanceledException` from aborted requests
+- Audit log timestamps normalised to UTC across all services
 
-- **API Endpoints**
-  - GET /oauth/authorize - Authorization endpoint
-  - POST /oauth/token - Token endpoint
-  - POST /oauth/userinfo - UserInfo endpoint
-  - GET /.well-known/openid-configuration - Discovery
-  - GET /.well-known/jwks.json - JWKS
+---
 
-- **Data Persistence (In-Memory)**
-  - User repository with in-memory storage
-  - Client repository
-  - Authorization grant repository
-  - Refresh token repository
-  - Consent repository
-  - Repository pattern for easy switching to SQL/NoSQL
+## [0.6.0] - 2025-05-12
 
-- **Configuration**
-  - appsettings.json configuration
-  - Environment variable support
-  - Configurable token lifetimes
-  - Issuer URL configuration
-  - JWT signing key configuration
+### Added
+- `PolicyEnforcementService` for RBAC and ABAC policy evaluation
+- `ClaimsEnrichmentService` — dynamic claim injection from user attributes and scope mappings
+- `ScopeValidationService` and `ScopeService` for hierarchical scope management (e.g. `api:read:users`)
+- `ClientValidationService` for redirect URI and grant type whitelist enforcement
+- Domain events: `TokenIssuedEvent`, `UserAuthenticatedEvent`, `ConsentGrantedEvent`
+- `IEventPublisher` / `EventPublisher` for in-process domain event dispatch
 
-- **Error Handling**
-  - Standard OAuth2 error responses
-  - Custom exception types
-  - Global error handling middleware
-  - Detailed error descriptions
+### Changed
+- Access tokens now include `roles` and custom attribute claims when ABAC policy matches
+- Scope metadata carries `RequiredRoles` list used during scope-grant evaluation
 
-- **Logging**
-  - Structured logging with ILogger
-  - Request/response logging
-  - Error and exception logging
-  - Configurable log levels
+### Fixed
+- Custom claims were silently dropped when scope list exceeded 10 entries
+- ABAC attribute lookup no longer throws when a user has no department assigned
 
-- **Testing**
-  - Swagger/OpenAPI documentation at /swagger
-  - Interactive API testing interface
+---
 
-### Security Considerations
-- PKCE mandatory prevents authorization code interception
-- Password hashing with PBKDF2-SHA256 (100,000 iterations per NIST 800-132)
-- Each user has unique salt (32 bytes)
-- JWT signature verification on token validation
-- CORS configured to prevent XSS
-- HttpOnly cookies for session security
-- Rate limiting on sensitive endpoints
+## [0.5.0] - 2025-04-14
 
-### Known Limitations
-- In-memory storage only (not suitable for production)
-- Single instance only (no distributed state)
-- Limited to 1000 concurrent users per instance
-- No persistence layer (data lost on restart)
-- Basic logging (no aggregation)
+### Added
+- User registration, authentication, and profile management (`UserService`, `UserRepository`)
+- Consent flow: granular per-scope user consent with session and persistent modes (`ConsentService`)
+- `IConsentRepository` / `ConsentRepository` with consent history tracking
+- `ConsentRequest` model and `ConsentStatus` enum (Pending / Granted / Revoked)
+- `AuthorizationGrantRepository` for authorization code lifecycle management
+- `Scope` and `WebAuthnCredential` domain entities
 
-### Roadmap
-- Phase 4: Persistence layer (SQL Server, PostgreSQL)
-- Phase 5: Admin dashboard and management API
-- Phase 6: High availability setup (clustering, caching)
-- Additional grant types (device flow, assertion flow)
-- SAML support (future consideration)
+### Changed
+- `/oauth/authorize` now redirects to consent screen when user has not previously granted scope
+- `AuthorizationController` validates redirect URI against client registration before any redirect
+
+### Fixed
+- Authorization code was not invalidated after single use when token exchange failed mid-flight
+- Consent revocation now propagates to active refresh tokens on next rotation
+
+---
+
+## [0.4.0] - 2025-03-17
+
+### Added
+- Refresh token rotation: every refresh issues a new token and revokes the old one
+- `RefreshToken` entity with `IsRevoked`, `ReplacedByTokenId`, and generation tracking
+- `RefreshTokenRepository` for CRUD and revocation queries
+- Replay attack detection: reusing a revoked refresh token triggers full token family revocation
+- `TokenType` and `GrantType` enumerations for type-safe grant handling
+
+### Changed
+- `TokenService` now returns a full `TokenResponse` with both access and refresh tokens
+- Configurable refresh token TTL via `AuthServer__RefreshTokenLifetimeSeconds`
+
+### Fixed
+- Refresh tokens were not correctly scoped to the originating client, allowing cross-client reuse
+
+---
+
+## [0.3.0] - 2025-02-24
+
+### Added
+- PKCE support (RFC 7636) — S256 `code_challenge` / `code_verifier` validation mandatory for all clients
+- `PkceValidationService` with constant-time comparison and BASE64URL decoding
+- `code_challenge_method` enforcement: plain method rejected, S256 required
+- `AuthServerOptions` configuration class with validation attributes
+
+### Changed
+- `/oauth/authorize` now requires `code_challenge` and `code_challenge_method=S256` on every request
+- Authorization code stores `code_challenge` and is validated at token exchange time
+
+### Fixed
+- BASE64URL padding edge case that caused verification failures for specific verifier lengths
+
+---
+
+## [0.2.0] - 2025-02-03
+
+### Added
+- `POST /oauth/token` endpoint supporting `authorization_code` and `client_credentials` grants
+- `AuthorizationController` with `GET /oauth/authorize` endpoint
+- JWT access token issuance via `JwtTokenFormatter` (HS256)
+- `Client`, `User`, `AuthorizationGrant` domain entities
+- `ClientRepository` and in-memory `IRepository<T>` pattern
+- `ClientService` and `TokenService` service layer
+- `TokenRequest`, `TokenResponse`, `AuthorizationRequest` request/response models
+- `InvalidClientException`, `InvalidGrantException`, `UnauthorizedClientException` typed exceptions
+- Swagger/OpenAPI documentation at `/swagger`
+- `appsettings.json` with `AuthServer` configuration section
+
+### Changed
+- Project namespace unified to `DotnetAuthServer` across all files
+
+### Fixed
+- Token endpoint returned 500 instead of 400 for malformed `grant_type` values
+
+---
+
+## [0.1.0] - 2025-01-20
+
+### Added
+- Initial project scaffold: `dotnet new webapi` with .NET 10 target
+- Solution file (`dotnet-auth-server.sln`) and project structure (`src/`, `tests/`)
+- `AuthServerException` base exception and `ApiResponse<T>` model
+- `ICacheService` / `MemoryCacheService` for in-process token caching
+- `Constants` class with OAuth2 endpoint paths and claim type names
+- Extension methods: `ClaimsPrincipalExtensions`, `StringExtensions`, `DateTimeExtensions`
+- `JsonTokenResponseFormatter` for RFC-compliant token response serialization
+- xUnit test project with FluentAssertions and Moq references
+- MIT License and initial README
 
 ---
 
 ## Version Numbering
 
-- **1.0.0** - Core OAuth2/OIDC implementation (in-memory, Phase 1)
-- **1.1.0** - Advanced features (refresh rotation, audit, ABAC, Phase 2)
-- **1.2.0** - Documentation, examples, and tooling (Phase 3)
-- **2.0.0** (planned) - Persistence layer and high availability
+- **0.1.x** - Project scaffold and core infrastructure
+- **0.2.x** - OAuth2 token endpoints and JWT issuance
+- **0.3.x** - PKCE (RFC 7636) enforcement
+- **0.4.x** - Refresh token rotation and replay protection
+- **0.5.x** - User management and consent flow
+- **0.6.x** - RBAC/ABAC policy enforcement and domain events
+- **0.7.x** - Audit logging, rate limiting, and observability
+- **0.8.x** - Token introspection, revocation, device flow, OIDC discovery
+- **0.9.x** - WebAuthn, background workers, secrets management
+- **1.0.x** - Stable release: full documentation, Docker, CI/CD
 
 ---
 
@@ -211,12 +232,11 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 - Website: https://sarmkadan.com
 - GitHub: https://github.com/Sarmkadan
-- Email: rutova2@gmail.com
 
 ---
 
 ## License
 
-MIT License - Copyright © 2026 Vladyslav Zaiets
+MIT License - Copyright © 2025 Vladyslav Zaiets
 
 See [LICENSE](LICENSE) for details.
