@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>Zaiets.dotnet.auth.server</PackageId>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
     <Description>Minimal OAuth2/OIDC authorization server for .NET - token issuance, PKCE, refresh rotation, consent, RBAC+ABAC</Description>
     <PackageTags>oauth2 oidc security jwt pkce auth</PackageTags>
