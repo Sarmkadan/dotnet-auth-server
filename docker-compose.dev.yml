@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Development version of the Authorization Server
+  auth-server-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dotnet-auth-server-dev
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      AuthServer__IssuerUrl: https://localhost:5001
+      AuthServer__JwtSigningKey: "${JWT_SIGNING_KEY:-your-256-bit-secret-key-minimum-length-required-for-production}"
+      AuthServer__AccessTokenLifetimeSeconds: 3600
+      AuthServer__RefreshTokenLifetimeSeconds: 2592000
+      AuthServer__RequirePkceForAllClients: "true"
+      AuthServer__EnableAuditLogging: "true"
+      AuthServer__EnableRateLimiting: "true"
+      # Database connection - in dev, we might use in-memory or file-based database
+      Database__ConnectionString: "Data Source=../data/auth.db"
+      Cache__Type: InMemory
+    volumes:
+      - ./src:/app/src:ro
+      - ./logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+networks:
+  auth-network:
+    driver: bridge
