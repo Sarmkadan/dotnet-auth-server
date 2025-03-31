@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -20,7 +21,7 @@ namespace DotnetAuthServer.Examples;
 /// - Limits damage from token leaks
 /// - Detects token reuse attacks
 /// </summary>
-public class TokenRefreshRotationExample
+public class TokenRefreshRotationExample sealed
 {
     private readonly HttpClient _httpClient;
     private readonly string _authServerUrl;
@@ -92,7 +93,7 @@ public class TokenRefreshRotationExample
 
             var newToken = await RefreshTokenAsync(currentRefreshToken);
 
-            if (newToken == null)
+            if (newToken is null)
             {
                 Console.WriteLine("✗ Token refresh failed\n");
                 break;
@@ -132,7 +133,7 @@ public class TokenRefreshRotationExample
             // Refresh token
             var newToken = await RefreshTokenAsync(refreshToken);
 
-            if (newToken == null)
+            if (newToken is null)
                 return null;
 
             refreshToken = newToken.RefreshToken;
@@ -152,7 +153,7 @@ public class TokenRefreshRotationExample
 /// <summary>
 /// Example: Token lifecycle management in mobile app
 /// </summary>
-public class MobileAppTokenManager
+public class MobileAppTokenManager sealed
 {
     private TokenResponse? _currentToken;
     private readonly string _authServerUrl;
@@ -180,7 +181,7 @@ public class MobileAppTokenManager
     public async Task<string?> GetValidAccessTokenAsync()
     {
         // Check if refresh needed
-        if (DateTime.UtcNow >= _tokenRefreshTime && _currentToken != null)
+        if (DateTime.UtcNow >= _tokenRefreshTime && _currentToken is not null)
         {
             await _tokenLock.WaitAsync();
             try
@@ -205,7 +206,7 @@ public class MobileAppTokenManager
     /// </summary>
     private async Task RefreshTokenInternalAsync()
     {
-        if (_currentToken?.RefreshToken == null)
+        if (_currentToken?.RefreshToken is null)
             return;
 
         try
@@ -213,7 +214,7 @@ public class MobileAppTokenManager
             var flow = new TokenRefreshRotationExample(_authServerUrl);
             var newToken = await flow.RefreshTokenAsync(_currentToken.RefreshToken);
 
-            if (newToken != null)
+            if (newToken is not null)
             {
                 _currentToken = newToken;
                 _tokenRefreshTime = DateTime.UtcNow.AddSeconds(newToken.ExpiresIn - 300);
@@ -259,7 +260,7 @@ public class MobileAppTokenManager
 /// <summary>
 /// Example: Handling token refresh failures and fallback
 /// </summary>
-public class ResilientTokenRefreshExample
+public class ResilientTokenRefreshExample sealed
 {
     private readonly string _authServerUrl;
     private int _refreshAttempts;
@@ -286,7 +287,7 @@ public class ResilientTokenRefreshExample
                 var flow = new TokenRefreshRotationExample(_authServerUrl);
                 var result = await flow.RefreshTokenAsync(refreshToken);
 
-                if (result != null)
+                if (result is not null)
                 {
                     Console.WriteLine($"✓ Token refreshed on attempt {_refreshAttempts}");
                     return result;
@@ -320,7 +321,7 @@ public class ResilientTokenRefreshExample
         var flow = new TokenRefreshRotationExample(_authServerUrl);
         var newToken = await flow.RefreshTokenAsync(refreshToken);
 
-        if (newToken != null)
+        if (newToken is not null)
         {
             Console.WriteLine("✓ Token refreshed successfully");
             return newToken;
@@ -346,7 +347,7 @@ public class ResilientTokenRefreshExample
 /// <summary>
 /// DTO for token response
 /// </summary>
-public class TokenResponse
+public class TokenResponse sealed
 {
     [JsonPropertyName("access_token")]
     public string AccessToken { get; set; } = string.Empty;
@@ -399,7 +400,7 @@ internal class Program
         var resilient = new ResilientTokenRefreshExample(authServerUrl);
         var result = await resilient.RefreshWithRetryAsync(initialRefreshToken);
 
-        if (result != null)
+        if (result is not null)
         {
             Console.WriteLine($"New token obtained: {result.AccessToken[..30]}...");
         }

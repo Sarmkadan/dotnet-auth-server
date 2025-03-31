@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Exceptions;
 /// <summary>
 /// Thrown when client authentication fails or client is invalid
 /// </summary>
-public class InvalidClientException : AuthServerException
+public class InvalidClientException : AuthServerException sealed
 {
     public InvalidClientException(
         string message = "Client authentication failed",

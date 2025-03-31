@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using System.Collections.Generic;
 /// Suitable for single-server deployments. For distributed systems, consider
 /// using a message broker like RabbitMQ or Kafka.
 /// </summary>
-public class EventPublisher : IEventPublisher
+public class EventPublisher : IEventPublisher sealed
 {
     private readonly ILogger<EventPublisher> _logger;
     private readonly Dictionary<Type, List<object>> _subscribers = new();
@@ -64,7 +65,7 @@ public class EventPublisher : IEventPublisher
             _subscribers.TryGetValue(eventType, out handlers);
         }
 
-        if (handlers == null || handlers.Count == 0)
+        if (handlers is null || handlers.Count == 0)
         {
             _logger.LogDebug("No subscribers found for event type {EventType}", eventType.Name);
             return;
@@ -75,7 +76,7 @@ public class EventPublisher : IEventPublisher
             try
             {
                 var subscriber = handler as IEventSubscriber<TEvent>;
-                if (subscriber != null)
+                if (subscriber is not null)
                 {
                     await subscriber.HandleAsync(@event, cancellationToken);
                 }

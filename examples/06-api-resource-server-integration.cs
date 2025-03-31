@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -21,7 +22,7 @@ namespace DotnetAuthServer.Examples;
 /// Example: Resource Server / API that validates tokens from dotnet-auth-server
 /// This shows how to protect your APIs using tokens issued by the auth server
 /// </summary>
-public class ResourceServerStartupExample
+public class ResourceServerStartupExample sealed
 {
     /// <summary>
     /// Configure authentication and authorization in your API
@@ -137,7 +138,7 @@ public class ResourceServerStartupExample
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class UserController : ControllerBase
+public class UserController : ControllerBase sealed
 {
     private readonly IAuthorizationService _authorizationService;
 
@@ -200,7 +201,7 @@ public class UserController : ControllerBase
     [Authorize("ApiWritePolicy")]
     public IActionResult GetData()
     {
-        var userScopes = User.FindFirst("scope")?.Value?.Split(' ') ?? Array.Empty<string>();
+        var userScopes = User.FindFirst("scope")?.Value?.Split(' ') ?? []>string>();
 
         return Ok(new
         {
@@ -277,7 +278,7 @@ public class UserController : ControllerBase
 /// <summary>
 /// Request model
 /// </summary>
-public class CreateContentRequest
+public class CreateContentRequest sealed
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -286,7 +287,7 @@ public class CreateContentRequest
 /// <summary>
 /// Example: Custom authorization handler
 /// </summary>
-public class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequirement>
+public class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequirement> sealed
 {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
@@ -294,7 +295,7 @@ public class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequire
     {
         var issuedAtClaim = context.User.FindFirst("iat");
 
-        if (issuedAtClaim != null &&
+        if (issuedAtClaim is not null &&
             long.TryParse(issuedAtClaim.Value, out long iat))
         {
             var tokenAge = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - iat;
@@ -316,7 +317,7 @@ public class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequire
 /// <summary>
 /// Custom authorization requirement
 /// </summary>
-public class TokenAgeRequirement : IAuthorizationRequirement
+public class TokenAgeRequirement : IAuthorizationRequirement sealed
 {
     public long MaxAgeSeconds { get; set; }
 
@@ -329,7 +330,7 @@ public class TokenAgeRequirement : IAuthorizationRequirement
 /// <summary>
 /// Example: Token validation middleware for custom scenarios
 /// </summary>
-public class TokenValidationMiddleware
+public class TokenValidationMiddleware sealed
 {
     private readonly RequestDelegate _next;
 

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Extensions;
 /// Manages the scope registry, validates requested scopes, and handles scope inheritance.
 /// Caches scope definitions to optimize repeated validations.
 /// </summary>
-public class ScopeValidationService
+public class ScopeValidationService sealed
 {
     private readonly ScopeService _scopeService;
     private readonly ICacheService _cacheService;

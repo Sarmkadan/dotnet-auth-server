@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -10,7 +11,7 @@ namespace DotnetAuthServer.Middleware;
 /// and correlation. Enables end-to-end request tracking through distributed systems
 /// and makes debugging production issues significantly easier.
 /// </summary>
-public class RequestContextMiddleware
+public class RequestContextMiddleware sealed
 {
     private readonly RequestDelegate _next;
 

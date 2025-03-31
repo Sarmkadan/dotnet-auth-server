@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-public class PkceValidationServiceTests
+public class PkceValidationServiceTests sealed
 {
     private readonly Mock<ILogger<PkceValidationService>> _loggerMock;
     private readonly AuthServerOptions _options;

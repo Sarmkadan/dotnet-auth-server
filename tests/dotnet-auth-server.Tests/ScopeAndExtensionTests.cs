@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-public class ScopeAndExtensionTests
+public class ScopeAndExtensionTests sealed
 {
     // -------------------------------------------------------------------------
     // ScopeValidationService — pure methods tested via mocked dependencies

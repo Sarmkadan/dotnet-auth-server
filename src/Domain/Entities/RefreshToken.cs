@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents a refresh token for obtaining new access tokens
 /// </summary>
-public class RefreshToken
+public class RefreshToken sealed
 {
     /// <summary>
     /// Unique refresh token identifier
@@ -149,7 +150,7 @@ public class RefreshToken
     /// </summary>
     public bool SuspiciousUsagePattern(TimeSpan timeWindow)
     {
-        if (LastUsedAt == null) return false;
+        if (LastUsedAt is null) return false;
 
         var timeSinceLastUse = DateTime.UtcNow - LastUsedAt;
         return timeSinceLastUse < timeWindow && UsageCount > 1;

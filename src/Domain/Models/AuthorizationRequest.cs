@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Models;
 /// <summary>
 /// Represents an OAuth2/OIDC authorization request
 /// </summary>
-public class AuthorizationRequest
+public class AuthorizationRequest sealed
 {
     /// <summary>
     /// Client identifier

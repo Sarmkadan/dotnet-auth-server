@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using DotnetAuthServer.Exceptions;
 /// Validates authorization requests, token requests, and other OAuth2 operations
 /// for correctness and security before processing.
 /// </summary>
-public class RequestValidationHandler
+public class RequestValidationHandler sealed
 {
     private readonly ILogger<RequestValidationHandler> _logger;
 
@@ -32,7 +33,7 @@ public class RequestValidationHandler
     /// </summary>
     public void ValidateAuthorizationRequest(AuthorizationRequest request)
     {
-        if (request == null)
+        if (request is null)
             throw new AuthServerException(
                 "invalid_request",
                 "Authorization request is null",
@@ -84,7 +85,7 @@ public class RequestValidationHandler
     /// </summary>
     public void ValidateTokenRequest(TokenRequest request)
     {
-        if (request == null)
+        if (request is null)
             throw new AuthServerException(
                 "invalid_request",
                 "Token request is null",
@@ -111,7 +112,7 @@ public class RequestValidationHandler
     /// </summary>
     public void ValidateConsentRequest(ConsentRequest request)
     {
-        if (request == null)
+        if (request is null)
             throw new AuthServerException(
                 "invalid_request",
                 "Consent request is null",
@@ -137,7 +138,7 @@ public class RequestValidationHandler
     /// </summary>
     public void ValidateHttpRequest(HttpRequest httpRequest)
     {
-        if (httpRequest == null)
+        if (httpRequest is null)
             throw new ArgumentNullException(nameof(httpRequest));
 
         // HTTPS should be required in production for OAuth2 endpoints
