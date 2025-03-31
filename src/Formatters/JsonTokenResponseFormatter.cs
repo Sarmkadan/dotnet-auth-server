@@ -15,7 +15,7 @@ using DotnetAuthServer.Domain.Models;
 /// Ensures consistent JSON formatting with proper snake_case field names
 /// and compact output suitable for client parsing.
 /// </summary>
-public class JsonTokenResponseFormatter sealed
+public sealed class JsonTokenResponseFormatter sealed
 {
     private static readonly JsonSerializerOptions DefaultOptions = new()
     {

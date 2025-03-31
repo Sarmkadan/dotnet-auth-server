@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents an OAuth2 scope definition
 /// </summary>
-public class Scope sealed
+public sealed class Scope sealed
 {
     /// <summary>
     /// Scope identifier (e.g., "openid", "profile", "api:read")

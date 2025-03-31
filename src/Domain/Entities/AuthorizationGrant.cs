@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents an authorization grant (authorization code) in OAuth2
 /// </summary>
-public class AuthorizationGrant sealed
+public sealed class AuthorizationGrant sealed
 {
     /// <summary>
     /// Unique grant identifier

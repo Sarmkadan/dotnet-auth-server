@@ -10,7 +10,7 @@ namespace DotnetAuthServer.Events;
 /// Event published when a user successfully authenticates during authorization flow.
 /// Used for audit logging and tracking authentication patterns.
 /// </summary>
-public class UserAuthenticatedEvent : IDomainEvent sealed
+public sealed class UserAuthenticatedEvent : IDomainEvent sealed
 {
     public string EventId { get; set; } = Guid.NewGuid().ToString("N");
     public DateTime OccurredAt { get; set; } = DateTime.UtcNow;

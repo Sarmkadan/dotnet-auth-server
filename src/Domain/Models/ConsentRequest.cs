@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Models;
 /// <summary>
 /// Represents a user consent request decision
 /// </summary>
-public class ConsentRequest sealed
+public sealed class ConsentRequest sealed
 {
     /// <summary>
     /// User ID providing consent

@@ -14,7 +14,7 @@ using DotnetAuthServer.Exceptions;
 /// Validates authorization requests, token requests, and other OAuth2 operations
 /// for correctness and security before processing.
 /// </summary>
-public class RequestValidationHandler sealed
+public sealed class RequestValidationHandler sealed
 {
     private readonly ILogger<RequestValidationHandler> _logger;
 

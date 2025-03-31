@@ -15,7 +15,7 @@ using DotnetAuthServer.Extensions;
 /// Manages the scope registry, validates requested scopes, and handles scope inheritance.
 /// Caches scope definitions to optimize repeated validations.
 /// </summary>
-public class ScopeValidationService sealed
+public sealed class ScopeValidationService sealed
 {
     private readonly ScopeService _scopeService;
     private readonly ICacheService _cacheService;

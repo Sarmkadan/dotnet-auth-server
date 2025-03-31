@@ -15,7 +15,7 @@ using DotnetAuthServer.Exceptions;
 /// <summary>
 /// Service for handling OAuth2/OIDC authorization requests and code generation
 /// </summary>
-public class AuthorizationService sealed
+public sealed class AuthorizationService sealed
 {
     private readonly AuthServerOptions _options;
     private readonly IClientRepository _clientRepository;
@@ -225,7 +225,7 @@ public class AuthorizationService sealed
 /// <summary>
 /// Response model for consent prompt display
 /// </summary>
-public class ConsentResponse sealed
+public sealed class ConsentResponse sealed
 {
     public string ClientId { get; set; } = null!;
     public string ClientName { get; set; } = null!;

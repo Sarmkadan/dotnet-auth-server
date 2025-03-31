@@ -13,7 +13,7 @@ using System.Security.Claims;
 /// Evaluates policies to determine if a user is allowed to perform an action or access a resource.
 /// Essential for fine-grained authorization beyond simple token validation.
 /// </summary>
-public class PolicyEnforcementService sealed
+public sealed class PolicyEnforcementService sealed
 {
     private readonly ILogger<PolicyEnforcementService> _logger;
     private readonly Dictionary<string, Policy> _policies = new();
@@ -182,7 +182,7 @@ public class PolicyEnforcementService sealed
 /// Represents a policy that can be evaluated against a principal.
 /// Contains one or more rules combined with AND/OR logic.
 /// </summary>
-public class Policy sealed
+public sealed class Policy sealed
 {
     public List<PolicyRule> Rules { get; set; } = new();
     public PolicyCombineMode CombineWith { get; set; } = PolicyCombineMode.All;
@@ -191,7 +191,7 @@ public class Policy sealed
 /// <summary>
 /// Single policy rule that checks a specific condition.
 /// </summary>
-public class PolicyRule sealed
+public sealed class PolicyRule sealed
 {
     public PolicyRuleType Type { get; set; }
     public string? Attribute { get; set; } // For attribute/claim rules

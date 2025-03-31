@@ -10,7 +10,7 @@ namespace DotnetAuthServer.Configuration;
 /// Configuration options for the caching layer.
 /// Controls cache expiration, size limits, and backend selection.
 /// </summary>
-public class CacheOptions sealed
+public sealed class CacheOptions sealed
 {
     /// <summary>
     /// Whether caching is enabled.
@@ -55,7 +55,7 @@ public class CacheOptions sealed
 /// <summary>
 /// Cache expiration times for different types of cached data.
 /// </summary>
-public class CacheItemExpirations sealed
+public sealed class CacheItemExpirations sealed
 {
     /// <summary>
     /// How long to cache client information (seconds).
