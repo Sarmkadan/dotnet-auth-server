@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1]
+### Security
+- Added input validation and length limits
+- Added request timeout configuration
+- Added security policy and vulnerability reporting
+
 ## [2.0.0] - 2026-07-18
 ### Added
 - Add multi-factor authentication with TOTP, SMS, and backup codes
