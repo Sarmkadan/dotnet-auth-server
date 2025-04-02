@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2] - 2026-07-20
+### Fixed
+- Fix refresh token rotation not revoking old token on concurrent refresh
+- Added regression test for the fix
+
 ## [2.0.1]
 ### Security
 - Added input validation and length limits
