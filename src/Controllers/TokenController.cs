@@ -17,7 +17,7 @@ using DotnetAuthServer.Services;
 /// </summary>
 [ApiController]
 [Route("oauth/token")]
-public class TokenController : ControllerBase sealed
+public sealed class TokenController : ControllerBase sealed
 {
     private readonly TokenService _tokenService;
     private readonly ILogger<TokenController> _logger;

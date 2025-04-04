@@ -15,7 +15,7 @@ using DotnetAuthServer.Domain.Entities;
 /// Transforms user entities into claims that can be embedded in tokens.
 /// Supports both standard OIDC claims and custom application claims.
 /// </summary>
-public class ClaimsEnrichmentService sealed
+public sealed class ClaimsEnrichmentService sealed
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<ClaimsEnrichmentService> _logger;

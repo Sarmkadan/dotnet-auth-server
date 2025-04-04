@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Exceptions;
 /// <summary>
 /// Thrown when the client is not authorized to use a requested grant type or other operation
 /// </summary>
-public class UnauthorizedClientException : AuthServerException sealed
+public sealed class UnauthorizedClientException : AuthServerException sealed
 {
     public UnauthorizedClientException(
         string message = "The client is not authorized to use this grant type",

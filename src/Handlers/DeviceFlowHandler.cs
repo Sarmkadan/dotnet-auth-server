@@ -13,7 +13,7 @@ using System.Collections.Concurrent;
 /// Enables authorization for devices with limited input capabilities (smart TVs, printers, etc.)
 /// or devices that lack a suitable browser.
 /// </summary>
-public class DeviceFlowHandler sealed
+public sealed class DeviceFlowHandler sealed
 {
     private readonly ConcurrentDictionary<string, DeviceFlowSession> _sessions = new();
     private readonly ILogger<DeviceFlowHandler> _logger;
@@ -166,7 +166,7 @@ public class DeviceFlowHandler sealed
 /// <summary>
 /// Device flow initiation response.
 /// </summary>
-public class DeviceFlowInitiation sealed
+public sealed class DeviceFlowInitiation sealed
 {
     public string DeviceCode { get; set; } = string.Empty;
     public string UserCode { get; set; } = string.Empty;
@@ -178,7 +178,7 @@ public class DeviceFlowInitiation sealed
 /// <summary>
 /// Result of polling a device flow.
 /// </summary>
-public class DeviceFlowPollResult sealed
+public sealed class DeviceFlowPollResult sealed
 {
     public DeviceFlowStatus Status { get; set; }
     public string? UserId { get; set; }
@@ -189,7 +189,7 @@ public class DeviceFlowPollResult sealed
 /// <summary>
 /// Device flow authorization session.
 /// </summary>
-public class DeviceFlowSession sealed
+public sealed class DeviceFlowSession sealed
 {
     public string DeviceCode { get; set; } = string.Empty;
     public string UserCode { get; set; } = string.Empty;

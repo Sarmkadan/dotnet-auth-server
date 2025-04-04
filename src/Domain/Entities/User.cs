@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents a user in the authorization system
 /// </summary>
-public class User sealed
+public sealed class User sealed
 {
     /// <summary>
     /// Unique identifier for the user

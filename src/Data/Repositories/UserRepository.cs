@@ -42,7 +42,7 @@ public interface IUserRepository : IRepository<User, string>
 /// <summary>
 /// In-memory implementation of user repository
 /// </summary>
-public class UserRepository : IUserRepository sealed
+public sealed class UserRepository : IUserRepository sealed
 {
     private readonly Dictionary<string, User> _users = new(StringComparer.OrdinalIgnoreCase);
 

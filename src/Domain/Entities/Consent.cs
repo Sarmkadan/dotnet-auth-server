@@ -11,7 +11,7 @@ using DotnetAuthServer.Domain.Enums;
 /// <summary>
 /// Represents user consent for a client's scope access
 /// </summary>
-public class Consent sealed
+public sealed class Consent sealed
 {
     /// <summary>
     /// Unique consent identifier

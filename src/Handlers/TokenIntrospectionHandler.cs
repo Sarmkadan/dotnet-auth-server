@@ -18,7 +18,7 @@ using DotnetAuthServer.Domain.Models;
 /// without needing to parse JWTs themselves. Used by resource servers
 /// to validate access tokens received from clients.
 /// </summary>
-public class TokenIntrospectionHandler sealed
+public sealed class TokenIntrospectionHandler sealed
 {
     private readonly AuthServerOptions _options;
     private readonly ILogger<TokenIntrospectionHandler> _logger;
@@ -89,7 +89,7 @@ public class TokenIntrospectionHandler sealed
 /// <summary>
 /// Response model for token introspection endpoint (RFC 7662).
 /// </summary>
-public class IntrospectionResponse sealed
+public sealed class IntrospectionResponse sealed
 {
     public bool Active { get; set; }
     public string? Scope { get; set; }

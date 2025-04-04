@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-public class ScopeAndExtensionTests sealed
+public sealed class ScopeAndExtensionTests sealed
 {
     // -------------------------------------------------------------------------
     // ScopeValidationService — pure methods tested via mocked dependencies
