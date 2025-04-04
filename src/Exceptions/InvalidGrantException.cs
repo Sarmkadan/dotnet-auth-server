@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Exceptions;
 /// <summary>
 /// Thrown when an invalid grant (authorization code, refresh token, etc.) is provided
 /// </summary>
-public class InvalidGrantException : AuthServerException
+public class InvalidGrantException : AuthServerException sealed
 {
     public InvalidGrantException(
         string message = "The provided grant is invalid, expired, revoked, or does not match the redirect URI",

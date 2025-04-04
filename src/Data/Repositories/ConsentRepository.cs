@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using DotnetAuthServer.Domain.Entities;
 /// Stores user consent data for audit and permission tracking.
 /// In production, should be persisted to a database.
 /// </summary>
-public class ConsentRepository : IConsentRepository
+public class ConsentRepository : IConsentRepository sealed
 {
     private readonly Dictionary<string, Consent> _consents = new();
 
@@ -30,7 +31,7 @@ public class ConsentRepository : IConsentRepository
 
     public Task<Consent?> CreateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
-        if (entity == null)
+        if (entity is null)
             return Task.FromResult<Consent?>(null);
 
         var id = Guid.NewGuid().ToString();
@@ -42,7 +43,7 @@ public class ConsentRepository : IConsentRepository
 
     public Task<bool> UpdateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
-        if (entity == null || string.IsNullOrWhiteSpace(entity.ConsentId))
+        if (entity is null || string.IsNullOrWhiteSpace(entity.ConsentId))
             return Task.FromResult(false);
 
         if (!_consents.ContainsKey(entity.ConsentId))
@@ -107,7 +108,7 @@ public class ConsentRepository : IConsentRepository
         var consent = _consents.Values.FirstOrDefault(c =>
             c.UserId == userId && c.ClientId == clientId);
 
-        if (consent == null)
+        if (consent is null)
             return Task.FromResult(false);
 
         return Task.FromResult(_consents.Remove(consent.ConsentId));

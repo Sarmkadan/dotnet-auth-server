@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Events;
 /// user authentication, consent changes, etc.
 /// Implements retry logic and exponential backoff for resilience.
 /// </summary>
-public class WebhookClient
+public class WebhookClient sealed
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<WebhookClient> _logger;
@@ -116,7 +117,7 @@ public class WebhookClient
 /// <summary>
 /// Result of a webhook delivery attempt.
 /// </summary>
-public class WebhookResult
+public class WebhookResult sealed
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -125,7 +126,7 @@ public class WebhookResult
 /// <summary>
 /// Webhook payload envelope containing event metadata and data.
 /// </summary>
-public class WebhookPayload
+public class WebhookPayload sealed
 {
     public string EventId { get; set; } = string.Empty;
     public string EventType { get; set; } = string.Empty;
@@ -137,7 +138,7 @@ public class WebhookPayload
 /// <summary>
 /// Configuration for webhook delivery behavior.
 /// </summary>
-public class WebhookOptions
+public class WebhookOptions sealed
 {
     public bool Enabled { get; set; } = true;
     public int MaxRetries { get; set; } = 3;

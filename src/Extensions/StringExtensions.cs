@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -83,7 +84,7 @@ public static class StringExtensions
     /// </summary>
     public static string SafeTruncate(this string value, int maxLength)
     {
-        if (value == null)
+        if (value is null)
             return string.Empty;
 
         return value.Length > maxLength ? value.Substring(0, maxLength) : value;

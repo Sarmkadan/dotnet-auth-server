@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Exceptions;
 /// <summary>
 /// Service for user authentication and management
 /// </summary>
-public class UserService
+public class UserService sealed
 {
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -40,7 +41,7 @@ public class UserService
     {
         var user = await _userRepository.GetByUsernameAsync(username, cancellationToken);
 
-        if (user == null)
+        if (user is null)
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidGrant,
                 "Invalid credentials",
@@ -109,14 +110,14 @@ public class UserService
 
         // Check if user already exists
         var existingUser = await _userRepository.GetByUsernameAsync(username, cancellationToken);
-        if (existingUser != null)
+        if (existingUser is not null)
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
                 "Username already exists",
                 400);
 
         var existingEmail = await _userRepository.GetByEmailAsync(email, cancellationToken);
-        if (existingEmail != null)
+        if (existingEmail is not null)
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
                 "Email already registered",
@@ -153,7 +154,7 @@ public class UserService
         if (!string.IsNullOrWhiteSpace(fullName))
             user.FullName = fullName;
 
-        if (attributes != null)
+        if (attributes is not null)
         {
             foreach (var attr in attributes)
             {

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using System.Text.RegularExpressions;
 /// consider using a distributed cache like Redis via dependency injection.
 /// Features automatic expiration checking and thread-safe operations.
 /// </summary>
-public class MemoryCacheService : ICacheService
+public class MemoryCacheService : ICacheService sealed
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
@@ -107,7 +108,7 @@ public class MemoryCacheService : ICacheService
     {
         // Try to get from cache first
         var cached = await GetAsync<T>(key, cancellationToken);
-        if (cached != null)
+        if (cached is not null)
             return cached;
 
         // Get or create a lock for this key to prevent thundering herd
@@ -118,12 +119,12 @@ public class MemoryCacheService : ICacheService
         {
             // Double-check pattern: another thread may have populated the cache
             var cachedAgain = await GetAsync<T>(key, cancellationToken);
-            if (cachedAgain != null)
+            if (cachedAgain is not null)
                 return cachedAgain;
 
             // Call factory to compute value
             var value = await factory(cancellationToken);
-            if (value != null)
+            if (value is not null)
             {
                 await SetAsync(key, value, expiration, cancellationToken);
             }
