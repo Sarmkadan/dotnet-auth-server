@@ -99,7 +99,10 @@ public sealed class PkceValidationService sealed
         try
         {
             var computedChallenge = GenerateCodeChallenge(codeVerifier, method);
-            var isValid = computedChallenge == codeChallenge;
+            // Use constant-time comparison to prevent timing attacks
+            var isValid = CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(computedChallenge),
+                Encoding.UTF8.GetBytes(codeChallenge));
 
             if (!isValid)
             {
