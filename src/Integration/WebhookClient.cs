@@ -53,7 +53,7 @@ public sealed class WebhookClient sealed
                     System.Text.Encoding.UTF8,
                     "application/json");
 
-                var response = await _httpClient.PostAsync(webhookUrl, content, cancellationToken);
+                var response = await _httpClient.PostAsync(webhookUrl, content, cancellationToken).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -90,7 +90,7 @@ public sealed class WebhookClient sealed
             retryCount++;
             if (retryCount <= _options.MaxRetries)
             {
-                await Task.Delay(delayMs, cancellationToken);
+                await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
                 delayMs = Math.Min(delayMs * 2, _options.MaxRetryDelayMs);
             }
         }

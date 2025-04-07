@@ -41,7 +41,7 @@ public sealed class UserinfoHandler sealed
             return null;
         }
 
-        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
             _logger.LogWarning("Userinfo requested for unknown user {UserId}", userId);

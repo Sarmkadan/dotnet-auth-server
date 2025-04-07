@@ -46,12 +46,12 @@ public sealed class ConsentRepository : IConsentRepository sealed
 
     public async Task<Consent?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_consents.TryGetValue(id, out var consent) ? consent : null);
+        return await Task.FromResult(_consents.TryGetValue(id, out var consent) ? consent : null).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Consent>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_consents.Values.ToList());
+        return await Task.FromResult(_consents.Values.ToList()).ConfigureAwait(false);
     }
 
     public async Task<Consent> CreateAsync(Consent entity, CancellationToken cancellationToken = default)
@@ -60,7 +60,7 @@ public sealed class ConsentRepository : IConsentRepository sealed
             throw new InvalidOperationException($"Consent with ID {entity.ConsentId} already exists");
 
         _consents[entity.ConsentId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task<Consent> UpdateAsync(Consent entity, CancellationToken cancellationToken = default)
@@ -70,12 +70,12 @@ public sealed class ConsentRepository : IConsentRepository sealed
 
         entity.UpdatedAt = DateTime.UtcNow;
         _consents[entity.ConsentId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(Consent entity, CancellationToken cancellationToken = default)
     {
-        await DeleteByIdAsync(entity.ConsentId, cancellationToken);
+        await DeleteByIdAsync(entity.ConsentId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -86,7 +86,7 @@ public sealed class ConsentRepository : IConsentRepository sealed
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_consents.ContainsKey(id));
+        return await Task.FromResult(_consents.ContainsKey(id)).ConfigureAwait(false);
     }
 
     public async Task<Consent?> GetByUserAndClientAsync(
@@ -97,21 +97,21 @@ public sealed class ConsentRepository : IConsentRepository sealed
         var consent = _consents.Values.FirstOrDefault(c =>
             c.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase) &&
             c.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase));
-        return await Task.FromResult(consent);
+        return await Task.FromResult(consent).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Consent>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         var consents = _consents.Values.Where(c =>
             c.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
-        return await Task.FromResult(consents);
+        return await Task.FromResult(consents).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Consent>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
         var consents = _consents.Values.Where(c =>
             c.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase)).ToList();
-        return await Task.FromResult(consents);
+        return await Task.FromResult(consents).ConfigureAwait(false);
     }
 
     public async Task RevokeAllUserConsentsAsync(string userId, CancellationToken cancellationToken = default)
@@ -149,7 +149,7 @@ public sealed class ConsentService sealed
         IEnumerable<string> requestedScopes,
         CancellationToken cancellationToken = default)
     {
-        var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
+        var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken).ConfigureAwait(false);
 
         if (consent is null || !consent.IsValidAndApproved())
             return false;
@@ -199,7 +199,7 @@ public sealed class ConsentService sealed
             consent.ExpiresAt = DateTime.UtcNow.AddHours(1); // Session-based consent
         }
 
-        await _consentRepository.CreateAsync(consent, cancellationToken);
+        await _consentRepository.CreateAsync(consent, cancellationToken).ConfigureAwait(false);
         return consent;
     }
 
@@ -212,7 +212,7 @@ public sealed class ConsentService sealed
         IEnumerable<string> requestedScopes,
         CancellationToken cancellationToken = default)
     {
-        var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
+        var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken).ConfigureAwait(false);
 
         if (consent?.IsValidAndApproved() != true)
             return Enumerable.Empty<string>();
@@ -228,7 +228,7 @@ public sealed class ConsentService sealed
     /// </summary>
     public async Task RevokeAllUserConsentsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        await _consentRepository.RevokeAllUserConsentsAsync(userId, cancellationToken);
+        await _consentRepository.RevokeAllUserConsentsAsync(userId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -239,11 +239,11 @@ public sealed class ConsentService sealed
         string clientId,
         CancellationToken cancellationToken = default)
     {
-        var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
+        var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken).ConfigureAwait(false);
         if (consent is not null)
         {
             consent.Revoke("User revoked consent");
-            await _consentRepository.UpdateAsync(consent, cancellationToken);
+            await _consentRepository.UpdateAsync(consent, cancellationToken).ConfigureAwait(false);
         }
     }
 }

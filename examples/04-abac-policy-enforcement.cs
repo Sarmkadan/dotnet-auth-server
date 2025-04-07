@@ -337,13 +337,13 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var canRead = await _policyEngine.EvaluateAsync("can_read_file", context);
+        var canRead = await _policyEngine.EvaluateAsync("can_read_file", context).ConfigureAwait(false);
         Console.WriteLine($"Can read file: {canRead}");
 
-        var requiresMfa = await _policyEngine.EvaluateAsync("requires_mfa", context);
+        var requiresMfa = await _policyEngine.EvaluateAsync("requires_mfa", context).ConfigureAwait(false);
         Console.WriteLine($"Requires MFA: {requiresMfa}");
 
-        var businessHours = await _policyEngine.EvaluateAsync("can_access_during_business_hours", context);
+        var businessHours = await _policyEngine.EvaluateAsync("can_access_during_business_hours", context).ConfigureAwait(false);
         Console.WriteLine($"Within business hours: {businessHours}\n");
     }
 
@@ -382,10 +382,10 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var canWrite = await _policyEngine.EvaluateAsync("can_write_file", context);
+        var canWrite = await _policyEngine.EvaluateAsync("can_write_file", context).ConfigureAwait(false);
         Console.WriteLine($"Can write file: {canWrite} (insufficient tenure)");
 
-        var requiresMfa = await _policyEngine.EvaluateAsync("requires_mfa", context);
+        var requiresMfa = await _policyEngine.EvaluateAsync("requires_mfa", context).ConfigureAwait(false);
         Console.WriteLine($"Requires MFA: {requiresMfa} (secret classification)\n");
     }
 
@@ -425,13 +425,13 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var businessHours = await _policyEngine.EvaluateAsync("can_access_during_business_hours", context);
+        var businessHours = await _policyEngine.EvaluateAsync("can_access_during_business_hours", context).ConfigureAwait(false);
         Console.WriteLine($"Within business hours: {businessHours}");
 
-        var officeLocation = await _policyEngine.EvaluateAsync("can_access_from_office", context);
+        var officeLocation = await _policyEngine.EvaluateAsync("can_access_from_office", context).ConfigureAwait(false);
         Console.WriteLine($"From approved location: {officeLocation}");
 
-        var requiresMfa = await _policyEngine.EvaluateAsync("requires_mfa", context);
+        var requiresMfa = await _policyEngine.EvaluateAsync("requires_mfa", context).ConfigureAwait(false);
         Console.WriteLine($"Requires MFA: {requiresMfa} (remote + off-hours)\n");
     }
 
@@ -458,7 +458,7 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var canApprove = await _policyEngine.EvaluateAsync("can_approve_budget", seniorContext);
+        var canApprove = await _policyEngine.EvaluateAsync("can_approve_budget", seniorContext).ConfigureAwait(false);
         Console.WriteLine($"Senior Manager (4yr tenure): Can approve budget = {canApprove}");
 
         // Junior manager - cannot approve (insufficient tenure)
@@ -477,7 +477,7 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var canApproveJunior = await _policyEngine.EvaluateAsync("can_approve_budget", juniorContext);
+        var canApproveJunior = await _policyEngine.EvaluateAsync("can_approve_budget", juniorContext).ConfigureAwait(false);
         Console.WriteLine($"Junior Manager (6mo tenure): Can approve budget = {canApproveJunior}\n");
     }
 
@@ -504,7 +504,7 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var canDeleteOld = await _policyEngine.EvaluateAsync("can_delete_resource", oldResourceContext);
+        var canDeleteOld = await _policyEngine.EvaluateAsync("can_delete_resource", oldResourceContext).ConfigureAwait(false);
         Console.WriteLine($"Owner deleting old file (60 days): {canDeleteOld}");
 
         // Owner trying to delete new resource
@@ -523,7 +523,7 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var canDeleteNew = await _policyEngine.EvaluateAsync("can_delete_resource", newResourceContext);
+        var canDeleteNew = await _policyEngine.EvaluateAsync("can_delete_resource", newResourceContext).ConfigureAwait(false);
         Console.WriteLine($"Owner deleting new file (5 days): {canDeleteNew}");
 
         // Admin can always delete
@@ -542,7 +542,7 @@ public sealed class AbacPolicyExample sealed
             }
         };
 
-        var canDeleteAdmin = await _policyEngine.EvaluateAsync("can_delete_resource", adminContext);
+        var canDeleteAdmin = await _policyEngine.EvaluateAsync("can_delete_resource", adminContext).ConfigureAwait(false);
         Console.WriteLine($"Admin deleting any file: {canDeleteAdmin}\n");
     }
 }
@@ -558,11 +558,11 @@ internal sealed class Program
 
         var example = new AbacPolicyExample();
 
-        await example.ManagerAccessFileAsync();
-        await example.JuniorDeveloperAccessAsync();
-        await example.RemoteOffHoursAccessAsync();
-        await example.BudgetApprovalAsync();
-        await example.DeleteResourceAsync();
+        await example.ManagerAccessFileAsync().ConfigureAwait(false);
+        await example.JuniorDeveloperAccessAsync().ConfigureAwait(false);
+        await example.RemoteOffHoursAccessAsync().ConfigureAwait(false);
+        await example.BudgetApprovalAsync().ConfigureAwait(false);
+        await example.DeleteResourceAsync().ConfigureAwait(false);
 
         Console.WriteLine("✓ ABAC Examples completed");
     }

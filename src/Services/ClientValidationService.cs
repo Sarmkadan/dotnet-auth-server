@@ -48,7 +48,7 @@ public sealed class ClientValidationService sealed
             throw new InvalidClientException("client_id is required");
         }
 
-        var client = await GetClientAsync(clientId, cancellationToken);
+        var client = await GetClientAsync(clientId, cancellationToken).ConfigureAwait(false);
         if (client is null || !client.IsActive)
         {
             _logger.LogWarning("Client {ClientId} not found or inactive", clientId);
@@ -90,7 +90,7 @@ public sealed class ClientValidationService sealed
         if (!redirectUri.IsValidAbsoluteUri())
             throw new InvalidClientException("redirect_uri is not a valid absolute URI");
 
-        var client = await GetClientAsync(clientId, cancellationToken);
+        var client = await GetClientAsync(clientId, cancellationToken).ConfigureAwait(false);
         if (client is null)
             throw new InvalidClientException("Client not found");
 
@@ -113,7 +113,7 @@ public sealed class ClientValidationService sealed
         IEnumerable<string> requestedScopes,
         CancellationToken cancellationToken = default)
     {
-        var client = await GetClientAsync(clientId, cancellationToken);
+        var client = await GetClientAsync(clientId, cancellationToken).ConfigureAwait(false);
         if (client is null)
             throw new InvalidClientException("Client not found");
 
@@ -141,7 +141,7 @@ public sealed class ClientValidationService sealed
         string grantType,
         CancellationToken cancellationToken = default)
     {
-        var client = await GetClientAsync(clientId, cancellationToken);
+        var client = await GetClientAsync(clientId, cancellationToken).ConfigureAwait(false);
         if (client is null)
             throw new InvalidClientException("Client not found");
 
@@ -165,15 +165,15 @@ public sealed class ClientValidationService sealed
             return null;
 
         var cacheKey = $"client:{clientId}";
-        var cachedClient = await _cacheService.GetAsync<Client>(cacheKey, cancellationToken);
+        var cachedClient = await _cacheService.GetAsync<Client>(cacheKey, cancellationToken).ConfigureAwait(false);
         if (cachedClient is not null)
             return cachedClient;
 
-        var client = await _clientRepository.GetByIdAsync(clientId, cancellationToken);
+        var client = await _clientRepository.GetByIdAsync(clientId, cancellationToken).ConfigureAwait(false);
         if (client is not null)
         {
             // Cache for 1 hour
-            await _cacheService.SetAsync(cacheKey, client, TimeSpan.FromHours(1), cancellationToken);
+            await _cacheService.SetAsync(cacheKey, client, TimeSpan.FromHours(1), cancellationToken).ConfigureAwait(false);
         }
 
         return client;

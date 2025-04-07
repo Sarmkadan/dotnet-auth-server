@@ -90,7 +90,7 @@ public sealed class ClientService sealed
                 "Client registration failed validation",
                 500);
 
-        return await _clientRepository.CreateAsync(client, cancellationToken);
+        return await _clientRepository.CreateAsync(client, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ public sealed class ClientService sealed
         }
 
         client.UpdatedAt = DateTime.UtcNow;
-        return await _clientRepository.UpdateAsync(client, cancellationToken);
+        return await _clientRepository.UpdateAsync(client, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -153,7 +153,7 @@ public sealed class ClientService sealed
         client.ClientSecretHash = newSecretHash;
         client.UpdatedAt = DateTime.UtcNow;
 
-        await _clientRepository.UpdateAsync(client, cancellationToken);
+        await _clientRepository.UpdateAsync(client, cancellationToken).ConfigureAwait(false);
         return newSecret;
     }
 
@@ -166,7 +166,7 @@ public sealed class ClientService sealed
     {
         client.IsActive = false;
         client.UpdatedAt = DateTime.UtcNow;
-        await _clientRepository.UpdateAsync(client, cancellationToken);
+        await _clientRepository.UpdateAsync(client, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -178,7 +178,7 @@ public sealed class ClientService sealed
     {
         client.IsActive = true;
         client.UpdatedAt = DateTime.UtcNow;
-        await _clientRepository.UpdateAsync(client, cancellationToken);
+        await _clientRepository.UpdateAsync(client, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

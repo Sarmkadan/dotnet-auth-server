@@ -39,7 +39,7 @@ public sealed class UserService sealed
         string password,
         CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByUsernameAsync(username, cancellationToken);
+        var user = await _userRepository.GetByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
 
         if (user is null)
             throw new AuthServerException(
@@ -64,7 +64,7 @@ public sealed class UserService sealed
         if (!VerifyPassword(password, user.PasswordHash))
         {
             user.RecordFailedLogin(_options.FailedLoginAttemptThreshold);
-            await _userRepository.UpdateAsync(user, cancellationToken);
+            await _userRepository.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidGrant,
                 "Invalid credentials",
@@ -72,7 +72,7 @@ public sealed class UserService sealed
         }
 
         user.RecordSuccessfulLogin();
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _userRepository.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
 
         return user;
     }
@@ -109,14 +109,14 @@ public sealed class UserService sealed
                 400);
 
         // Check if user already exists
-        var existingUser = await _userRepository.GetByUsernameAsync(username, cancellationToken);
+        var existingUser = await _userRepository.GetByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
         if (existingUser is not null)
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
                 "Username already exists",
                 400);
 
-        var existingEmail = await _userRepository.GetByEmailAsync(email, cancellationToken);
+        var existingEmail = await _userRepository.GetByEmailAsync(email, cancellationToken).ConfigureAwait(false);
         if (existingEmail is not null)
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
@@ -139,7 +139,7 @@ public sealed class UserService sealed
                 "User creation failed validation",
                 500);
 
-        return await _userRepository.CreateAsync(user, cancellationToken);
+        return await _userRepository.CreateAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -162,7 +162,7 @@ public sealed class UserService sealed
             }
         }
 
-        return await _userRepository.UpdateAsync(user, cancellationToken);
+        return await _userRepository.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public sealed class UserService sealed
 
         user.PasswordHash = HashPassword(newPassword);
         user.RecordFailedLogin(0); // Reset failed attempts
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _userRepository.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
 
         // Revoke all refresh tokens on password change
         await _refreshTokenRepository.RevokeAllUserTokensAsync(
@@ -209,7 +209,7 @@ public sealed class UserService sealed
             return;
 
         user.Roles.Add(role);
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _userRepository.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -221,7 +221,7 @@ public sealed class UserService sealed
         CancellationToken cancellationToken = default)
     {
         user.Roles.Remove(role);
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _userRepository.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

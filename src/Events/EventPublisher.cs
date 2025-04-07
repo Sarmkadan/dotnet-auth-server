@@ -78,7 +78,7 @@ public sealed class EventPublisher : IEventPublisher sealed
                 var subscriber = handler as IEventSubscriber<TEvent>;
                 if (subscriber is not null)
                 {
-                    await subscriber.HandleAsync(@event, cancellationToken);
+                    await subscriber.HandleAsync(@event, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)

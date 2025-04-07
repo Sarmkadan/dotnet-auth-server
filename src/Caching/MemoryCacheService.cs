@@ -107,26 +107,26 @@ public sealed class MemoryCacheService : ICacheService sealed
         where T : class
     {
         // Try to get from cache first
-        var cached = await GetAsync<T>(key, cancellationToken);
+        var cached = await GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
         if (cached is not null)
             return cached;
 
         // Get or create a lock for this key to prevent thundering herd
         var @lock = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
 
-        await @lock.WaitAsync(cancellationToken);
+        await @lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             // Double-check pattern: another thread may have populated the cache
-            var cachedAgain = await GetAsync<T>(key, cancellationToken);
+            var cachedAgain = await GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
             if (cachedAgain is not null)
                 return cachedAgain;
 
             // Call factory to compute value
-            var value = await factory(cancellationToken);
+            var value = await factory(cancellationToken).ConfigureAwait(false);
             if (value is not null)
             {
-                await SetAsync(key, value, expiration, cancellationToken);
+                await SetAsync(key, value, expiration, cancellationToken).ConfigureAwait(false);
             }
 
             return value;

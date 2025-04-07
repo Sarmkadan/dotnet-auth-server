@@ -43,12 +43,12 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
     public async Task<AuthorizationGrant?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_grants.TryGetValue(id, out var grant) ? grant : null);
+        return await Task.FromResult(_grants.TryGetValue(id, out var grant) ? grant : null).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<AuthorizationGrant>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_grants.Values.ToList());
+        return await Task.FromResult(_grants.Values.ToList()).ConfigureAwait(false);
     }
 
     public async Task<AuthorizationGrant> CreateAsync(AuthorizationGrant entity, CancellationToken cancellationToken = default)
@@ -57,7 +57,7 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
             throw new InvalidOperationException($"Grant with ID {entity.GrantId} already exists");
 
         _grants[entity.GrantId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task<AuthorizationGrant> UpdateAsync(AuthorizationGrant entity, CancellationToken cancellationToken = default)
@@ -66,12 +66,12 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
             throw new InvalidOperationException($"Grant with ID {entity.GrantId} not found");
 
         _grants[entity.GrantId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(AuthorizationGrant entity, CancellationToken cancellationToken = default)
     {
-        await DeleteByIdAsync(entity.GrantId, cancellationToken);
+        await DeleteByIdAsync(entity.GrantId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -82,28 +82,28 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_grants.ContainsKey(id));
+        return await Task.FromResult(_grants.ContainsKey(id)).ConfigureAwait(false);
     }
 
     public async Task<AuthorizationGrant?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
     {
         var grant = _grants.Values.FirstOrDefault(g =>
             g.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
-        return await Task.FromResult(grant);
+        return await Task.FromResult(grant).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<AuthorizationGrant>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         var grants = _grants.Values.Where(g =>
             g.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
-        return await Task.FromResult(grants);
+        return await Task.FromResult(grants).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<AuthorizationGrant>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
         var grants = _grants.Values.Where(g =>
             g.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase)).ToList();
-        return await Task.FromResult(grants);
+        return await Task.FromResult(grants).ConfigureAwait(false);
     }
 
     public async Task DeleteExpiredAsync(CancellationToken cancellationToken = default)

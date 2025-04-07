@@ -31,14 +31,14 @@ public sealed class TokenCleanupWorker : BackgroundService sealed
         _logger.LogInformation("Token cleanup worker started");
 
         // Initial delay to allow server startup
-        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken).ConfigureAwait(false);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await CleanupExpiredTokensAsync(stoppingToken);
-                await CleanupExpiredGrantsAsync(stoppingToken);
+                await CleanupExpiredTokensAsync(stoppingToken).ConfigureAwait(false);
+                await CleanupExpiredGrantsAsync(stoppingToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -47,7 +47,7 @@ public sealed class TokenCleanupWorker : BackgroundService sealed
 
             try
             {
-                await Task.Delay(_cleanupInterval, stoppingToken);
+                await Task.Delay(_cleanupInterval, stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

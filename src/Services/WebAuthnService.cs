@@ -204,7 +204,7 @@ public sealed class WebAuthnService : IWebAuthnService
         var cacheKey = $"webauthn:reg:{userId}";
         var entry = await _cache.GetAsync<ChallengeEntry>(cacheKey, cancellationToken)
             ?? throw new InvalidGrantException("Registration challenge expired or not found.");
-        await _cache.RemoveAsync(cacheKey, cancellationToken);
+        await _cache.RemoveAsync(cacheKey, cancellationToken).ConfigureAwait(false);
 
         var clientDataBytes = Base64UrlDecode(clientDataJsonB64);
         VerifyClientData(clientDataBytes, entry.Value, "webauthn.create");
@@ -231,7 +231,7 @@ public sealed class WebAuthnService : IWebAuthnService
             BackedUp         = (authData.Flags & 0x10) != 0,
         };
 
-        await _store.AddAsync(credential, cancellationToken);
+        await _store.AddAsync(credential, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation(
             "Registered WebAuthn credential {CredentialId} (alg={Alg}) for user {UserId}",
             credential.CredentialId, alg, userId);
@@ -250,7 +250,7 @@ public sealed class WebAuthnService : IWebAuthnService
         IReadOnlyList<string> allowCredentials = [];
         if (userId is not null)
         {
-            var creds = await _store.GetByUserIdAsync(userId, cancellationToken);
+            var creds = await _store.GetByUserIdAsync(userId, cancellationToken).ConfigureAwait(false);
             allowCredentials = creds.Select(c => c.CredentialId).ToList();
         }
 
@@ -275,7 +275,7 @@ public sealed class WebAuthnService : IWebAuthnService
 
         var entry = await _cache.GetAsync<ChallengeEntry>($"webauthn:auth:{challenge}", cancellationToken)
             ?? throw new InvalidGrantException("Authentication challenge expired or not found.");
-        await _cache.RemoveAsync($"webauthn:auth:{challenge}", cancellationToken);
+        await _cache.RemoveAsync($"webauthn:auth:{challenge}", cancellationToken).ConfigureAwait(false);
 
         VerifyClientData(clientDataBytes, challenge, "webauthn.get");
 
@@ -305,7 +305,7 @@ public sealed class WebAuthnService : IWebAuthnService
 
         credential.SignatureCounter = authData.SignCount;
         credential.LastUsedAt = DateTime.UtcNow;
-        await _store.UpdateAsync(credential, cancellationToken);
+        await _store.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
 
         var subject = userHandle is not null
             ? Encoding.UTF8.GetString(Base64UrlDecode(userHandle))

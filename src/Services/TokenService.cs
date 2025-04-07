@@ -87,7 +87,7 @@ public sealed class TokenService sealed
         if (!request.IsValidForGrantType(Constants.GrantTypes.AuthorizationCode))
             throw new InvalidGrantException("Authorization code or redirect_uri is missing");
 
-        var grant = await _grantRepository.GetByCodeAsync(request.Code, cancellationToken);
+        var grant = await _grantRepository.GetByCodeAsync(request.Code, cancellationToken).ConfigureAwait(false);
         if (grant is null || !grant.IsValid())
             throw new InvalidGrantException("Authorization code is invalid or expired");
 
@@ -105,9 +105,9 @@ public sealed class TokenService sealed
         }
 
         grant.MarkAsUsed();
-        await _grantRepository.UpdateAsync(grant, cancellationToken);
+        await _grantRepository.UpdateAsync(grant, cancellationToken).ConfigureAwait(false);
 
-        var user = await _userRepository.GetByIdAsync(grant.UserId, cancellationToken);
+        var user = await _userRepository.GetByIdAsync(grant.UserId, cancellationToken).ConfigureAwait(false);
         if (user is null)
             throw new AuthServerException(
                 Constants.ErrorCodes.ServerError,
@@ -142,15 +142,15 @@ public sealed class TokenService sealed
             throw new InvalidGrantException("Refresh token is missing");
 
         var tokenHash = HashToken(request.RefreshToken!);
-        var token = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
+        var token = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken).ConfigureAwait(false);
 
         if (token is null || !token.IsValid())
             throw new InvalidGrantException("Refresh token is invalid or expired");
 
         token.RecordUsage();
-        await _refreshTokenRepository.UpdateAsync(token, cancellationToken);
+        await _refreshTokenRepository.UpdateAsync(token, cancellationToken).ConfigureAwait(false);
 
-        var user = await _userRepository.GetByIdAsync(token.UserId, cancellationToken);
+        var user = await _userRepository.GetByIdAsync(token.UserId, cancellationToken).ConfigureAwait(false);
         if (user is null)
             throw new AuthServerException(
                 Constants.ErrorCodes.ServerError,
@@ -180,11 +180,11 @@ public sealed class TokenService sealed
                 PreviousTokenHash = token.TokenHash,
                 ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds)
             };
-            await _refreshTokenRepository.CreateAsync(newToken, cancellationToken);
+            await _refreshTokenRepository.CreateAsync(newToken, cancellationToken).ConfigureAwait(false);
 
             // Revoke old token after new one is safely persisted
             token.Revoke("Refresh token rotation");
-            await _refreshTokenRepository.UpdateAsync(token, cancellationToken);
+            await _refreshTokenRepository.UpdateAsync(token, cancellationToken).ConfigureAwait(false);
         }
 
         return new TokenResponse
@@ -204,7 +204,7 @@ public sealed class TokenService sealed
         TokenRequest request,
         CancellationToken cancellationToken)
     {
-        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
+        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken).ConfigureAwait(false);
         if (client is null)
             throw new InvalidClientException("Client not found or inactive");
 
@@ -236,7 +236,7 @@ public sealed class TokenService sealed
                 "Username and password are required",
                 400);
 
-        var user = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
+        var user = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken).ConfigureAwait(false);
         if (user is null || user.IsLocked())
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidGrant,
@@ -351,7 +351,7 @@ public sealed class TokenService sealed
             ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds)
         };
 
-        await _refreshTokenRepository.CreateAsync(refreshToken, cancellationToken);
+        await _refreshTokenRepository.CreateAsync(refreshToken, cancellationToken).ConfigureAwait(false);
         return tokenValue;
     }
 

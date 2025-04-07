@@ -45,7 +45,7 @@ public sealed class AuthorizationService sealed
                 400);
 
         // Validate client
-        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
+        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken).ConfigureAwait(false);
         if (client is null)
             throw new InvalidClientException("Client not found or inactive");
 
@@ -118,7 +118,7 @@ public sealed class AuthorizationService sealed
             ExpiresAt = DateTime.UtcNow.AddSeconds(_options.AuthorizationCodeLifetimeSeconds)
         };
 
-        await _grantRepository.CreateAsync(grant, cancellationToken);
+        await _grantRepository.CreateAsync(grant, cancellationToken).ConfigureAwait(false);
         return grant;
     }
 
@@ -130,7 +130,7 @@ public sealed class AuthorizationService sealed
         User user,
         CancellationToken cancellationToken = default)
     {
-        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
+        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken).ConfigureAwait(false);
         if (client is null)
             throw new InvalidClientException("Client not found");
 
@@ -180,7 +180,7 @@ public sealed class AuthorizationService sealed
     /// </summary>
     public async Task CleanupExpiredGrantsAsync(CancellationToken cancellationToken = default)
     {
-        await _grantRepository.DeleteExpiredAsync(cancellationToken);
+        await _grantRepository.DeleteExpiredAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

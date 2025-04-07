@@ -95,7 +95,7 @@ public sealed class ScopeMetadataHandler sealed
             return null;
 
         var cacheKey = $"scope_metadata:{scopeName}";
-        var cached = await _cacheService.GetAsync<ScopeMetadata>(cacheKey, cancellationToken);
+        var cached = await _cacheService.GetAsync<ScopeMetadata>(cacheKey, cancellationToken).ConfigureAwait(false);
         if (cached is not null)
             return cached;
 
@@ -108,7 +108,7 @@ public sealed class ScopeMetadataHandler sealed
         if (metadata is not null)
         {
             // Cache for 24 hours
-            await _cacheService.SetAsync(cacheKey, metadata, TimeSpan.FromHours(24), cancellationToken);
+            await _cacheService.SetAsync(cacheKey, metadata, TimeSpan.FromHours(24), cancellationToken).ConfigureAwait(false);
         }
 
         return metadata;
@@ -125,7 +125,7 @@ public sealed class ScopeMetadataHandler sealed
 
         foreach (var scopeName in scopeNames)
         {
-            var metadata = await GetScopeMetadataAsync(scopeName, cancellationToken);
+            var metadata = await GetScopeMetadataAsync(scopeName, cancellationToken).ConfigureAwait(false);
             if (metadata is not null)
             {
                 results.Add(metadata);
@@ -144,7 +144,7 @@ public sealed class ScopeMetadataHandler sealed
 
         foreach (var scopeName in StandardScopes.Keys)
         {
-            var metadata = await GetScopeMetadataAsync(scopeName, cancellationToken);
+            var metadata = await GetScopeMetadataAsync(scopeName, cancellationToken).ConfigureAwait(false);
             if (metadata is not null)
             {
                 scopes.Add(metadata);

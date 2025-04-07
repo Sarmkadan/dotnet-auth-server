@@ -49,17 +49,17 @@ public sealed class ClientCredentialsFlowExample sealed
                 })
             };
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
+                var errorContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 Console.WriteLine($"Token request failed: {response.StatusCode}");
                 Console.WriteLine($"Error: {errorContent}");
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -82,11 +82,11 @@ public sealed class ClientCredentialsFlowExample sealed
             var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
             request.Headers.Add("Authorization", $"Bearer {accessToken}");
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 Console.WriteLine("API Response:");
                 Console.WriteLine(content);
             }
@@ -118,12 +118,12 @@ public sealed class ClientCredentialsFlowExample sealed
                 })
             };
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
                 return false;
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var introspectResponse = JsonSerializer.Deserialize<IntrospectResponse>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -153,7 +153,7 @@ public sealed class ClientCredentialsFlowExample sealed
                 })
             };
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
                 Console.WriteLine("Token revoked successfully");
@@ -193,11 +193,11 @@ public sealed class BackgroundDataProcessorService sealed
             // Get fresh token if needed
             if (string.IsNullOrEmpty(_currentAccessToken) || DateTime.UtcNow >= _tokenExpiresAt)
             {
-                await RefreshAccessTokenAsync();
+                await RefreshAccessTokenAsync().ConfigureAwait(false);
             }
 
             // Process data
-            await ProcessDataAsync(_currentAccessToken);
+            await ProcessDataAsync(_currentAccessToken).ConfigureAwait(false);
 
             Console.WriteLine($"Job {jobId} completed successfully");
         }
@@ -213,7 +213,7 @@ public sealed class BackgroundDataProcessorService sealed
     /// </summary>
     private async Task RefreshAccessTokenAsync()
     {
-        var tokenResponse = await _authFlow.GetServiceAccessTokenAsync("api:read api:write");
+        var tokenResponse = await _authFlow.GetServiceAccessTokenAsync("api:read api:write").ConfigureAwait(false);
 
         if (tokenResponse is null)
             throw new InvalidOperationException("Failed to obtain access token");
@@ -233,11 +233,11 @@ public sealed class BackgroundDataProcessorService sealed
             throw new InvalidOperationException("No access token");
 
         // Validate token before use
-        var isValid = await _authFlow.ValidateTokenAsync(accessToken);
+        var isValid = await _authFlow.ValidateTokenAsync(accessToken).ConfigureAwait(false);
         if (!isValid)
         {
             Console.WriteLine("Token is invalid, obtaining new one...");
-            await RefreshAccessTokenAsync();
+            await RefreshAccessTokenAsync().ConfigureAwait(false);
             return;
         }
 
@@ -246,7 +246,7 @@ public sealed class BackgroundDataProcessorService sealed
             "https://api.example.com/data/process");
 
         // Simulate processing time
-        await Task.Delay(1000);
+        await Task.Delay(1000).ConfigureAwait(false);
 
         Console.WriteLine("Data processed");
     }
@@ -258,7 +258,7 @@ public sealed class BackgroundDataProcessorService sealed
     {
         if (!string.IsNullOrEmpty(_currentAccessToken))
         {
-            await _authFlow.RevokeTokenAsync(_currentAccessToken);
+            await _authFlow.RevokeTokenAsync(_currentAccessToken).ConfigureAwait(false);
             _currentAccessToken = null;
         }
     }
@@ -283,7 +283,7 @@ public sealed class MultiServiceAuthenticationExample sealed
     {
         // Log reading service (read-only)
         var logReaderFlow = new ClientCredentialsFlowExample(_authServerUrl);
-        var logReaderToken = await logReaderFlow.GetServiceAccessTokenAsync("logs:read");
+        var logReaderToken = await logReaderFlow.GetServiceAccessTokenAsync("logs:read").ConfigureAwait(false);
 
         if (logReaderToken is not null)
         {
@@ -306,7 +306,7 @@ public sealed class MultiServiceAuthenticationExample sealed
 
         // Admin service (full access)
         var adminFlow = new ClientCredentialsFlowExample(_authServerUrl);
-        var adminToken = await adminFlow.GetServiceAccessTokenAsync("admin:*");
+        var adminToken = await adminFlow.GetServiceAccessTokenAsync("admin:*").ConfigureAwait(false);
 
         if (adminToken is not null)
         {
@@ -370,7 +370,7 @@ internal sealed class Program
         // Example 1: Simple token request
         Console.WriteLine("1. Request access token:");
         var flow = new ClientCredentialsFlowExample(authServerUrl);
-        var token = await flow.GetServiceAccessTokenAsync();
+        var token = await flow.GetServiceAccessTokenAsync().ConfigureAwait(false);
 
         if (token is not null)
         {
@@ -381,12 +381,12 @@ internal sealed class Program
 
             // Example 2: Validate token
             Console.WriteLine("2. Validate token:");
-            var isValid = await flow.ValidateTokenAsync(token.AccessToken);
+            var isValid = await flow.ValidateTokenAsync(token.AccessToken).ConfigureAwait(false);
             Console.WriteLine($"✓ Token is valid: {isValid}\n");
 
             // Example 3: Revoke token
             Console.WriteLine("3. Revoke token:");
-            await flow.RevokeTokenAsync(token.AccessToken);
+            await flow.RevokeTokenAsync(token.AccessToken).ConfigureAwait(false);
             Console.WriteLine();
         }
 
@@ -395,16 +395,16 @@ internal sealed class Program
         var processor = new BackgroundDataProcessorService(authServerUrl);
         try
         {
-            await processor.ExecuteJobAsync("job-001");
+            await processor.ExecuteJobAsync("job-001").ConfigureAwait(false);
         }
         finally
         {
-            await processor.ShutdownAsync();
+            await processor.ShutdownAsync().ConfigureAwait(false);
         }
 
         // Example 5: Multiple services with different scopes
         Console.WriteLine("\n5. Multiple services with different scopes:");
         var multiService = new MultiServiceAuthenticationExample(authServerUrl);
-        await multiService.DemonstrateMultiServiceAsync();
+        await multiService.DemonstrateMultiServiceAsync().ConfigureAwait(false);
     }
 }

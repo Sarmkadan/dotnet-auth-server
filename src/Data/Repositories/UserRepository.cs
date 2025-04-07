@@ -48,12 +48,12 @@ public sealed class UserRepository : IUserRepository sealed
 
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_users.TryGetValue(id, out var user) ? user : null);
+        return await Task.FromResult(_users.TryGetValue(id, out var user) ? user : null).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<User>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_users.Values.ToList());
+        return await Task.FromResult(_users.Values.ToList()).ConfigureAwait(false);
     }
 
     public async Task<User> CreateAsync(User entity, CancellationToken cancellationToken = default)
@@ -62,7 +62,7 @@ public sealed class UserRepository : IUserRepository sealed
             throw new InvalidOperationException($"User with ID {entity.UserId} already exists");
 
         _users[entity.UserId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task<User> UpdateAsync(User entity, CancellationToken cancellationToken = default)
@@ -72,12 +72,12 @@ public sealed class UserRepository : IUserRepository sealed
 
         entity.UpdatedAt = DateTime.UtcNow;
         _users[entity.UserId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(User entity, CancellationToken cancellationToken = default)
     {
-        await DeleteByIdAsync(entity.UserId, cancellationToken);
+        await DeleteByIdAsync(entity.UserId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -88,34 +88,34 @@ public sealed class UserRepository : IUserRepository sealed
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_users.ContainsKey(id));
+        return await Task.FromResult(_users.ContainsKey(id)).ConfigureAwait(false);
     }
 
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         var user = _users.Values.FirstOrDefault(u =>
             u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-        return await Task.FromResult(user);
+        return await Task.FromResult(user).ConfigureAwait(false);
     }
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var user = _users.Values.FirstOrDefault(u =>
             u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
-        return await Task.FromResult(user);
+        return await Task.FromResult(user).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<User>> GetByRoleAsync(string role, CancellationToken cancellationToken = default)
     {
         var users = _users.Values.Where(u =>
             u.Roles.Contains(role, StringComparer.OrdinalIgnoreCase)).ToList();
-        return await Task.FromResult(users);
+        return await Task.FromResult(users).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<User>> GetActiveUsersAsync(CancellationToken cancellationToken = default)
     {
         var users = _users.Values.Where(u => u.IsActive).ToList();
-        return await Task.FromResult(users);
+        return await Task.FromResult(users).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<User>> SearchAsync(string query, CancellationToken cancellationToken = default)
@@ -125,6 +125,6 @@ public sealed class UserRepository : IUserRepository sealed
             u.Username.ToLower().Contains(lowerQuery) ||
             u.Email.ToLower().Contains(lowerQuery) ||
             (u.FullName?.ToLower().Contains(lowerQuery) ?? false)).ToList();
-        return await Task.FromResult(results);
+        return await Task.FromResult(results).ConfigureAwait(false);
     }
 }

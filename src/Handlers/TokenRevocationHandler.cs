@@ -53,10 +53,10 @@ public sealed class TokenRevocationHandler sealed
             var tokenHash = HashToken(token);
 
             // Try to revoke as refresh token
-            var refreshToken = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
+            var refreshToken = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken).ConfigureAwait(false);
             if (refreshToken is not null)
             {
-                await _refreshTokenRepository.DeleteAsync(refreshToken.TokenId, cancellationToken);
+                await _refreshTokenRepository.DeleteAsync(refreshToken.TokenId, cancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("Refresh token revoked successfully");
                 return new RevocationResult { Success = true, Revoked = true };
             }

@@ -38,12 +38,12 @@ public sealed class ClientRepository : IClientRepository sealed
 
     public async Task<Client?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_clients.TryGetValue(id, out var client) ? client : null);
+        return await Task.FromResult(_clients.TryGetValue(id, out var client) ? client : null).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Client>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_clients.Values.ToList());
+        return await Task.FromResult(_clients.Values.ToList()).ConfigureAwait(false);
     }
 
     public async Task<Client> CreateAsync(Client entity, CancellationToken cancellationToken = default)
@@ -52,7 +52,7 @@ public sealed class ClientRepository : IClientRepository sealed
             throw new InvalidOperationException($"Client with ID {entity.ClientId} already exists");
 
         _clients[entity.ClientId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task<Client> UpdateAsync(Client entity, CancellationToken cancellationToken = default)
@@ -62,12 +62,12 @@ public sealed class ClientRepository : IClientRepository sealed
 
         entity.UpdatedAt = DateTime.UtcNow;
         _clients[entity.ClientId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(Client entity, CancellationToken cancellationToken = default)
     {
-        await DeleteByIdAsync(entity.ClientId, cancellationToken);
+        await DeleteByIdAsync(entity.ClientId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -78,19 +78,19 @@ public sealed class ClientRepository : IClientRepository sealed
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_clients.ContainsKey(id));
+        return await Task.FromResult(_clients.ContainsKey(id)).ConfigureAwait(false);
     }
 
     public async Task<Client?> GetActiveClientAsync(string clientId, CancellationToken cancellationToken = default)
     {
-        var client = await GetByIdAsync(clientId, cancellationToken);
-        return await Task.FromResult(client?.IsActive == true ? client : null);
+        var client = await GetByIdAsync(clientId, cancellationToken).ConfigureAwait(false);
+        return await Task.FromResult(client?.IsActive == true ? client : null).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Client>> GetActiveClientsAsync(CancellationToken cancellationToken = default)
     {
         var clients = _clients.Values.Where(c => c.IsActive).ToList();
-        return await Task.FromResult(clients);
+        return await Task.FromResult(clients).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Client>> SearchAsync(string query, CancellationToken cancellationToken = default)
@@ -100,6 +100,6 @@ public sealed class ClientRepository : IClientRepository sealed
             c.ClientName.ToLower().Contains(lowerQuery) ||
             c.ClientId.ToLower().Contains(lowerQuery) ||
             (c.Description?.ToLower().Contains(lowerQuery) ?? false)).ToList();
-        return await Task.FromResult(results);
+        return await Task.FromResult(results).ConfigureAwait(false);
     }
 }

@@ -40,12 +40,12 @@ public sealed class ScopeRepository : IScopeRepository sealed
 
     public async Task<Scope?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_scopes.TryGetValue(id, out var scope) ? scope : null);
+        return await Task.FromResult(_scopes.TryGetValue(id, out var scope) ? scope : null).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Scope>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_scopes.Values.ToList());
+        return await Task.FromResult(_scopes.Values.ToList()).ConfigureAwait(false);
     }
 
     public async Task<Scope> CreateAsync(Scope entity, CancellationToken cancellationToken = default)
@@ -54,7 +54,7 @@ public sealed class ScopeRepository : IScopeRepository sealed
             throw new InvalidOperationException($"Scope with ID {entity.ScopeId} already exists");
 
         _scopes[entity.ScopeId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task<Scope> UpdateAsync(Scope entity, CancellationToken cancellationToken = default)
@@ -64,12 +64,12 @@ public sealed class ScopeRepository : IScopeRepository sealed
 
         entity.UpdatedAt = DateTime.UtcNow;
         _scopes[entity.ScopeId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(Scope entity, CancellationToken cancellationToken = default)
     {
-        await DeleteByIdAsync(entity.ScopeId, cancellationToken);
+        await DeleteByIdAsync(entity.ScopeId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -80,20 +80,20 @@ public sealed class ScopeRepository : IScopeRepository sealed
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_scopes.ContainsKey(id));
+        return await Task.FromResult(_scopes.ContainsKey(id)).ConfigureAwait(false);
     }
 
     public async Task<Scope?> GetByScopeIdAsync(string scopeId, CancellationToken cancellationToken = default)
     {
         var scope = _scopes.Values.FirstOrDefault(s =>
             s.ScopeId.Equals(scopeId, StringComparison.OrdinalIgnoreCase));
-        return await Task.FromResult(scope);
+        return await Task.FromResult(scope).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Scope>> GetActiveScopesAsync(CancellationToken cancellationToken = default)
     {
         var scopes = _scopes.Values.Where(s => s.IsActive).ToList();
-        return await Task.FromResult(scopes);
+        return await Task.FromResult(scopes).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Scope>> SearchAsync(string query, CancellationToken cancellationToken = default)
@@ -103,7 +103,7 @@ public sealed class ScopeRepository : IScopeRepository sealed
             s.ScopeId.ToLower().Contains(lowerQuery) ||
             s.DisplayName.ToLower().Contains(lowerQuery) ||
             s.Description.ToLower().Contains(lowerQuery)).ToList();
-        return await Task.FromResult(results);
+        return await Task.FromResult(results).ConfigureAwait(false);
     }
 }
 
@@ -138,7 +138,7 @@ public sealed class ScopeService sealed
                 "Scope ID, display name, and description are required",
                 400);
 
-        var existingScope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
+        var existingScope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken).ConfigureAwait(false);
         if (existingScope is not null)
             throw new AuthServerException(
                 "invalid_request",
@@ -155,7 +155,7 @@ public sealed class ScopeService sealed
             IsActive = true
         };
 
-        return await _scopeRepository.CreateAsync(scope, cancellationToken);
+        return await _scopeRepository.CreateAsync(scope, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -167,7 +167,7 @@ public sealed class ScopeService sealed
         bool isIdTokenClaim = true,
         CancellationToken cancellationToken = default)
     {
-        var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
+        var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken).ConfigureAwait(false);
         if (scope is null)
             throw new AuthServerException(
                 "invalid_request",
@@ -185,7 +185,7 @@ public sealed class ScopeService sealed
                 scope.AccessTokenClaims.Add(claim);
         }
 
-        await _scopeRepository.UpdateAsync(scope, cancellationToken);
+        await _scopeRepository.UpdateAsync(scope, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -196,7 +196,7 @@ public sealed class ScopeService sealed
         string role,
         CancellationToken cancellationToken = default)
     {
-        var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
+        var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken).ConfigureAwait(false);
         if (scope is null)
             throw new AuthServerException(
                 "invalid_request",
@@ -206,7 +206,7 @@ public sealed class ScopeService sealed
         if (!scope.AllowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
             scope.AllowedRoles.Add(role);
 
-        await _scopeRepository.UpdateAsync(scope, cancellationToken);
+        await _scopeRepository.UpdateAsync(scope, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -215,7 +215,7 @@ public sealed class ScopeService sealed
     public async Task<IEnumerable<ScopeSummary>> GetScopesWithClaimsAsync(
         CancellationToken cancellationToken = default)
     {
-        var scopes = await _scopeRepository.GetActiveScopesAsync(cancellationToken);
+        var scopes = await _scopeRepository.GetActiveScopesAsync(cancellationToken).ConfigureAwait(false);
 
         return scopes.Select(s => new ScopeSummary
         {
@@ -240,7 +240,7 @@ public sealed class ScopeService sealed
 
         foreach (var scopeId in requestedScopes)
         {
-            var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
+            var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken).ConfigureAwait(false);
             if (scope is not null && scope.IsActive && scope.CanUserAccessScope(userRoles))
             {
                 validScopes.Add(scopeId);

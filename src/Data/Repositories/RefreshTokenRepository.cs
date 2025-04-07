@@ -53,12 +53,12 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
 
     public async Task<RefreshToken?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_tokens.TryGetValue(id, out var token) ? token : null);
+        return await Task.FromResult(_tokens.TryGetValue(id, out var token) ? token : null).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<RefreshToken>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_tokens.Values.ToList());
+        return await Task.FromResult(_tokens.Values.ToList()).ConfigureAwait(false);
     }
 
     public async Task<RefreshToken> CreateAsync(RefreshToken entity, CancellationToken cancellationToken = default)
@@ -67,7 +67,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
             throw new InvalidOperationException($"Token with ID {entity.TokenId} already exists");
 
         _tokens[entity.TokenId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task<RefreshToken> UpdateAsync(RefreshToken entity, CancellationToken cancellationToken = default)
@@ -77,12 +77,12 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
 
         entity.UpdatedAt = DateTime.UtcNow;
         _tokens[entity.TokenId] = entity;
-        return await Task.FromResult(entity);
+        return await Task.FromResult(entity).ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(RefreshToken entity, CancellationToken cancellationToken = default)
     {
-        await DeleteByIdAsync(entity.TokenId, cancellationToken);
+        await DeleteByIdAsync(entity.TokenId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -93,28 +93,28 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_tokens.ContainsKey(id));
+        return await Task.FromResult(_tokens.ContainsKey(id)).ConfigureAwait(false);
     }
 
     public async Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
     {
         var token = _tokens.Values.FirstOrDefault(t =>
             t.TokenHash.Equals(tokenHash, StringComparison.OrdinalIgnoreCase));
-        return await Task.FromResult(token);
+        return await Task.FromResult(token).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<RefreshToken>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         var tokens = _tokens.Values.Where(t =>
             t.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
-        return await Task.FromResult(tokens);
+        return await Task.FromResult(tokens).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<RefreshToken>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
         var tokens = _tokens.Values.Where(t =>
             t.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase)).ToList();
-        return await Task.FromResult(tokens);
+        return await Task.FromResult(tokens).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<RefreshToken>> GetValidTokensByUserAsync(string userId, CancellationToken cancellationToken = default)
@@ -122,7 +122,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
         var tokens = _tokens.Values.Where(t =>
             t.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase) &&
             t.IsValid()).ToList();
-        return await Task.FromResult(tokens);
+        return await Task.FromResult(tokens).ConfigureAwait(false);
     }
 
     public async Task RevokeAllUserTokensAsync(string userId, string reason, CancellationToken cancellationToken = default)

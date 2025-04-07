@@ -92,7 +92,7 @@ public sealed class ScopeValidationService sealed
             return true;
 
         var cacheKey = $"scope:valid:{scope}";
-        var cachedResult = await _cacheService.GetAsync<bool>(cacheKey, cancellationToken);
+        var cachedResult = await _cacheService.GetAsync<bool>(cacheKey, cancellationToken).ConfigureAwait(false);
         if (cachedResult.HasValue)
             return cachedResult.Value;
 
@@ -100,7 +100,7 @@ public sealed class ScopeValidationService sealed
         var exists = true; // In real implementation, would query database
 
         // Cache result for 24 hours
-        await _cacheService.SetAsync(cacheKey, exists, TimeSpan.FromHours(24), cancellationToken);
+        await _cacheService.SetAsync(cacheKey, exists, TimeSpan.FromHours(24), cancellationToken).ConfigureAwait(false);
 
         return exists;
     }

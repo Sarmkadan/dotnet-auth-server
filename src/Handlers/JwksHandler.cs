@@ -42,7 +42,7 @@ public sealed class JwksHandler sealed
     /// </summary>
     public async Task<JwksResponse> GetJwksAsync(CancellationToken cancellationToken = default)
     {
-        var cached = await _cacheService.GetAsync<JwksResponse>(JwksKey, cancellationToken);
+        var cached = await _cacheService.GetAsync<JwksResponse>(JwksKey, cancellationToken).ConfigureAwait(false);
         if (cached is not null)
         {
             _logger.LogDebug("Returning cached JWKS");
@@ -52,7 +52,7 @@ public sealed class JwksHandler sealed
         var jwks = GenerateJwks();
 
         // Cache for 24 hours
-        await _cacheService.SetAsync(JwksKey, jwks, TimeSpan.FromHours(24), cancellationToken);
+        await _cacheService.SetAsync(JwksKey, jwks, TimeSpan.FromHours(24), cancellationToken).ConfigureAwait(false);
 
         return jwks;
     }
@@ -130,7 +130,7 @@ public sealed class JwksHandler sealed
         string keyId,
         CancellationToken cancellationToken = default)
     {
-        var jwks = await GetJwksAsync(cancellationToken);
+        var jwks = await GetJwksAsync(cancellationToken).ConfigureAwait(false);
         return jwks.Keys.Any(k => k.Kid == keyId);
     }
 }

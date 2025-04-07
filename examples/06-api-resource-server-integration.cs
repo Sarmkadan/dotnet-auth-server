@@ -360,13 +360,13 @@ public sealed class TokenValidationMiddleware sealed
                 if (!context.User.IsInRole("admin"))
                 {
                     context.Response.StatusCode = 403;
-                    await context.Response.WriteAsync("Admin access required");
+                    await context.Response.WriteAsync("Admin access required").ConfigureAwait(false);
                     return;
                 }
             }
         }
 
-        await _next(context);
+        await _next(context).ConfigureAwait(false);
     }
 
     private string ExtractToken(HttpContext context)

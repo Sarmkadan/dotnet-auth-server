@@ -53,16 +53,16 @@ public sealed class TokenRefreshRotationExample sealed
                 })
             };
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
+                var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 Console.WriteLine($"Token refresh failed: {error}");
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             return JsonSerializer.Deserialize<TokenResponse>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
@@ -91,7 +91,7 @@ public sealed class TokenRefreshRotationExample sealed
         {
             Console.WriteLine($"--- Refresh #{i} ---");
 
-            var newToken = await RefreshTokenAsync(currentRefreshToken);
+            var newToken = await RefreshTokenAsync(currentRefreshToken).ConfigureAwait(false);
 
             if (newToken is null)
             {
@@ -127,11 +127,11 @@ public sealed class TokenRefreshRotationExample sealed
             if (timeUntilRefresh.TotalSeconds > 0)
             {
                 Console.WriteLine($"Token expires in {(expirationTime - DateTime.UtcNow).TotalSeconds:F0} seconds");
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             }
 
             // Refresh token
-            var newToken = await RefreshTokenAsync(refreshToken);
+            var newToken = await RefreshTokenAsync(refreshToken).ConfigureAwait(false);
 
             if (newToken is null)
                 return null;
@@ -183,13 +183,13 @@ public sealed class MobileAppTokenManager sealed
         // Check if refresh needed
         if (DateTime.UtcNow >= _tokenRefreshTime && _currentToken is not null)
         {
-            await _tokenLock.WaitAsync();
+            await _tokenLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 // Double-check after acquiring lock
                 if (DateTime.UtcNow >= _tokenRefreshTime)
                 {
-                    await RefreshTokenInternalAsync();
+                    await RefreshTokenInternalAsync().ConfigureAwait(false);
                 }
             }
             finally
@@ -212,7 +212,7 @@ public sealed class MobileAppTokenManager sealed
         try
         {
             var flow = new TokenRefreshRotationExample(_authServerUrl);
-            var newToken = await flow.RefreshTokenAsync(_currentToken.RefreshToken);
+            var newToken = await flow.RefreshTokenAsync(_currentToken.RefreshToken).ConfigureAwait(false);
 
             if (newToken is not null)
             {
@@ -232,7 +232,7 @@ public sealed class MobileAppTokenManager sealed
     /// </summary>
     public async Task<bool> CallApiAsync(string apiUrl)
     {
-        var token = await GetValidAccessTokenAsync();
+        var token = await GetValidAccessTokenAsync().ConfigureAwait(false);
 
         if (string.IsNullOrEmpty(token))
         {
@@ -246,7 +246,7 @@ public sealed class MobileAppTokenManager sealed
 
         try
         {
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request).ConfigureAwait(false);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -285,7 +285,7 @@ public sealed class ResilientTokenRefreshExample sealed
             try
             {
                 var flow = new TokenRefreshRotationExample(_authServerUrl);
-                var result = await flow.RefreshTokenAsync(refreshToken);
+                var result = await flow.RefreshTokenAsync(refreshToken).ConfigureAwait(false);
 
                 if (result is not null)
                 {
@@ -303,7 +303,7 @@ public sealed class ResilientTokenRefreshExample sealed
                 // Exponential backoff: 2^attempt seconds
                 var delayMs = (int)Math.Pow(2, _refreshAttempts) * 1000;
                 Console.WriteLine($"Retrying in {delayMs / 1000} seconds...");
-                await Task.Delay(delayMs);
+                await Task.Delay(delayMs).ConfigureAwait(false);
             }
         }
 
@@ -319,7 +319,7 @@ public sealed class ResilientTokenRefreshExample sealed
         Func<Task<string?>> fallbackAuthAsync)
     {
         var flow = new TokenRefreshRotationExample(_authServerUrl);
-        var newToken = await flow.RefreshTokenAsync(refreshToken);
+        var newToken = await flow.RefreshTokenAsync(refreshToken).ConfigureAwait(false);
 
         if (newToken is not null)
         {
@@ -330,7 +330,7 @@ public sealed class ResilientTokenRefreshExample sealed
         Console.WriteLine("✗ Refresh failed, attempting re-authentication...");
 
         // Fallback: Use fallback authentication method
-        var authCode = await fallbackAuthAsync();
+        var authCode = await fallbackAuthAsync().ConfigureAwait(false);
 
         if (!string.IsNullOrEmpty(authCode))
         {
@@ -393,12 +393,12 @@ internal sealed class Program
 
         // Make API calls (token auto-refreshes if needed)
         Console.WriteLine("Making API call...");
-        await tokenManager.CallApiAsync("https://api.example.com/user/profile");
+        await tokenManager.CallApiAsync("https://api.example.com/user/profile").ConfigureAwait(false);
 
         // Example 3: Resilient token refresh
         Console.WriteLine("\nExample 3: Resilient Token Refresh with Retry\n");
         var resilient = new ResilientTokenRefreshExample(authServerUrl);
-        var result = await resilient.RefreshWithRetryAsync(initialRefreshToken);
+        var result = await resilient.RefreshWithRetryAsync(initialRefreshToken).ConfigureAwait(false);
 
         if (result is not null)
         {
