@@ -17,8 +17,26 @@ using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
 
 /// <summary>
-/// Service for issuing and managing OAuth2/OIDC tokens
+/// Service for issuing and managing OAuth 2.0 / OpenID Connect tokens. Handles the token
+/// endpoint logic for all supported grant types: authorization code, client credentials,
+/// refresh token, and resource owner password credentials (ROPC).
 /// </summary>
+/// <remarks>
+/// <para>
+/// Supported grant types (dispatched via <see cref="HandleTokenRequestAsync"/>):
+/// <list type="bullet">
+///   <item><c>authorization_code</c> - exchanges an auth code for access + refresh tokens (with optional PKCE)</item>
+///   <item><c>client_credentials</c> - machine-to-machine token issuance without user context</item>
+///   <item><c>refresh_token</c> - rotates an expired access token using a valid refresh token</item>
+///   <item><c>password</c> - direct username/password exchange (legacy, not recommended)</item>
+/// </list>
+/// </para>
+/// <para>
+/// Access tokens are signed JWTs with configurable lifetime (<see cref="AuthServerOptions"/>).
+/// Refresh tokens are opaque, persisted in <see cref="IRefreshTokenRepository"/>, and support
+/// rotation (old refresh token is revoked when a new one is issued).
+/// </para>
+/// </remarks>
 public sealed class TokenService sealed
 {
     private readonly AuthServerOptions _options;
@@ -42,8 +60,14 @@ public sealed class TokenService sealed
     }
 
     /// <summary>
-    /// Handles token request and returns a token response
+    /// Handles an incoming token request by dispatching to the appropriate grant type handler.
+    /// Validates the request parameters, authenticates the client, and returns a
+    /// <see cref="TokenResponse"/> containing the access token, optional refresh token, and metadata.
     /// </summary>
+    /// <param name="request">The token request containing grant_type, client credentials, and grant-specific parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="TokenResponse"/> with the issued tokens.</returns>
+    /// <exception cref="AuthServerException">Thrown when the request is invalid or authentication fails.</exception>
     public async Task<TokenResponse> HandleTokenRequestAsync(
         TokenRequest request,
         CancellationToken cancellationToken = default)
