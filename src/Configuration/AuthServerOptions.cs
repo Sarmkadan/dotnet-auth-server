@@ -57,6 +57,14 @@ public sealed class AuthServerOptions sealed
     public int MaxRefreshTokenGenerations { get; set; } = 10;
 
     /// <summary>
+    /// Maximum allowed clock skew in seconds between the client and server.
+    /// Refresh tokens whose server-side expiry falls within this window are still
+    /// accepted, preventing spurious rejections when clocks diverge slightly.
+    /// Defaults to 300 seconds (5 minutes).
+    /// </summary>
+    public int ClockSkewToleranceSeconds { get; set; } = 300;
+
+    /// <summary>
     /// Database connection string
     /// </summary>
     public string DatabaseConnectionString { get; set; } = null!;
