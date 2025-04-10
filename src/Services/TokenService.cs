@@ -268,6 +268,7 @@ public sealed class TokenService sealed
 
         var claims = new List<Claim>
         {
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(Constants.Claims.Sub, user.UserId),
             new(Constants.Claims.Iss, _options.IssuerUrl),
             new(Constants.Claims.Aud, clientId),
@@ -308,6 +309,7 @@ public sealed class TokenService sealed
 
         var claims = new List<Claim>
         {
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(Constants.Claims.Sub, client.ClientId),
             new(Constants.Claims.Iss, _options.IssuerUrl),
             new(Constants.Claims.Aud, client.ClientId),
