@@ -1,9 +1,5 @@
-# =============================================================================
-# Author: Vladyslav Zaiets | https://sarmkadan.com
-# CTO & Software Architect
-# =============================================================================
-
-# EditorConfig helps maintain consistent coding styles across different editors
+# EditorConfig — consistent coding styles across editors and IDEs
+# https://editorconfig.org
 
 root = true
 
