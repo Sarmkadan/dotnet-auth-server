@@ -50,11 +50,15 @@ builder.Configuration.GetSection("Cache").Bind(cacheOptions);
 var webhookOptions = new WebhookOptions();
 builder.Configuration.GetSection("Webhooks").Bind(webhookOptions);
 
+var opaOptions = new OpaOptions();
+builder.Configuration.GetSection("Opa").Bind(opaOptions);
+
 // Add services to the container
 builder.Services.AddSingleton(authServerOptions);
 builder.Services.AddSingleton(loggingOptions);
 builder.Services.AddSingleton(cacheOptions);
 builder.Services.AddSingleton(webhookOptions);
+builder.Services.AddSingleton(opaOptions);
 
 // Repositories
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
@@ -103,6 +107,18 @@ builder.Services.AddHostedService<TokenCleanupWorker>();
 // HTTP Clients
 builder.Services.AddHttpClient<WebhookClient>()
     .ConfigureHttpClient(client => client.Timeout = webhookOptions.Timeout);
+
+// Optional OPA client — registered only when integration is enabled so the
+// HttpClient factory doesn't create unnecessary connections.
+if (opaOptions.Enabled)
+{
+    builder.Services.AddHttpClient<OpaClient>()
+        .ConfigureHttpClient(client =>
+        {
+            client.BaseAddress = new Uri(opaOptions.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(opaOptions.TimeoutSeconds);
+        });
+}
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
