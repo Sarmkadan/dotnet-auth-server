@@ -11,7 +11,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Represents an OAuth2 token response
 /// </summary>
-public sealed class TokenResponse sealed
+public sealed class TokenResponse
 {
     /// <summary>
     /// The access token

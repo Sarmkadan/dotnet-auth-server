@@ -19,7 +19,7 @@ using DotnetAuthServer.Security;
 /// Removes tokens from server-side storage to prevent their use.
 /// Important for logout flows and compromised token recovery.
 /// </summary>
-public sealed class TokenRevocationHandler sealed
+public sealed class TokenRevocationHandler
 {
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IAuthorizationGrantRepository _grantRepository;
@@ -66,7 +66,7 @@ public sealed class TokenRevocationHandler sealed
             var refreshToken = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
             if (refreshToken is not null)
             {
-                await _refreshTokenRepository.DeleteAsync(refreshToken.TokenId, cancellationToken);
+                await _refreshTokenRepository.DeleteAsync(refreshToken, cancellationToken);
                 _logger.LogInformation("Refresh token revoked successfully");
                 return new RevocationResult { Success = true, Revoked = true };
             }
@@ -171,7 +171,7 @@ public sealed class TokenRevocationHandler sealed
 /// <summary>
 /// Result of a token revocation operation.
 /// </summary>
-public sealed class RevocationResult sealed
+public sealed class RevocationResult
 {
     /// <summary>
     /// Whether the operation completed without errors.

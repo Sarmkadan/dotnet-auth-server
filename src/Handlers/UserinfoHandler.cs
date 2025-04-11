@@ -15,7 +15,7 @@ using DotnetAuthServer.Data.Repositories;
 /// Returns claims about the authenticated user based on their access token.
 /// Scope claims control what information is returned (openid, profile, email, etc.)
 /// </summary>
-public sealed class UserinfoHandler sealed
+public sealed class UserinfoHandler
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<UserinfoHandler> _logger;
@@ -54,10 +54,12 @@ public sealed class UserinfoHandler sealed
         // 'openid' scope: always include sub, add other claims conditionally
         if (scopes.Contains("profile"))
         {
-            response.Name = user.DisplayName ?? user.Username;
-            response.GivenName = user.FirstName;
-            response.FamilyName = user.LastName;
-            response.UpdatedAt = (long?)user.LastModifiedAt?.ToUniversalTime()
+            var nameParts = user.FullName?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            response.Name = user.FullName ?? user.Username;
+            response.GivenName = nameParts?.FirstOrDefault();
+            response.FamilyName = nameParts?.LastOrDefault();
+            response.UpdatedAt = (long?)user.UpdatedAt.ToUniversalTime()
                 .Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
                 .TotalSeconds ?? 0;
         }
@@ -108,7 +110,7 @@ public sealed class UserinfoHandler sealed
 /// OpenID Connect UserInfo response model.
 /// Only populated fields that are allowed by token scopes.
 /// </summary>
-public sealed class UserinfoResponse sealed
+public sealed class UserinfoResponse
 {
     public string Sub { get; set; } = string.Empty;
 
@@ -133,7 +135,7 @@ public sealed class UserinfoResponse sealed
 /// <summary>
 /// OpenID Connect address information.
 /// </summary>
-public sealed class AddressInfo sealed
+public sealed class AddressInfo
 {
     public string? StreetAddress { get; set; }
     public string? Locality { get; set; }

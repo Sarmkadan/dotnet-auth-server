@@ -18,7 +18,7 @@ using DotnetAuthServer.Configuration;
 /// Returns the public keys used to validate JWTs issued by this authorization server.
 /// Essential for clients that need to validate tokens independently.
 /// </summary>
-public sealed class JwksHandler sealed
+public sealed class JwksHandler
 {
     private readonly AuthServerOptions _options;
     private readonly ICacheService _cacheService;
@@ -138,7 +138,7 @@ public sealed class JwksHandler sealed
 /// <summary>
 /// JSON Web Key Set response per RFC 7517.
 /// </summary>
-public sealed class JwksResponse sealed
+public sealed class JwksResponse
 {
     [JsonPropertyName("keys")]
     public List<JwkKey> Keys { get; set; } = new();
@@ -147,7 +147,7 @@ public sealed class JwksResponse sealed
 /// <summary>
 /// Single JSON Web Key (JWK) per RFC 7517.
 /// </summary>
-public sealed class JwkKey sealed
+public sealed class JwkKey
 {
     [JsonPropertyName("kty")]
     public string? Kty { get; set; } // Key type (RSA, oct, EC, etc.)

@@ -32,7 +32,7 @@ public interface IClientRepository : IRepository<Client, string>
 /// <summary>
 /// In-memory implementation of client repository
 /// </summary>
-public sealed class ClientRepository : IClientRepository sealed
+public sealed class ClientRepository : IClientRepository
 {
     private readonly Dictionary<string, Client> _clients = new(StringComparer.OrdinalIgnoreCase);
 
@@ -70,10 +70,10 @@ public sealed class ClientRepository : IClientRepository sealed
         await DeleteByIdAsync(entity.ClientId, cancellationToken);
     }
 
-    public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _clients.Remove(id);
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)

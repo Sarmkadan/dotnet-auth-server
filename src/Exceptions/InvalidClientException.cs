@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Exceptions;
 /// <summary>
 /// Thrown when client authentication fails or client is invalid
 /// </summary>
-public sealed class InvalidClientException : AuthServerException sealed
+public sealed class InvalidClientException : AuthServerException
 {
     public InvalidClientException(
         string message = "Client authentication failed",

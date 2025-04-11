@@ -117,6 +117,64 @@ Database Layer (In-Memory or SQL - configurable):
 - ✅ **JWKS (JSON Web Key Set)** endpoint for public key distribution
 - ✅ **Discovery Endpoints** - OpenID Connect metadata
 
+### User Management API
+
+A complete REST API for administering user accounts at `/api/users`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users` | List all users (optional `?q=` search) |
+| GET | `/api/users/{id}` | Get a user by ID |
+| POST | `/api/users` | Create a new user |
+| PUT | `/api/users/{id}` | Update user profile |
+| DELETE | `/api/users/{id}` | Delete user + revoke all tokens/sessions |
+| POST | `/api/users/{id}/roles` | Assign a role |
+| DELETE | `/api/users/{id}/roles/{role}` | Remove a role |
+| POST | `/api/users/{id}/lock` | Lock account (`?minutes=60`) |
+| POST | `/api/users/{id}/unlock` | Unlock account |
+
+**Create user example:**
+```bash
+curl -X POST https://localhost:7001/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","email":"alice@example.com","password":"Secret123!","roles":["viewer"]}'
+```
+
+### Session Management Dashboard
+
+A real-time view of all authenticated user sessions at `/api/sessions`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/sessions` | List all active sessions |
+| GET | `/api/sessions/stats` | Aggregate statistics |
+| GET | `/api/sessions/users/{userId}` | Sessions for a specific user |
+| DELETE | `/api/sessions/{sessionId}` | Revoke a session |
+| DELETE | `/api/sessions/users/{userId}` | Revoke all sessions for a user |
+| POST | `/api/sessions/cleanup` | Remove expired session records |
+
+Sessions are automatically created on successful token issuance and expire with the refresh token lifetime. The stats endpoint returns total/active/revoked/expired counts and unique user counts — useful for security dashboards and incident response.
+
+### MFA / TOTP Support
+
+RFC 6238-compliant TOTP multi-factor authentication, rooted at `/api/users/{userId}/mfa`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users/{id}/mfa` | Get MFA status |
+| POST | `/api/users/{id}/mfa/setup` | Initiate enrollment (returns secret + QR URI) |
+| POST | `/api/users/{id}/mfa/confirm` | Confirm enrollment with first code |
+| POST | `/api/users/{id}/mfa/verify` | Verify a TOTP or backup code |
+| DELETE | `/api/users/{id}/mfa` | Disable MFA |
+
+**Enrollment flow:**
+1. Call `POST /mfa/setup` — returns a Base32 secret, `otpauth://` provisioning URI (render as QR), and 8 one-time backup codes.
+2. User scans the QR code in any TOTP authenticator app (e.g., Google Authenticator, Authy, 1Password).
+3. Call `POST /mfa/confirm` with the 6-digit code from the app to activate MFA.
+4. On subsequent logins, call `POST /mfa/verify` to validate the user's code.
+
+Backup codes (8 per enrollment, each usable exactly once) can be redeemed via the same `/verify` endpoint when the authenticator device is unavailable.
+
 ### Security
 
 | Feature | Implementation | Standard |

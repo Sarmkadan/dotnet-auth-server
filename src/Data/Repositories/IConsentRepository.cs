@@ -12,7 +12,7 @@ using DotnetAuthServer.Domain.Entities;
 /// Repository interface for managing user consent records.
 /// Tracks which clients users have authorized and what scopes they've granted.
 /// </summary>
-public interface IConsentRepository : IRepository<Consent>
+public interface IConsentRepository : IRepository<Consent, string>
 {
     /// <summary>
     /// Gets all consents for a specific user.

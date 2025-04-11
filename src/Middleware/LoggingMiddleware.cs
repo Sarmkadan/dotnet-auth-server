@@ -13,7 +13,7 @@ using System.Diagnostics;
 /// Provides observability into API usage patterns, latencies, and potential issues.
 /// Excludes sensitive endpoints (like /swagger) to reduce noise and security concerns.
 /// </summary>
-public sealed class LoggingMiddleware sealed
+public sealed class LoggingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<LoggingMiddleware> _logger;

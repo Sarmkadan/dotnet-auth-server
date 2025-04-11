@@ -34,7 +34,7 @@ public interface IScopeRepository : IRepository<Scope, string>
 /// <summary>
 /// In-memory implementation of scope repository
 /// </summary>
-public sealed class ScopeRepository : IScopeRepository sealed
+public sealed class ScopeRepository : IScopeRepository
 {
     private readonly Dictionary<string, Scope> _scopes = new(StringComparer.OrdinalIgnoreCase);
 
@@ -72,10 +72,10 @@ public sealed class ScopeRepository : IScopeRepository sealed
         await DeleteByIdAsync(entity.ScopeId, cancellationToken);
     }
 
-    public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _scopes.Remove(id);
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
@@ -110,7 +110,7 @@ public sealed class ScopeRepository : IScopeRepository sealed
 /// <summary>
 /// Service for managing OAuth2 scopes
 /// </summary>
-public sealed class ScopeService sealed
+public sealed class ScopeService
 {
     private readonly IScopeRepository _scopeRepository;
 
@@ -254,7 +254,7 @@ public sealed class ScopeService sealed
 /// <summary>
 /// Summary view of a scope
 /// </summary>
-public sealed class ScopeSummary sealed
+public sealed class ScopeSummary
 {
     public string ScopeId { get; set; } = null!;
     public string DisplayName { get; set; } = null!;

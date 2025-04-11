@@ -102,6 +102,6 @@ public sealed class ClientRegistrationResponse
     /// Registered contacts.
     /// </summary>
     [JsonPropertyName("contacts")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingEmptyCollection)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ICollection<string> Contacts { get; set; } = [];
 }

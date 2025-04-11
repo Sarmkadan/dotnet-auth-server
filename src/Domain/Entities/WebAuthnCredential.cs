@@ -11,7 +11,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// enabling passwordless and phishing-resistant authentication via platform authenticators
 /// (e.g., Touch ID, Windows Hello) or roaming hardware security keys (e.g., YubiKey).
 /// </summary>
-public sealed class WebAuthnCredential sealed
+public sealed class WebAuthnCredential
 {
     /// <summary>Gets or sets the internal unique identifier for this credential record.</summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();

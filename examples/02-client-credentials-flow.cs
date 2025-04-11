@@ -17,7 +17,7 @@ namespace DotnetAuthServer.Examples;
 /// Machine-to-Machine (M2M) Client Credentials Flow Example
 /// Used for service-to-service authentication without user involvement
 /// </summary>
-public sealed class ClientCredentialsFlowExample sealed
+public sealed class ClientCredentialsFlowExample
 {
     private readonly HttpClient _httpClient;
     private readonly string _authServerUrl;
@@ -170,7 +170,7 @@ public sealed class ClientCredentialsFlowExample sealed
 /// <summary>
 /// Example: Background job that processes data using service credentials
 /// </summary>
-public sealed class BackgroundDataProcessorService sealed
+public sealed class BackgroundDataProcessorService
 {
     private readonly ClientCredentialsFlowExample _authFlow;
     private string? _currentAccessToken;
@@ -267,7 +267,7 @@ public sealed class BackgroundDataProcessorService sealed
 /// <summary>
 /// Example: Multiple services with different permission scopes
 /// </summary>
-public sealed class MultiServiceAuthenticationExample sealed
+public sealed class MultiServiceAuthenticationExample
 {
     private readonly string _authServerUrl;
 
@@ -320,7 +320,7 @@ public sealed class MultiServiceAuthenticationExample sealed
 /// <summary>
 /// DTO for token response
 /// </summary>
-public sealed class TokenResponse sealed
+public sealed class TokenResponse
 {
     [JsonPropertyName("access_token")]
     public string AccessToken { get; set; } = string.Empty;
@@ -338,7 +338,7 @@ public sealed class TokenResponse sealed
 /// <summary>
 /// DTO for token introspection response
 /// </summary>
-public sealed class IntrospectResponse sealed
+public sealed class IntrospectResponse
 {
     [JsonPropertyName("active")]
     public bool Active { get; set; }

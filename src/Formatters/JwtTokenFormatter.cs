@@ -14,7 +14,7 @@ using System.Security.Claims;
 /// Useful for debugging and logging token structure.
 /// WARNING: Does NOT validate signatures - never trust token claims without validation!
 /// </summary>
-public sealed class JwtTokenFormatter sealed
+public sealed class JwtTokenFormatter
 {
     private readonly ILogger<JwtTokenFormatter> _logger;
 
@@ -97,7 +97,7 @@ public sealed class JwtTokenFormatter sealed
 /// <summary>
 /// Inspected JWT token structure (without cryptographic validation).
 /// </summary>
-public sealed class TokenInspection sealed
+public sealed class TokenInspection
 {
     public TokenHeader Header { get; set; } = new();
     public TokenPayload Payload { get; set; } = new();
@@ -107,7 +107,7 @@ public sealed class TokenInspection sealed
 /// <summary>
 /// JWT header information.
 /// </summary>
-public sealed class TokenHeader sealed
+public sealed class TokenHeader
 {
     public string? Alg { get; set; }
     public string? Typ { get; set; }
@@ -117,7 +117,7 @@ public sealed class TokenHeader sealed
 /// <summary>
 /// JWT payload (claims).
 /// </summary>
-public sealed class TokenPayload sealed
+public sealed class TokenPayload
 {
     public string? Subject { get; set; }
     public string? Issuer { get; set; }

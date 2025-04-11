@@ -16,7 +16,7 @@ using DotnetAuthServer.Integration;
 /// When OPA integration is enabled (<see cref="OpaOptions.Enabled"/> = true) policy decisions are
 /// delegated to the Open Policy Agent REST API; otherwise the built-in evaluator is used.
 /// </summary>
-public sealed class PolicyEnforcementService sealed
+public sealed class PolicyEnforcementService
 {
     private readonly ILogger<PolicyEnforcementService> _logger;
     private readonly OpaClient? _opaClient;
@@ -238,7 +238,7 @@ public sealed class PolicyEnforcementService sealed
 /// Represents a policy that can be evaluated against a principal.
 /// Contains one or more rules combined with AND/OR logic.
 /// </summary>
-public sealed class Policy sealed
+public sealed class Policy
 {
     public List<PolicyRule> Rules { get; set; } = new();
     public PolicyCombineMode CombineWith { get; set; } = PolicyCombineMode.All;
@@ -247,7 +247,7 @@ public sealed class Policy sealed
 /// <summary>
 /// Single policy rule that checks a specific condition.
 /// </summary>
-public sealed class PolicyRule sealed
+public sealed class PolicyRule
 {
     public PolicyRuleType Type { get; set; }
     public string? Attribute { get; set; } // For attribute/claim rules

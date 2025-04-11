@@ -15,7 +15,7 @@ using DotnetAuthServer.Domain.Entities;
 /// Transforms user entities into claims that can be embedded in tokens.
 /// Supports both standard OIDC claims and custom application claims.
 /// </summary>
-public sealed class ClaimsEnrichmentService sealed
+public sealed class ClaimsEnrichmentService
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<ClaimsEnrichmentService> _logger;
@@ -89,31 +89,33 @@ public sealed class ClaimsEnrichmentService sealed
     /// </summary>
     private void EnrichProfileClaims(List<Claim> claims, User user)
     {
-        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+        var displayName = user.FullName;
+        var nameParts = user.FullName?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var firstName = nameParts?.FirstOrDefault();
+        var lastName = nameParts?.LastOrDefault();
+
+        if (!string.IsNullOrWhiteSpace(displayName))
         {
-            claims.Add(new Claim(ClaimTypes.Name, user.DisplayName));
-            claims.Add(new Claim("name", user.DisplayName));
+            claims.Add(new Claim(ClaimTypes.Name, displayName));
+            claims.Add(new Claim("name", displayName));
         }
 
-        if (!string.IsNullOrWhiteSpace(user.FirstName))
+        if (!string.IsNullOrWhiteSpace(firstName))
         {
-            claims.Add(new Claim("given_name", user.FirstName));
+            claims.Add(new Claim("given_name", firstName));
         }
 
-        if (!string.IsNullOrWhiteSpace(user.LastName))
+        if (!string.IsNullOrWhiteSpace(lastName))
         {
-            claims.Add(new Claim("family_name", user.LastName));
+            claims.Add(new Claim("family_name", lastName));
         }
 
-        if (user.LastModifiedAt.HasValue)
+        var timestamp = (long?)user.UpdatedAt.ToUniversalTime()
+            .Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
+            .TotalSeconds;
+        if (timestamp.HasValue)
         {
-            var timestamp = (long?)user.LastModifiedAt.Value.ToUniversalTime()
-                .Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
-                .TotalSeconds;
-            if (timestamp.HasValue)
-            {
-                claims.Add(new Claim("updated_at", timestamp.Value.ToString()));
-            }
+            claims.Add(new Claim("updated_at", timestamp.Value.ToString()));
         }
     }
 

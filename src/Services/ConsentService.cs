@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Services;
 
+using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Domain.Models;
@@ -40,7 +41,7 @@ public interface IConsentRepository : IRepository<Consent, string>
 /// <summary>
 /// In-memory implementation of consent repository
 /// </summary>
-public sealed class ConsentRepository : IConsentRepository sealed
+public sealed class ConsentRepository : IConsentRepository
 {
     private readonly Dictionary<string, Consent> _consents = new(StringComparer.OrdinalIgnoreCase);
 
@@ -78,10 +79,10 @@ public sealed class ConsentRepository : IConsentRepository sealed
         await DeleteByIdAsync(entity.ConsentId, cancellationToken);
     }
 
-    public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _consents.Remove(id);
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
@@ -114,7 +115,7 @@ public sealed class ConsentRepository : IConsentRepository sealed
         return await Task.FromResult(consents);
     }
 
-    public async Task RevokeAllUserConsentsAsync(string userId, CancellationToken cancellationToken = default)
+    public Task RevokeAllUserConsentsAsync(string userId, CancellationToken cancellationToken = default)
     {
         var userConsents = _consents.Values.Where(c =>
             c.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -124,14 +125,14 @@ public sealed class ConsentRepository : IConsentRepository sealed
             consent.Revoke("User revoked all consents");
         }
 
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 }
 
 /// <summary>
 /// Service for managing user consent decisions
 /// </summary>
-public sealed class ConsentService sealed
+public sealed class ConsentService
 {
     private readonly IConsentRepository _consentRepository;
 

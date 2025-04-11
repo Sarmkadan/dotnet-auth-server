@@ -18,7 +18,7 @@ using DotnetAuthServer.Services;
 /// </summary>
 [ApiController]
 [Route("register")]
-public sealed class ClientRegistrationController : ControllerBase sealed
+public sealed class ClientRegistrationController : ControllerBase
 {
     private readonly DynamicClientRegistrationService _registrationService;
     private readonly ILogger<ClientRegistrationController> _logger;

@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Exceptions;
 /// <summary>
 /// Base exception for authorization server errors
 /// </summary>
-public sealed class AuthServerException : Exception sealed
+public class AuthServerException : Exception
 {
     /// <summary>
     /// OAuth2 error code

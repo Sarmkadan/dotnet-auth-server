@@ -15,7 +15,7 @@ using System.Text.RegularExpressions;
 /// consider using a distributed cache like Redis via dependency injection.
 /// Features automatic expiration checking and thread-safe operations.
 /// </summary>
-public sealed class MemoryCacheService : ICacheService sealed
+public sealed class MemoryCacheService : ICacheService
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();

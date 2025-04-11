@@ -11,7 +11,7 @@ namespace DotnetAuthServer.Middleware;
 /// and correlation. Enables end-to-end request tracking through distributed systems
 /// and makes debugging production issues significantly easier.
 /// </summary>
-public sealed class RequestContextMiddleware sealed
+public sealed class RequestContextMiddleware
 {
     private readonly RequestDelegate _next;
 

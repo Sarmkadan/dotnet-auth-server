@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-public sealed class PkceValidationServiceTests sealed
+public sealed class PkceValidationServiceTests
 {
     private readonly Mock<ILogger<PkceValidationService>> _loggerMock;
     private readonly AuthServerOptions _options;

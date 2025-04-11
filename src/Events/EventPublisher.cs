@@ -14,7 +14,7 @@ using System.Collections.Generic;
 /// Suitable for single-server deployments. For distributed systems, consider
 /// using a message broker like RabbitMQ or Kafka.
 /// </summary>
-public sealed class EventPublisher : IEventPublisher sealed
+public sealed class EventPublisher : IEventPublisher
 {
     private readonly ILogger<EventPublisher> _logger;
     private readonly Dictionary<Type, List<object>> _subscribers = new();

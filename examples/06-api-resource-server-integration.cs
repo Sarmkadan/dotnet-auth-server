@@ -22,7 +22,7 @@ namespace DotnetAuthServer.Examples;
 /// Example: Resource Server / API that validates tokens from dotnet-auth-server
 /// This shows how to protect your APIs using tokens issued by the auth server
 /// </summary>
-public sealed class ResourceServerStartupExample sealed
+public sealed class ResourceServerStartupExample
 {
     /// <summary>
     /// Configure authentication and authorization in your API
@@ -138,7 +138,7 @@ public sealed class ResourceServerStartupExample sealed
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public sealed class UserController : ControllerBase sealed
+public sealed class UserController : ControllerBase
 {
     private readonly IAuthorizationService _authorizationService;
 
@@ -201,7 +201,7 @@ public sealed class UserController : ControllerBase sealed
     [Authorize("ApiWritePolicy")]
     public IActionResult GetData()
     {
-        var userScopes = User.FindFirst("scope")?.Value?.Split(' ') ?? []>string>();
+        var userScopes = User.FindFirst("scope")?.Value?.Split(' ') ?? Array.Empty<string>();
 
         return Ok(new
         {
@@ -278,7 +278,7 @@ public sealed class UserController : ControllerBase sealed
 /// <summary>
 /// Request model
 /// </summary>
-public sealed class CreateContentRequest sealed
+public sealed class CreateContentRequest
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -287,7 +287,7 @@ public sealed class CreateContentRequest sealed
 /// <summary>
 /// Example: Custom authorization handler
 /// </summary>
-public sealed class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequirement> sealed
+public sealed class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequirement>
 {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
@@ -317,7 +317,7 @@ public sealed class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAge
 /// <summary>
 /// Custom authorization requirement
 /// </summary>
-public sealed class TokenAgeRequirement : IAuthorizationRequirement sealed
+public sealed class TokenAgeRequirement : IAuthorizationRequirement
 {
     public long MaxAgeSeconds { get; set; }
 
@@ -330,7 +330,7 @@ public sealed class TokenAgeRequirement : IAuthorizationRequirement sealed
 /// <summary>
 /// Example: Token validation middleware for custom scenarios
 /// </summary>
-public sealed class TokenValidationMiddleware sealed
+public sealed class TokenValidationMiddleware
 {
     private readonly RequestDelegate _next;
 
