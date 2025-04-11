@@ -6,8 +6,12 @@
 
 namespace DotnetAuthServer.Handlers;
 
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Security;
 
 /// <summary>
 /// Handler for OAuth2 token revocation (RFC 7009).
@@ -19,15 +23,21 @@ public sealed class TokenRevocationHandler sealed
 {
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IAuthorizationGrantRepository _grantRepository;
+    private readonly RevokedTokenStore _revokedTokenStore;
+    private readonly AuthServerOptions _options;
     private readonly ILogger<TokenRevocationHandler> _logger;
 
     public TokenRevocationHandler(
         IRefreshTokenRepository refreshTokenRepository,
         IAuthorizationGrantRepository grantRepository,
+        RevokedTokenStore revokedTokenStore,
+        AuthServerOptions options,
         ILogger<TokenRevocationHandler> logger)
     {
         _refreshTokenRepository = refreshTokenRepository;
         _grantRepository = grantRepository;
+        _revokedTokenStore = revokedTokenStore;
+        _options = options;
         _logger = logger;
     }
 
@@ -52,7 +62,7 @@ public sealed class TokenRevocationHandler sealed
             // Hash the token to match how it's stored
             var tokenHash = HashToken(token);
 
-            // Try to revoke as refresh token
+            // Try to revoke as refresh token first
             var refreshToken = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
             if (refreshToken is not null)
             {
@@ -61,8 +71,15 @@ public sealed class TokenRevocationHandler sealed
                 return new RevocationResult { Success = true, Revoked = true };
             }
 
+            // Try to revoke as an access token by extracting and blacklisting its jti
+            if (TryExtractJti(token, out var jti, out var tokenExpiry))
+            {
+                _revokedTokenStore.Revoke(jti!, tokenExpiry);
+                _logger.LogInformation("Access token (jti={Jti}) added to revocation list", jti);
+                return new RevocationResult { Success = true, Revoked = true };
+            }
+
             // Token type hint was incorrect or token not found
-            // Per spec, still return success
             _logger.LogDebug("Token revocation requested for unknown token (possible already revoked)");
         }
         catch (Exception ex)
@@ -106,6 +123,48 @@ public sealed class TokenRevocationHandler sealed
             var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(token));
             return Convert.ToBase64String(hash);
         }
+    }
+
+    /// <summary>
+    /// Attempts to parse a JWT and extract its jti and expiry without full signature validation.
+    /// Used to blacklist individual access tokens on revocation.
+    /// </summary>
+    private bool TryExtractJti(string token, out string? jti, out DateTime expiresAt)
+    {
+        jti = null;
+        expiresAt = DateTime.UtcNow;
+
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            if (!handler.CanReadToken(token)) return false;
+
+            var signingKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_options.JwtSigningKey));
+
+            handler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = signingKey,
+                ValidateIssuer = true,
+                ValidIssuer = _options.IssuerUrl,
+                ValidateAudience = false,
+                ValidateLifetime = false // allow revoking already-expired tokens
+            }, out var validatedToken);
+
+            if (validatedToken is JwtSecurityToken jwt)
+            {
+                jti = jwt.Id;
+                expiresAt = jwt.ValidTo;
+                return !string.IsNullOrWhiteSpace(jti);
+            }
+        }
+        catch
+        {
+            // Malformed or untrusted JWT — skip access-token revocation path
+        }
+
+        return false;
     }
 }
 

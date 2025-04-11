@@ -11,6 +11,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Domain.Models;
+using DotnetAuthServer.Security;
 
 /// <summary>
 /// Handler for OAuth2 token introspection (RFC 7662).
@@ -21,11 +22,16 @@ using DotnetAuthServer.Domain.Models;
 public sealed class TokenIntrospectionHandler sealed
 {
     private readonly AuthServerOptions _options;
+    private readonly RevokedTokenStore _revokedTokenStore;
     private readonly ILogger<TokenIntrospectionHandler> _logger;
 
-    public TokenIntrospectionHandler(AuthServerOptions options, ILogger<TokenIntrospectionHandler> logger)
+    public TokenIntrospectionHandler(
+        AuthServerOptions options,
+        RevokedTokenStore revokedTokenStore,
+        ILogger<TokenIntrospectionHandler> logger)
     {
         _options = options;
+        _revokedTokenStore = revokedTokenStore;
         _logger = logger;
     }
 
@@ -61,6 +67,14 @@ public sealed class TokenIntrospectionHandler sealed
 
             if (validatedToken is JwtSecurityToken jwtToken)
             {
+                // Reject tokens that have been explicitly revoked via their jti
+                var jti = jwtToken.Id;
+                if (!string.IsNullOrWhiteSpace(jti) && _revokedTokenStore.IsRevoked(jti))
+                {
+                    _logger.LogDebug("Introspection rejected revoked token jti={Jti}", jti);
+                    return new IntrospectionResponse { Active = false };
+                }
+
                 return new IntrospectionResponse
                 {
                     Active = true,
