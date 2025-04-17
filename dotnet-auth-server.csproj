@@ -8,9 +8,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>Zaiets.dotnet.auth.server</PackageId>
-    <Version>2.0.2</Version>
+    <Version>1.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
-    <Description>Minimal OAuth2/OIDC authorization server for .NET - token issuance, PKCE, refresh rotation, consent, RBAC+ABAC</Description>
+    <Description>A lightweight and extensible OAuth 2.0 and OpenID Connect authentication server designed for .NET applications.</Description>
     <PackageTags>oauth2 oidc security jwt pkce auth</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sarmkadan/dotnet-auth-server</PackageProjectUrl>
