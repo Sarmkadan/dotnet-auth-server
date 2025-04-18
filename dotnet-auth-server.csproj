@@ -23,10 +23,15 @@
   <ItemGroup>
     <Compile Remove="tests/**" />
     <Compile Remove="examples/**" />
+    <Compile Remove="src/**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="src/DotnetAuthServer.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

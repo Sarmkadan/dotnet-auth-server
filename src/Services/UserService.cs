@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotnetAuthServer.Services;
 
@@ -11,6 +11,7 @@ using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Exceptions;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Service for user authentication and management
@@ -20,15 +21,18 @@ public sealed class UserService
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly AuthServerOptions _options;
+    private readonly ILogger<UserService> _logger;
 
     public UserService(
         IUserRepository userRepository,
         IRefreshTokenRepository refreshTokenRepository,
-        AuthServerOptions options)
+        AuthServerOptions options,
+        ILogger<UserService> logger)
     {
-        _userRepository = userRepository;
-        _refreshTokenRepository = refreshTokenRepository;
-        _options = options;
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _refreshTokenRepository = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -39,42 +43,77 @@ public sealed class UserService
         string password,
         CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByUsernameAsync(username, cancellationToken);
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Username cannot be null or whitespace", nameof(username));
 
-        if (user is null)
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidGrant,
-                "Invalid credentials",
-                401);
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Password cannot be null or whitespace", nameof(password));
 
-        if (user.IsLocked())
-            throw new AuthServerException(
-                Constants.ErrorCodes.AccessDenied,
-                "Account is locked due to too many failed login attempts",
-                403);
-
-        if (!user.IsActive)
-            throw new AuthServerException(
-                Constants.ErrorCodes.AccessDenied,
-                "User account is inactive",
-                403);
-
-        // In production, use bcrypt.VerifyHashedPassword or similar
-        // For this implementation, we assume password hashing is done elsewhere
-        if (!VerifyPassword(password, user.PasswordHash))
+        try
         {
-            user.RecordFailedLogin(_options.FailedLoginAttemptThreshold);
+            var user = await _userRepository.GetByUsernameAsync(username, cancellationToken);
+
+            if (user is null)
+            {
+                _logger.LogWarning("Authentication attempt with invalid username: {Username}", username);
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidGrant,
+                    "Invalid credentials",
+                    401);
+            }
+
+            if (user.IsLocked())
+            {
+                _logger.LogWarning("Authentication attempt for locked account: {UserId}", user.UserId);
+                throw new AuthServerException(
+                    Constants.ErrorCodes.AccessDenied,
+                    "Account is locked due to too many failed login attempts",
+                    403);
+            }
+
+            if (!user.IsActive)
+            {
+                _logger.LogWarning("Authentication attempt for inactive account: {UserId}", user.UserId);
+                throw new AuthServerException(
+                    Constants.ErrorCodes.AccessDenied,
+                    "User account is inactive",
+                    403);
+            }
+
+            // In production, use bcrypt.VerifyHashedPassword or similar
+            // For this implementation, we assume password hashing is done elsewhere
+            if (!VerifyPassword(password, user.PasswordHash))
+            {
+                user.RecordFailedLogin(_options.FailedLoginAttemptThreshold);
+                await _userRepository.UpdateAsync(user, cancellationToken);
+                _logger.LogInformation("Failed login attempt for user: {Username}", username);
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidGrant,
+                    "Invalid credentials",
+                    401);
+            }
+
+            user.RecordSuccessfulLogin();
             await _userRepository.UpdateAsync(user, cancellationToken);
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidGrant,
-                "Invalid credentials",
-                401);
+
+            _logger.LogInformation("User authenticated successfully: {Username}", username);
+            return user;
         }
-
-        user.RecordSuccessfulLogin();
-        await _userRepository.UpdateAsync(user, cancellationToken);
-
-        return user;
+        catch (AuthServerException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error during user authentication for username: {Username}", username);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Authentication failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -87,59 +126,88 @@ public sealed class UserService
         string? fullName = null,
         CancellationToken cancellationToken = default)
     {
-        // Validate username format
-        if (!IsValidUsername(username))
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "Username must be 3-50 characters, alphanumeric with allowed special characters",
-                400);
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Username cannot be null or whitespace", nameof(username));
 
-        // Validate email format
-        if (!IsValidEmail(email))
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "Invalid email format",
-                400);
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be null or whitespace", nameof(email));
 
-        // Validate password strength
-        if (!IsStrongPassword(password))
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                $"Password must be at least {Constants.Validation.MinPasswordLength} characters",
-                400);
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Password cannot be null or whitespace", nameof(password));
 
-        // Check if user already exists
-        var existingUser = await _userRepository.GetByUsernameAsync(username, cancellationToken);
-        if (existingUser is not null)
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "Username already exists",
-                400);
-
-        var existingEmail = await _userRepository.GetByEmailAsync(email, cancellationToken);
-        if (existingEmail is not null)
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "Email already registered",
-                400);
-
-        var user = new User
+        try
         {
-            UserId = Guid.NewGuid().ToString(),
-            Username = username,
-            Email = email,
-            FullName = fullName,
-            PasswordHash = HashPassword(password),
-            IsActive = true
-        };
+            // Validate username format
+            if (!IsValidUsername(username))
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    "Username must be 3-50 characters, alphanumeric with allowed special characters",
+                    400);
 
-        if (!user.IsValid())
+            // Validate email format
+            if (!IsValidEmail(email))
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    "Invalid email format",
+                    400);
+
+            // Validate password strength
+            if (!IsStrongPassword(password))
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    $"Password must be at least {Constants.Validation.MinPasswordLength} characters",
+                    400);
+
+            // Check if user already exists
+            var existingUser = await _userRepository.GetByUsernameAsync(username, cancellationToken);
+            if (existingUser is not null)
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    "Username already exists",
+                    400);
+
+            var existingEmail = await _userRepository.GetByEmailAsync(email, cancellationToken);
+            if (existingEmail is not null)
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    "Email already registered",
+                    400);
+
+            var user = new User
+            {
+                UserId = Guid.NewGuid().ToString(),
+                Username = username,
+                Email = email,
+                FullName = fullName,
+                PasswordHash = HashPassword(password),
+                IsActive = true
+            };
+
+            if (!user.IsValid())
+                throw new AuthServerException(
+                    Constants.ErrorCodes.ServerError,
+                    "User creation failed validation",
+                    500);
+
+            var createdUser = await _userRepository.CreateAsync(user, cancellationToken);
+            _logger.LogInformation("User created successfully: {Username}", username);
+            return createdUser;
+        }
+        catch (AuthServerException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error creating user with username: {Username}", username);
             throw new AuthServerException(
                 Constants.ErrorCodes.ServerError,
-                "User creation failed validation",
-                500);
-
-        return await _userRepository.CreateAsync(user, cancellationToken);
+                "User creation failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -151,18 +219,37 @@ public sealed class UserService
         Dictionary<string, object>? attributes = null,
         CancellationToken cancellationToken = default)
     {
-        if (!string.IsNullOrWhiteSpace(fullName))
-            user.FullName = fullName;
+        if (user is null)
+            throw new ArgumentNullException(nameof(user));
 
-        if (attributes is not null)
+        try
         {
-            foreach (var attr in attributes)
-            {
-                user.Attributes[attr.Key] = attr.Value;
-            }
-        }
+            if (!string.IsNullOrWhiteSpace(fullName))
+                user.FullName = fullName;
 
-        return await _userRepository.UpdateAsync(user, cancellationToken);
+            if (attributes is not null)
+            {
+                foreach (var attr in attributes)
+                {
+                    user.Attributes[attr.Key] = attr.Value;
+                }
+            }
+
+            var updatedUser = await _userRepository.UpdateAsync(user, cancellationToken);
+            _logger.LogInformation("User updated successfully: {UserId}", user.UserId);
+            return updatedUser;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error updating user with ID: {UserId}", user?.UserId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "User update failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -174,27 +261,56 @@ public sealed class UserService
         string newPassword,
         CancellationToken cancellationToken = default)
     {
-        if (!VerifyPassword(currentPassword, user.PasswordHash))
+        if (user is null)
+            throw new ArgumentNullException(nameof(user));
+
+        if (string.IsNullOrWhiteSpace(currentPassword))
+            throw new ArgumentException("Current password cannot be null or whitespace", nameof(currentPassword));
+
+        if (string.IsNullOrWhiteSpace(newPassword))
+            throw new ArgumentException("New password cannot be null or whitespace", nameof(newPassword));
+
+        try
+        {
+            if (!VerifyPassword(currentPassword, user.PasswordHash))
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidGrant,
+                    "Current password is incorrect",
+                    401);
+
+            if (!IsStrongPassword(newPassword))
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    $"New password must be at least {Constants.Validation.MinPasswordLength} characters",
+                    400);
+
+            user.PasswordHash = HashPassword(newPassword);
+            user.RecordFailedLogin(0); // Reset failed attempts
+            await _userRepository.UpdateAsync(user, cancellationToken);
+
+            // Revoke all refresh tokens on password change
+            await _refreshTokenRepository.RevokeAllUserTokensAsync(
+                user.UserId,
+                "Password changed",
+                cancellationToken);
+
+            _logger.LogInformation("Password changed successfully for user: {UserId}", user.UserId);
+        }
+        catch (AuthServerException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error changing password for user: {UserId}", user.UserId);
             throw new AuthServerException(
-                Constants.ErrorCodes.InvalidGrant,
-                "Current password is incorrect",
-                401);
-
-        if (!IsStrongPassword(newPassword))
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                $"New password must be at least {Constants.Validation.MinPasswordLength} characters",
-                400);
-
-        user.PasswordHash = HashPassword(newPassword);
-        user.RecordFailedLogin(0); // Reset failed attempts
-        await _userRepository.UpdateAsync(user, cancellationToken);
-
-        // Revoke all refresh tokens on password change
-        await _refreshTokenRepository.RevokeAllUserTokensAsync(
-            user.UserId,
-            "Password changed",
-            cancellationToken);
+                Constants.ErrorCodes.ServerError,
+                "Password change failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -205,11 +321,32 @@ public sealed class UserService
         string role,
         CancellationToken cancellationToken = default)
     {
-        if (user.Roles.Contains(role, StringComparer.OrdinalIgnoreCase))
-            return;
+        if (user is null)
+            throw new ArgumentNullException(nameof(user));
 
-        user.Roles.Add(role);
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        if (string.IsNullOrWhiteSpace(role))
+            throw new ArgumentException("Role cannot be null or whitespace", nameof(role));
+
+        try
+        {
+            if (user.Roles.Contains(role, StringComparer.OrdinalIgnoreCase))
+                return;
+
+            user.Roles.Add(role);
+            await _userRepository.UpdateAsync(user, cancellationToken);
+            _logger.LogInformation("Role {Role} assigned to user: {UserId}", role, user.UserId);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error assigning role {Role} to user: {UserId}", role, user.UserId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Role assignment failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -220,8 +357,29 @@ public sealed class UserService
         string role,
         CancellationToken cancellationToken = default)
     {
-        user.Roles.Remove(role);
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        if (user is null)
+            throw new ArgumentNullException(nameof(user));
+
+        if (string.IsNullOrWhiteSpace(role))
+            throw new ArgumentException("Role cannot be null or whitespace", nameof(role));
+
+        try
+        {
+            user.Roles.Remove(role);
+            await _userRepository.UpdateAsync(user, cancellationToken);
+            _logger.LogInformation("Role {Role} removed from user: {UserId}", role, user.UserId);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error removing role {Role} from user: {UserId}", role, user.UserId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Role removal failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>

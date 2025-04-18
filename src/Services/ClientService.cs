@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotnetAuthServer.Services;
 
@@ -10,6 +10,7 @@ using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Exceptions;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Service for OAuth2 client registration and management
@@ -17,10 +18,12 @@ using DotnetAuthServer.Exceptions;
 public sealed class ClientService
 {
     private readonly IClientRepository _clientRepository;
+    private readonly ILogger<ClientService> _logger;
 
-    public ClientService(IClientRepository clientRepository)
+    public ClientService(IClientRepository clientRepository, ILogger<ClientService> logger)
     {
-        _clientRepository = clientRepository;
+        _clientRepository = clientRepository ?? throw new ArgumentNullException(nameof(clientRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -35,62 +38,88 @@ public sealed class ClientService
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(clientName))
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "Client name is required",
-                400);
+            throw new ArgumentException("Client name cannot be null or whitespace", nameof(clientName));
 
-        if (!redirectUris.Any())
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "At least one redirect URI is required",
-                400);
+        if (redirectUris is null)
+            throw new ArgumentNullException(nameof(redirectUris));
 
-        if (!allowedGrantTypes.Any())
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "At least one grant type must be allowed",
-                400);
+        if (allowedGrantTypes is null)
+            throw new ArgumentNullException(nameof(allowedGrantTypes));
 
-        // Validate redirect URIs
-        foreach (var uri in redirectUris)
+        if (allowedScopes is null)
+            throw new ArgumentNullException(nameof(allowedScopes));
+
+        try
         {
-            if (!IsValidRedirectUri(uri))
+            if (!redirectUris.Any())
                 throw new AuthServerException(
                     Constants.ErrorCodes.InvalidRequest,
-                    $"Invalid redirect URI: {uri}",
+                    "At least one redirect URI is required",
                     400);
-        }
 
-        // Validate scopes
-        foreach (var scope in allowedScopes)
-        {
-            if (string.IsNullOrWhiteSpace(scope))
+            if (!allowedGrantTypes.Any())
                 throw new AuthServerException(
                     Constants.ErrorCodes.InvalidRequest,
-                    "Scope cannot be empty",
+                    "At least one grant type must be allowed",
                     400);
+
+            // Validate redirect URIs
+            foreach (var uri in redirectUris)
+            {
+                if (!IsValidRedirectUri(uri))
+                    throw new AuthServerException(
+                        Constants.ErrorCodes.InvalidRequest,
+                        $"Invalid redirect URI: {uri}",
+                        400);
+            }
+
+            // Validate scopes
+            foreach (var scope in allowedScopes)
+            {
+                if (string.IsNullOrWhiteSpace(scope))
+                    throw new AuthServerException(
+                        Constants.ErrorCodes.InvalidRequest,
+                        "Scope cannot be empty",
+                        400);
+            }
+
+            var client = new Client
+            {
+                ClientId = GenerateClientId(),
+                ClientName = clientName,
+                IsConfidential = isConfidential,
+                ClientSecretHash = isConfidential ? GenerateAndHashClientSecret() : null,
+                RedirectUris = new List<string>(redirectUris),
+                AllowedGrantTypes = new List<string>(allowedGrantTypes),
+                AllowedScopes = new List<string>(allowedScopes),
+                IsActive = true
+            };
+
+            if (!client.IsValid())
+                throw new AuthServerException(
+                    Constants.ErrorCodes.ServerError,
+                    "Client registration failed validation",
+                    500);
+
+            var createdClient = await _clientRepository.CreateAsync(client, cancellationToken);
+            _logger.LogInformation("Client registered successfully: {ClientId}, Name: {ClientName}", createdClient.ClientId, clientName);
+            return createdClient;
         }
-
-        var client = new Client
+        catch (AuthServerException)
         {
-            ClientId = GenerateClientId(),
-            ClientName = clientName,
-            IsConfidential = isConfidential,
-            ClientSecretHash = isConfidential ? GenerateAndHashClientSecret() : null,
-            RedirectUris = new List<string>(redirectUris),
-            AllowedGrantTypes = new List<string>(allowedGrantTypes),
-            AllowedScopes = new List<string>(allowedScopes),
-            IsActive = true
-        };
-
-        if (!client.IsValid())
+            throw;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error registering client with name: {ClientName}", clientName);
             throw new AuthServerException(
                 Constants.ErrorCodes.ServerError,
-                "Client registration failed validation",
-                500);
-
-        return await _clientRepository.CreateAsync(client, cancellationToken);
+                "Client registration failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -104,34 +133,57 @@ public sealed class ClientService
         IEnumerable<string>? corsOrigins = null,
         CancellationToken cancellationToken = default)
     {
-        if (!string.IsNullOrWhiteSpace(clientName))
-            client.ClientName = clientName;
+        if (client is null)
+            throw new ArgumentNullException(nameof(client));
 
-        if (redirectUris is not null)
+        try
         {
-            foreach (var uri in redirectUris)
+            if (!string.IsNullOrWhiteSpace(clientName))
+                client.ClientName = clientName;
+
+            if (redirectUris is not null)
             {
-                if (!IsValidRedirectUri(uri))
-                    throw new AuthServerException(
-                        Constants.ErrorCodes.InvalidRequest,
-                        $"Invalid redirect URI: {uri}",
-                        400);
+                foreach (var uri in redirectUris)
+                {
+                    if (!IsValidRedirectUri(uri))
+                        throw new AuthServerException(
+                            Constants.ErrorCodes.InvalidRequest,
+                            $"Invalid redirect URI: {uri}",
+                            400);
+                }
+                client.RedirectUris = new List<string>(redirectUris);
             }
-            client.RedirectUris = new List<string>(redirectUris);
-        }
 
-        if (allowedScopes is not null)
+            if (allowedScopes is not null)
+            {
+                client.AllowedScopes = new List<string>(allowedScopes);
+            }
+
+            if (corsOrigins is not null)
+            {
+                client.AllowedCorsOrigins = new List<string>(corsOrigins);
+            }
+
+            client.UpdatedAt = DateTime.UtcNow;
+            var updatedClient = await _clientRepository.UpdateAsync(client, cancellationToken);
+            _logger.LogInformation("Client updated successfully: {ClientId}", client.ClientId);
+            return updatedClient;
+        }
+        catch (AuthServerException)
         {
-            client.AllowedScopes = new List<string>(allowedScopes);
+            throw;
         }
-
-        if (corsOrigins is not null)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            client.AllowedCorsOrigins = new List<string>(corsOrigins);
+            _logger.LogError(ex, "Error updating client: {ClientId}", client?.ClientId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Client update failed due to server error",
+                500,
+                null,
+                null,
+                ex);
         }
-
-        client.UpdatedAt = DateTime.UtcNow;
-        return await _clientRepository.UpdateAsync(client, cancellationToken);
     }
 
     /// <summary>
@@ -141,20 +193,42 @@ public sealed class ClientService
         Client client,
         CancellationToken cancellationToken = default)
     {
-        if (!client.IsConfidential)
+        if (client is null)
+            throw new ArgumentNullException(nameof(client));
+
+        try
+        {
+            if (!client.IsConfidential)
+                throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    "Only confidential clients have secrets",
+                    400);
+
+            var newSecret = GenerateClientSecret();
+            var newSecretHash = HashClientSecret(newSecret);
+
+            client.ClientSecretHash = newSecretHash;
+            client.UpdatedAt = DateTime.UtcNow;
+
+            await _clientRepository.UpdateAsync(client, cancellationToken);
+            _logger.LogInformation("Client secret rotated successfully: {ClientId}", client.ClientId);
+            return newSecret;
+        }
+        catch (AuthServerException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error rotating client secret for client: {ClientId}", client?.ClientId);
             throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "Only confidential clients have secrets",
-                400);
-
-        var newSecret = GenerateClientSecret();
-        var newSecretHash = HashClientSecret(newSecret);
-
-        client.ClientSecretHash = newSecretHash;
-        client.UpdatedAt = DateTime.UtcNow;
-
-        await _clientRepository.UpdateAsync(client, cancellationToken);
-        return newSecret;
+                Constants.ErrorCodes.ServerError,
+                "Client secret rotation failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -164,9 +238,27 @@ public sealed class ClientService
         Client client,
         CancellationToken cancellationToken = default)
     {
-        client.IsActive = false;
-        client.UpdatedAt = DateTime.UtcNow;
-        await _clientRepository.UpdateAsync(client, cancellationToken);
+        if (client is null)
+            throw new ArgumentNullException(nameof(client));
+
+        try
+        {
+            client.IsActive = false;
+            client.UpdatedAt = DateTime.UtcNow;
+            await _clientRepository.UpdateAsync(client, cancellationToken);
+            _logger.LogInformation("Client deactivated: {ClientId}", client.ClientId);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error deactivating client: {ClientId}", client?.ClientId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Client deactivation failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -176,9 +268,27 @@ public sealed class ClientService
         Client client,
         CancellationToken cancellationToken = default)
     {
-        client.IsActive = true;
-        client.UpdatedAt = DateTime.UtcNow;
-        await _clientRepository.UpdateAsync(client, cancellationToken);
+        if (client is null)
+            throw new ArgumentNullException(nameof(client));
+
+        try
+        {
+            client.IsActive = true;
+            client.UpdatedAt = DateTime.UtcNow;
+            await _clientRepository.UpdateAsync(client, cancellationToken);
+            _logger.LogInformation("Client reactivated: {ClientId}", client.ClientId);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error reactivating client: {ClientId}", client?.ClientId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Client reactivation failed due to server error",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -186,14 +296,25 @@ public sealed class ClientService
     /// </summary>
     public bool ValidateClientSecret(Client client, string? providedSecret)
     {
-        if (!client.IsConfidential)
-            return true;
+        if (client is null)
+            throw new ArgumentNullException(nameof(client));
 
-        if (string.IsNullOrWhiteSpace(providedSecret))
+        try
+        {
+            if (!client.IsConfidential)
+                return true;
+
+            if (string.IsNullOrWhiteSpace(providedSecret))
+                return false;
+
+            var providedHash = HashClientSecret(providedSecret);
+            return providedHash.Equals(client.ClientSecretHash, StringComparison.Ordinal);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating client secret for client: {ClientId}", client.ClientId);
             return false;
-
-        var providedHash = HashClientSecret(providedSecret);
-        return providedHash.Equals(client.ClientSecretHash, StringComparison.Ordinal);
+        }
     }
 
     /// <summary>

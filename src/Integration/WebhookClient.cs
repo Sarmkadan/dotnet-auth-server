@@ -2,12 +2,14 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ====================================================================
 
 namespace DotnetAuthServer.Integration;
 
 using System.Text.Json;
 using DotnetAuthServer.Events;
+using DotnetAuthServer.Exceptions;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Client for sending webhook notifications about authorization server events.
@@ -23,9 +25,9 @@ public sealed class WebhookClient
 
     public WebhookClient(HttpClient httpClient, ILogger<WebhookClient> logger, WebhookOptions options)
     {
-        _httpClient = httpClient;
-        _logger = logger;
-        _options = options;
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     /// <summary>
@@ -37,6 +39,12 @@ public sealed class WebhookClient
         IDomainEvent @event,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(webhookUrl))
+            throw new ArgumentException("Webhook URL cannot be null or whitespace", nameof(webhookUrl));
+
+        if (@event is null)
+            throw new ArgumentNullException(nameof(@event));
+
         if (!_options.Enabled || string.IsNullOrWhiteSpace(webhookUrl))
             return new WebhookResult { Success = false, Error = "Webhooks disabled or URL missing" };
 
@@ -48,12 +56,15 @@ public sealed class WebhookClient
         {
             try
             {
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(_options.Timeout);
+
                 var content = new StringContent(
                     JsonSerializer.Serialize(payload),
                     System.Text.Encoding.UTF8,
                     "application/json");
 
-                var response = await _httpClient.PostAsync(webhookUrl, content, cancellationToken);
+                var response = await _httpClient.PostAsync(webhookUrl, content, cts.Token);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -78,11 +89,27 @@ public sealed class WebhookClient
                     };
                 }
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    "Webhook delivery timed out for {Url} (attempt {Attempt}/{MaxRetries})",
+                    webhookUrl,
+                    retryCount + 1,
+                    _options.MaxRetries);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Webhook delivery attempt {Attempt} failed for {Url} with HTTP error",
+                    retryCount + 1,
+                    webhookUrl);
+            }
             catch (Exception ex)
             {
                 _logger.LogWarning(
                     ex,
-                    "Webhook delivery attempt {Attempt} failed for {Url}",
+                    "Webhook delivery attempt {Attempt} failed for {Url} with unexpected error",
                     retryCount + 1,
                     webhookUrl);
             }
@@ -95,6 +122,7 @@ public sealed class WebhookClient
             }
         }
 
+        _logger.LogError("Webhook delivery failed after {MaxRetries} attempts to {Url}", _options.MaxRetries, webhookUrl);
         return new WebhookResult { Success = false, Error = "Max retries exceeded" };
     }
 
