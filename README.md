@@ -362,18 +362,41 @@ docker-compose logs -f auth-server
 
 ## Configuration
 
-The application uses the `IOptions` pattern for configuration, with all settings encapsulated under the `DotnetAuthServer` section in `appsettings.json`.
+The application uses the `IOptions` pattern for configuration, with all settings encapsulated under the `DotnetAuthServer` and `Webhooks` sections in `appsettings.json`.
 
 For a complete example of all configurable settings and their default values, see [appsettings.example.json](./appsettings.example.json).
 
 ### Configuration Options
 
-The `DotnetAuthServer` section consists of four sub-sections:
+#### DotnetAuthServer
+- **AuthServer**:
+  - `IssuerUrl`: Base URL of the authorization server.
+  - `JwtSigningKey`: Symmetric key used to sign JWTs (min 32 chars).
+  - `JwtAlgorithm`: JWT signing algorithm (e.g., HS256).
+  - `AccessTokenLifetimeSeconds`: Lifetime of access tokens.
+  - `RefreshTokenLifetimeSeconds`: Lifetime of refresh tokens.
+  - `AuthorizationCodeLifetimeSeconds`: Lifetime of auth codes.
+  - `RequirePkceForAllClients`: Force PKCE for all clients.
+  - `AutoRefreshTokenRotation`: Automatically rotate refresh tokens.
+  - `MaxRefreshTokenGenerations`: Maximum rotations allowed.
+  - `ClockSkewToleranceSeconds`: Time skew tolerance for JWT validation.
+  - `DatabaseConnectionString`: Connection string for SQL storage.
+  - `UseInMemoryDatabase`: Use in-memory storage.
+  - `FailedLoginAttemptThreshold`: Failed login attempts before lockout.
+  - `AccountLockoutDurationMinutes`: Duration of account lockout.
+  - `RequireUserConsent`: Force user consent for scopes.
+  - `SupportedScopes`: List of allowed scopes.
+  - `SupportedGrantTypes`: List of allowed grant types.
+- **Cache**: Caching layer settings (Enabled, Backend, TTLs, MaxEntries, etc.).
+- **Logging**: Logging behavior (MinimumLevel, LogSensitiveData, ExcludedPaths, etc.).
+- **Opa**: Optional Open Policy Agent integration settings (Enabled, BaseUrl, PolicyPath, etc.).
 
-- **AuthServer**: Core authorization server settings (Issuer, JWT signing, lifetimes, etc.).
-- **Cache**: Caching layer settings (Backend, TTLs, connection strings).
-- **Logging**: Logging behavior (Minimum level, sensitive data logging, excluded paths).
-- **Opa**: Optional Open Policy Agent integration settings.
+#### Webhooks
+- **Enabled**: Enable webhook functionality.
+- **MaxRetries**: Maximum number of delivery retries.
+- **InitialRetryDelayMs**: Initial delay for retries.
+- **MaxRetryDelayMs**: Maximum delay for retries.
+- **Timeout**: Delivery request timeout.
 
 ### Validation
 

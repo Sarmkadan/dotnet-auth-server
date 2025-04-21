@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.ComponentModel.DataAnnotations;
+
 namespace DotnetAuthServer.Configuration;
 
 /// <summary>
@@ -18,22 +20,26 @@ public sealed class OpaOptions
     /// Enables OPA-backed policy evaluation.
     /// When false (default) the built-in evaluator is used.
     /// </summary>
+    [Required]
     public bool Enabled { get; set; } = false;
 
     /// <summary>
     /// Base URL of the OPA server, e.g. "http://opa:8181".
     /// </summary>
+    [Required, Url]
     public string BaseUrl { get; set; } = "http://localhost:8181";
 
     /// <summary>
     /// OPA policy path prefix, e.g. "authz".
     /// The full query URL becomes {BaseUrl}/v1/data/{PolicyPath}/{policyName}.
     /// </summary>
+    [Required]
     public string PolicyPath { get; set; } = "authz";
 
     /// <summary>
     /// HTTP request timeout in seconds when calling OPA.
     /// </summary>
+    [Range(1, int.MaxValue)]
     public int TimeoutSeconds { get; set; } = 5;
 
     /// <summary>
@@ -42,5 +48,6 @@ public sealed class OpaOptions
     /// built-in evaluator so normal operation continues if OPA is temporarily
     /// unavailable.
     /// </summary>
+    [Required]
     public bool FailClosedOnError { get; set; } = false;
 }

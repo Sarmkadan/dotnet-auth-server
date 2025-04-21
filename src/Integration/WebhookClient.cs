@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Integration;
 
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using DotnetAuthServer.Events;
 using DotnetAuthServer.Exceptions;
@@ -168,9 +169,13 @@ public sealed class WebhookPayload
 /// </summary>
 public sealed class WebhookOptions
 {
+    [Required]
     public bool Enabled { get; set; } = true;
+    [Range(0, 100)]
     public int MaxRetries { get; set; } = 3;
+    [Range(100, 10000)]
     public int InitialRetryDelayMs { get; set; } = 1000;
+    [Range(1000, 60000)]
     public int MaxRetryDelayMs { get; set; } = 30000;
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 }
