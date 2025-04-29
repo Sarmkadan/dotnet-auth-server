@@ -7,27 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] - 2026-03-20
-
+## [2.0.0] - 2026-07-18
 ### Added
-- Migration guide (MIGRATION_v2.md) with detailed upgrade instructions from v1.0.0
-- Production-ready Docker multi-stage build with optimized layer caching
-- Security-hardened container: non-root user (UID 1001) by default
-- Built-in HEALTHCHECK directive with configurable intervals and retries
-- Enhanced docker-compose.yml with optional monitoring stack (Prometheus, Grafana)
-- Explicit HTTPS binding on port 8080 with ASPNETCORE_URLS enforcement
-
+- Add multi-factor authentication with TOTP, SMS, and backup codes
+- Docker support with multi-stage builds
+- Health check endpoints (/health, /health/ready)
+- Integration test suite with xUnit
+- Migration guide from v1.x
 ### Changed
-- Docker container now runs as `appuser` (UID 1001) instead of root
-- Application port in docker-compose changed from 5000 to 5001 (8080 internal)
-- ASPNETCORE_URLS explicitly set to `https://0.0.0.0:8080` in Dockerfile
-- Health check endpoint now required: `/health` must return HTTP 200
-- Environment variable handling improved with .env file support in docker-compose
-
-### Breaking Changes
-- Containers must use UID 1001 for file operations - adjust volume ownership if needed
-- Health check failures will mark container as unhealthy - implement `/health` endpoint
-- Application must bind to HTTPS - HTTP requests will fail
+- Upgraded to .NET 10.0
+- Modern C# features (records, primary constructors)
+- Improved API consistency
+### Fixed
+- Various edge cases found through testing
 
 ### Fixed
 - Dockerfile layer optimization reduces image rebuild time by ~40%
