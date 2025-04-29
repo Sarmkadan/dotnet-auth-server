@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents a user in the authorization system
 /// </summary>
-public class User
+public class User sealed
 {
     /// <summary>
     /// Unique identifier for the user
@@ -96,7 +97,7 @@ public class User
     /// </summary>
     public bool IsLocked()
     {
-        if (LockedUntil == null) return false;
+        if (LockedUntil is null) return false;
         if (DateTime.UtcNow >= LockedUntil)
         {
             LockedUntil = null;

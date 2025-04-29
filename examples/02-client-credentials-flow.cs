@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ namespace DotnetAuthServer.Examples;
 /// Machine-to-Machine (M2M) Client Credentials Flow Example
 /// Used for service-to-service authentication without user involvement
 /// </summary>
-public class ClientCredentialsFlowExample
+public class ClientCredentialsFlowExample sealed
 {
     private readonly HttpClient _httpClient;
     private readonly string _authServerUrl;
@@ -169,7 +170,7 @@ public class ClientCredentialsFlowExample
 /// <summary>
 /// Example: Background job that processes data using service credentials
 /// </summary>
-public class BackgroundDataProcessorService
+public class BackgroundDataProcessorService sealed
 {
     private readonly ClientCredentialsFlowExample _authFlow;
     private string? _currentAccessToken;
@@ -214,7 +215,7 @@ public class BackgroundDataProcessorService
     {
         var tokenResponse = await _authFlow.GetServiceAccessTokenAsync("api:read api:write");
 
-        if (tokenResponse == null)
+        if (tokenResponse is null)
             throw new InvalidOperationException("Failed to obtain access token");
 
         _currentAccessToken = tokenResponse.AccessToken;
@@ -266,7 +267,7 @@ public class BackgroundDataProcessorService
 /// <summary>
 /// Example: Multiple services with different permission scopes
 /// </summary>
-public class MultiServiceAuthenticationExample
+public class MultiServiceAuthenticationExample sealed
 {
     private readonly string _authServerUrl;
 
@@ -284,7 +285,7 @@ public class MultiServiceAuthenticationExample
         var logReaderFlow = new ClientCredentialsFlowExample(_authServerUrl);
         var logReaderToken = await logReaderFlow.GetServiceAccessTokenAsync("logs:read");
 
-        if (logReaderToken != null)
+        if (logReaderToken is not null)
         {
             Console.WriteLine($"Log Reader Token: {logReaderToken.AccessToken[..50]}...");
             Console.WriteLine($"Scopes: {logReaderToken.Scope}");
@@ -296,7 +297,7 @@ public class MultiServiceAuthenticationExample
         var dataWriterToken = await dataWriterFlow.GetServiceAccessTokenAsync(
             "api:read api:write database:write");
 
-        if (dataWriterToken != null)
+        if (dataWriterToken is not null)
         {
             Console.WriteLine($"\nData Writer Token: {dataWriterToken.AccessToken[..50]}...");
             Console.WriteLine($"Scopes: {dataWriterToken.Scope}");
@@ -307,7 +308,7 @@ public class MultiServiceAuthenticationExample
         var adminFlow = new ClientCredentialsFlowExample(_authServerUrl);
         var adminToken = await adminFlow.GetServiceAccessTokenAsync("admin:*");
 
-        if (adminToken != null)
+        if (adminToken is not null)
         {
             Console.WriteLine($"\nAdmin Token: {adminToken.AccessToken[..50]}...");
             Console.WriteLine($"Scopes: {adminToken.Scope}");
@@ -319,7 +320,7 @@ public class MultiServiceAuthenticationExample
 /// <summary>
 /// DTO for token response
 /// </summary>
-public class TokenResponse
+public class TokenResponse sealed
 {
     [JsonPropertyName("access_token")]
     public string AccessToken { get; set; } = string.Empty;
@@ -337,7 +338,7 @@ public class TokenResponse
 /// <summary>
 /// DTO for token introspection response
 /// </summary>
-public class IntrospectResponse
+public class IntrospectResponse sealed
 {
     [JsonPropertyName("active")]
     public bool Active { get; set; }
@@ -371,7 +372,7 @@ internal class Program
         var flow = new ClientCredentialsFlowExample(authServerUrl);
         var token = await flow.GetServiceAccessTokenAsync();
 
-        if (token != null)
+        if (token is not null)
         {
             Console.WriteLine($"✓ Access Token (first 50 chars): {token.AccessToken[..50]}...");
             Console.WriteLine($"✓ Token Type: {token.TokenType}");

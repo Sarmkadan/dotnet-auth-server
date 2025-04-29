@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents an authorization grant (authorization code) in OAuth2
 /// </summary>
-public class AuthorizationGrant
+public class AuthorizationGrant sealed
 {
     /// <summary>
     /// Unique grant identifier

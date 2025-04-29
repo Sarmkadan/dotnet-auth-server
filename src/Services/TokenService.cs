@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -18,7 +19,7 @@ using DotnetAuthServer.Exceptions;
 /// <summary>
 /// Service for issuing and managing OAuth2/OIDC tokens
 /// </summary>
-public class TokenService
+public class TokenService sealed
 {
     private readonly AuthServerOptions _options;
     private readonly IUserRepository _userRepository;
@@ -87,7 +88,7 @@ public class TokenService
             throw new InvalidGrantException("Authorization code or redirect_uri is missing");
 
         var grant = await _grantRepository.GetByCodeAsync(request.Code, cancellationToken);
-        if (grant == null || !grant.IsValid())
+        if (grant is null || !grant.IsValid())
             throw new InvalidGrantException("Authorization code is invalid or expired");
 
         if (!grant.RedirectUri.Equals(request.RedirectUri, StringComparison.OrdinalIgnoreCase))
@@ -107,7 +108,7 @@ public class TokenService
         await _grantRepository.UpdateAsync(grant, cancellationToken);
 
         var user = await _userRepository.GetByIdAsync(grant.UserId, cancellationToken);
-        if (user == null)
+        if (user is null)
             throw new AuthServerException(
                 Constants.ErrorCodes.ServerError,
                 "User not found",
@@ -141,14 +142,14 @@ public class TokenService
         var tokenHash = HashToken(request.RefreshToken!);
         var token = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
 
-        if (token == null || !token.IsValid())
+        if (token is null || !token.IsValid())
             throw new InvalidGrantException("Refresh token is invalid or expired");
 
         token.RecordUsage();
         await _refreshTokenRepository.UpdateAsync(token, cancellationToken);
 
         var user = await _userRepository.GetByIdAsync(token.UserId, cancellationToken);
-        if (user == null)
+        if (user is null)
             throw new AuthServerException(
                 Constants.ErrorCodes.ServerError,
                 "User not found",
@@ -197,7 +198,7 @@ public class TokenService
         CancellationToken cancellationToken)
     {
         var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
-        if (client == null)
+        if (client is null)
             throw new InvalidClientException("Client not found or inactive");
 
         if (client.IsConfidential && string.IsNullOrWhiteSpace(request.ClientSecret))
@@ -229,7 +230,7 @@ public class TokenService
                 400);
 
         var user = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
-        if (user == null || user.IsLocked())
+        if (user is null || user.IsLocked())
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidGrant,
                 "Invalid credentials",

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotnetAuthServer.Events;
 /// Event published when a user grants consent for a client application to access their data.
 /// Essential for compliance logging (GDPR, CCPA) and understanding user permissions.
 /// </summary>
-public class ConsentGrantedEvent : IDomainEvent
+public class ConsentGrantedEvent : IDomainEvent sealed
 {
     public string EventId { get; set; } = Guid.NewGuid().ToString("N");
     public DateTime OccurredAt { get; set; } = DateTime.UtcNow;

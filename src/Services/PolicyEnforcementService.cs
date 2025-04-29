@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using System.Security.Claims;
 /// Evaluates policies to determine if a user is allowed to perform an action or access a resource.
 /// Essential for fine-grained authorization beyond simple token validation.
 /// </summary>
-public class PolicyEnforcementService
+public class PolicyEnforcementService sealed
 {
     private readonly ILogger<PolicyEnforcementService> _logger;
     private readonly Dictionary<string, Policy> _policies = new();
@@ -52,7 +53,7 @@ public class PolicyEnforcementService
     /// </summary>
     public bool EvaluatePolicy(Policy policy, ClaimsPrincipal principal)
     {
-        if (policy == null || principal == null)
+        if (policy is null || principal is null)
             return false;
 
         var results = policy.Rules.Select(rule => EvaluateRule(rule, principal)).ToList();
@@ -131,7 +132,7 @@ public class PolicyEnforcementService
     private bool EvaluateClaimRule(PolicyRule rule, ClaimsPrincipal principal)
     {
         var claim = principal.FindFirst(rule.Attribute);
-        if (claim == null)
+        if (claim is null)
             return rule.Match == PolicyMatchMode.None;
 
         return rule.Match switch
@@ -181,7 +182,7 @@ public class PolicyEnforcementService
 /// Represents a policy that can be evaluated against a principal.
 /// Contains one or more rules combined with AND/OR logic.
 /// </summary>
-public class Policy
+public class Policy sealed
 {
     public List<PolicyRule> Rules { get; set; } = new();
     public PolicyCombineMode CombineWith { get; set; } = PolicyCombineMode.All;
@@ -190,7 +191,7 @@ public class Policy
 /// <summary>
 /// Single policy rule that checks a specific condition.
 /// </summary>
-public class PolicyRule
+public class PolicyRule sealed
 {
     public PolicyRuleType Type { get; set; }
     public string? Attribute { get; set; } // For attribute/claim rules

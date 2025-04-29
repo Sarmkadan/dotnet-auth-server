@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ using DotnetAuthServer.Services;
 /// </summary>
 [ApiController]
 [Route("oauth/token")]
-public class TokenController : ControllerBase
+public class TokenController : ControllerBase sealed
 {
     private readonly TokenService _tokenService;
     private readonly ILogger<TokenController> _logger;

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using DotnetAuthServer.Exceptions;
 /// <summary>
 /// Service for OAuth2 client registration and management
 /// </summary>
-public class ClientService
+public class ClientService sealed
 {
     private readonly IClientRepository _clientRepository;
 
@@ -106,7 +107,7 @@ public class ClientService
         if (!string.IsNullOrWhiteSpace(clientName))
             client.ClientName = clientName;
 
-        if (redirectUris != null)
+        if (redirectUris is not null)
         {
             foreach (var uri in redirectUris)
             {
@@ -119,12 +120,12 @@ public class ClientService
             client.RedirectUris = new List<string>(redirectUris);
         }
 
-        if (allowedScopes != null)
+        if (allowedScopes is not null)
         {
             client.AllowedScopes = new List<string>(allowedScopes);
         }
 
-        if (corsOrigins != null)
+        if (corsOrigins is not null)
         {
             client.AllowedCorsOrigins = new List<string>(corsOrigins);
         }

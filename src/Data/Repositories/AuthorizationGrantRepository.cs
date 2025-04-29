@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -36,7 +37,7 @@ public interface IAuthorizationGrantRepository : IRepository<AuthorizationGrant,
 /// <summary>
 /// In-memory implementation of authorization grant repository
 /// </summary>
-public class AuthorizationGrantRepository : IAuthorizationGrantRepository
+public class AuthorizationGrantRepository : IAuthorizationGrantRepository sealed
 {
     private readonly Dictionary<string, AuthorizationGrant> _grants = new(StringComparer.OrdinalIgnoreCase);
 

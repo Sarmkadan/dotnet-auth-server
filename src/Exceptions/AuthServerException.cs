@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Exceptions;
 /// <summary>
 /// Base exception for authorization server errors
 /// </summary>
-public class AuthServerException : Exception
+public class AuthServerException : Exception sealed
 {
     /// <summary>
     /// OAuth2 error code
