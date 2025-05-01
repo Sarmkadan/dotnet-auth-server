@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Models;
 /// <summary>
 /// Represents an OAuth2/OIDC authorization request
 /// </summary>
-public class AuthorizationRequest sealed
+public sealed class AuthorizationRequest sealed
 {
     /// <summary>
     /// Client identifier

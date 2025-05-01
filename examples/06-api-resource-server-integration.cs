@@ -22,7 +22,7 @@ namespace DotnetAuthServer.Examples;
 /// Example: Resource Server / API that validates tokens from dotnet-auth-server
 /// This shows how to protect your APIs using tokens issued by the auth server
 /// </summary>
-public class ResourceServerStartupExample sealed
+public sealed class ResourceServerStartupExample sealed
 {
     /// <summary>
     /// Configure authentication and authorization in your API
@@ -138,7 +138,7 @@ public class ResourceServerStartupExample sealed
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class UserController : ControllerBase sealed
+public sealed class UserController : ControllerBase sealed
 {
     private readonly IAuthorizationService _authorizationService;
 
@@ -278,7 +278,7 @@ public class UserController : ControllerBase sealed
 /// <summary>
 /// Request model
 /// </summary>
-public class CreateContentRequest sealed
+public sealed class CreateContentRequest sealed
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -287,7 +287,7 @@ public class CreateContentRequest sealed
 /// <summary>
 /// Example: Custom authorization handler
 /// </summary>
-public class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequirement> sealed
+public sealed class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequirement> sealed
 {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
@@ -317,7 +317,7 @@ public class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequire
 /// <summary>
 /// Custom authorization requirement
 /// </summary>
-public class TokenAgeRequirement : IAuthorizationRequirement sealed
+public sealed class TokenAgeRequirement : IAuthorizationRequirement sealed
 {
     public long MaxAgeSeconds { get; set; }
 
@@ -330,7 +330,7 @@ public class TokenAgeRequirement : IAuthorizationRequirement sealed
 /// <summary>
 /// Example: Token validation middleware for custom scenarios
 /// </summary>
-public class TokenValidationMiddleware sealed
+public sealed class TokenValidationMiddleware sealed
 {
     private readonly RequestDelegate _next;
 
@@ -385,7 +385,7 @@ public class TokenValidationMiddleware sealed
 /// <summary>
 /// Main example - demonstrates complete setup
 /// </summary>
-internal class Program
+internal sealed class Program
 {
     static void Main(string[] args)
     {

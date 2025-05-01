@@ -17,7 +17,7 @@ using DotnetAuthServer.Services;
 /// </summary>
 [ApiController]
 [Route("oauth/authorize")]
-public class AuthorizationController : ControllerBase sealed
+public sealed class AuthorizationController : ControllerBase sealed
 {
     private readonly AuthorizationService _authorizationService;
     private readonly ILogger<AuthorizationController> _logger;

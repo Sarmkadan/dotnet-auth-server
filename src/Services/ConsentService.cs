@@ -40,7 +40,7 @@ public interface IConsentRepository : IRepository<Consent, string>
 /// <summary>
 /// In-memory implementation of consent repository
 /// </summary>
-public class ConsentRepository : IConsentRepository sealed
+public sealed class ConsentRepository : IConsentRepository sealed
 {
     private readonly Dictionary<string, Consent> _consents = new(StringComparer.OrdinalIgnoreCase);
 
@@ -131,7 +131,7 @@ public class ConsentRepository : IConsentRepository sealed
 /// <summary>
 /// Service for managing user consent decisions
 /// </summary>
-public class ConsentService sealed
+public sealed class ConsentService sealed
 {
     private readonly IConsentRepository _consentRepository;
 

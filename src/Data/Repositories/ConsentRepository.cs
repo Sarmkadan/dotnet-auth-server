@@ -14,7 +14,7 @@ using DotnetAuthServer.Domain.Entities;
 /// Stores user consent data for audit and permission tracking.
 /// In production, should be persisted to a database.
 /// </summary>
-public class ConsentRepository : IConsentRepository sealed
+public sealed class ConsentRepository : IConsentRepository sealed
 {
     private readonly Dictionary<string, Consent> _consents = new();
 
