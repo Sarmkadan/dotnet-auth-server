@@ -146,6 +146,16 @@ public sealed class TokenService sealed
             throw new InvalidGrantException("Refresh token is invalid or expired");
 
         token.RecordUsage();
+                    // Hotfix: refresh token rotation should revoke old token
+                    if (_options.AutoRefreshTokenRotation)
+                    {
+                        var oldToken = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
+                        if (oldToken != null)
+                        {
+                            oldToken.Revoke("Refresh token rotation");
+                            await _refreshTokenRepository.UpdateAsync(oldToken, cancellationToken);
+                        }
+                    }
         await _refreshTokenRepository.UpdateAsync(token, cancellationToken);
 
         var user = await _userRepository.GetByIdAsync(token.UserId, cancellationToken);
