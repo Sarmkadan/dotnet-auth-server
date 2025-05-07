@@ -15,6 +15,7 @@ using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
+using DotnetAuthServer.Security;
 
 /// <summary>
 /// Service for issuing and managing OAuth2/OIDC tokens
@@ -26,19 +27,22 @@ public sealed class TokenService sealed
     private readonly IClientRepository _clientRepository;
     private readonly IAuthorizationGrantRepository _grantRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly LoginRateLimiter _loginRateLimiter;
 
     public TokenService(
         AuthServerOptions options,
         IUserRepository userRepository,
         IClientRepository clientRepository,
         IAuthorizationGrantRepository grantRepository,
-        IRefreshTokenRepository refreshTokenRepository)
+        IRefreshTokenRepository refreshTokenRepository,
+        LoginRateLimiter loginRateLimiter)
     {
         _options = options;
         _userRepository = userRepository;
         _clientRepository = clientRepository;
         _grantRepository = grantRepository;
         _refreshTokenRepository = refreshTokenRepository;
+        _loginRateLimiter = loginRateLimiter;
     }
 
     /// <summary>
@@ -114,16 +118,20 @@ public sealed class TokenService sealed
                 "User not found",
                 500);
 
+        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
+
         var scopes = grant.GrantedScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var accessToken = GenerateAccessToken(user, request.ClientId, scopes);
+        var accessToken = GenerateAccessToken(user, request.ClientId, scopes,
+            GetAccessTokenLifetime(client));
         var refreshToken = await GenerateAndStoreRefreshTokenAsync(
-            user.UserId, request.ClientId, grant.GrantedScopes, cancellationToken);
+            user.UserId, request.ClientId, grant.GrantedScopes,
+            GetRefreshTokenLifetime(client), cancellationToken);
 
         return new TokenResponse
         {
             AccessToken = accessToken,
             TokenType = Constants.TokenTypes.Bearer,
-            ExpiresIn = _options.AccessTokenLifetimeSeconds,
+            ExpiresIn = GetAccessTokenLifetime(client),
             RefreshToken = refreshToken,
             Scope = grant.GrantedScopes
         };
@@ -170,8 +178,11 @@ public sealed class TokenService sealed
                 "User not found",
                 500);
 
+        var client = await _clientRepository.GetActiveClientAsync(token.ClientId, cancellationToken);
+
         var scopes = token.GrantedScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var accessToken = GenerateAccessToken(user, token.ClientId, scopes);
+        var accessToken = GenerateAccessToken(user, token.ClientId, scopes,
+            GetAccessTokenLifetime(client));
         var newRefreshToken = request.RefreshToken;
 
         if (_options.AutoRefreshTokenRotation)
@@ -187,7 +198,7 @@ public sealed class TokenService sealed
                 GrantedScopes = token.GrantedScopes,
                 Version = token.Version + 1,
                 PreviousTokenHash = token.TokenHash,
-                ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds)
+                ExpiresAt = DateTime.UtcNow.AddSeconds(GetRefreshTokenLifetime(client))
             };
             await _refreshTokenRepository.CreateAsync(newToken, cancellationToken);
         }
@@ -196,7 +207,7 @@ public sealed class TokenService sealed
         {
             AccessToken = accessToken,
             TokenType = Constants.TokenTypes.Bearer,
-            ExpiresIn = _options.AccessTokenLifetimeSeconds,
+            ExpiresIn = GetAccessTokenLifetime(client),
             RefreshToken = newRefreshToken,
             Scope = token.GrantedScopes
         };
@@ -223,7 +234,7 @@ public sealed class TokenService sealed
         {
             AccessToken = accessToken,
             TokenType = Constants.TokenTypes.Bearer,
-            ExpiresIn = _options.AccessTokenLifetimeSeconds,
+            ExpiresIn = GetAccessTokenLifetime(client),
             Scope = request.Scope
         };
     }
@@ -241,23 +252,35 @@ public sealed class TokenService sealed
                 "Username and password are required",
                 400);
 
+        // Enforce per-username and per-IP rate limiting before touching the database
+        _loginRateLimiter.ThrowIfBlocked(request.Username, request.IpAddress);
+
         var user = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
         if (user is null || user.IsLocked())
+        {
+            _loginRateLimiter.RecordFailure(request.Username, request.IpAddress);
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidGrant,
                 "Invalid credentials",
                 400);
+        }
+
+        _loginRateLimiter.RecordSuccess(request.Username);
+
+        var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
 
         var scopes = (request.Scope ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var accessToken = GenerateAccessToken(user, request.ClientId, scopes);
+        var accessToken = GenerateAccessToken(user, request.ClientId, scopes,
+            GetAccessTokenLifetime(client));
         var refreshToken = await GenerateAndStoreRefreshTokenAsync(
-            user.UserId, request.ClientId, request.Scope ?? "", cancellationToken);
+            user.UserId, request.ClientId, request.Scope ?? "",
+            GetRefreshTokenLifetime(client), cancellationToken);
 
         return new TokenResponse
         {
             AccessToken = accessToken,
             TokenType = Constants.TokenTypes.Bearer,
-            ExpiresIn = _options.AccessTokenLifetimeSeconds,
+            ExpiresIn = GetAccessTokenLifetime(client),
             RefreshToken = refreshToken,
             Scope = request.Scope
         };
@@ -266,10 +289,11 @@ public sealed class TokenService sealed
     /// <summary>
     /// Generates a JWT access token for a user
     /// </summary>
-    private string GenerateAccessToken(User user, string clientId, IEnumerable<string> scopes)
+    private string GenerateAccessToken(User user, string clientId, IEnumerable<string> scopes,
+        int lifetimeSeconds)
     {
         var now = DateTime.UtcNow;
-        var expiresAt = now.AddSeconds(_options.AccessTokenLifetimeSeconds);
+        var expiresAt = now.AddSeconds(lifetimeSeconds);
 
         var claims = new List<Claim>
         {
@@ -310,7 +334,7 @@ public sealed class TokenService sealed
     private string GenerateClientCredentialsAccessToken(Client client, IEnumerable<string> scopes)
     {
         var now = DateTime.UtcNow;
-        var expiresAt = now.AddSeconds(_options.AccessTokenLifetimeSeconds);
+        var expiresAt = now.AddSeconds(GetAccessTokenLifetime(client));
 
         var claims = new List<Claim>
         {
@@ -343,6 +367,7 @@ public sealed class TokenService sealed
         string userId,
         string clientId,
         string scopes,
+        int lifetimeSeconds,
         CancellationToken cancellationToken)
     {
         var tokenValue = GenerateTokenValue();
@@ -355,12 +380,26 @@ public sealed class TokenService sealed
             ClientId = clientId,
             UserId = userId,
             GrantedScopes = scopes,
-            ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds)
+            ExpiresAt = DateTime.UtcNow.AddSeconds(lifetimeSeconds)
         };
 
         await _refreshTokenRepository.CreateAsync(refreshToken, cancellationToken);
         return tokenValue;
     }
+
+    /// <summary>
+    /// Returns the effective access token lifetime: client-specific setting if configured,
+    /// otherwise the global default.
+    /// </summary>
+    private int GetAccessTokenLifetime(Client? client)
+        => client?.AccessTokenLifetime > 0 ? client.AccessTokenLifetime : _options.AccessTokenLifetimeSeconds;
+
+    /// <summary>
+    /// Returns the effective refresh token lifetime: client-specific setting if configured,
+    /// otherwise the global default.
+    /// </summary>
+    private int GetRefreshTokenLifetime(Client? client)
+        => client?.RefreshTokenLifetime > 0 ? client.RefreshTokenLifetime : _options.RefreshTokenLifetimeSeconds;
 
     /// <summary>
     /// Generates a cryptographically secure token value

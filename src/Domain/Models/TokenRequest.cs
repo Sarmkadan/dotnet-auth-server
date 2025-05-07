@@ -87,6 +87,12 @@ public sealed class TokenRequest sealed
     public string? ActorTokenType { get; set; }
 
     /// <summary>
+    /// Caller IP address (populated by the controller, not from the form body).
+    /// Used for per-IP rate limiting on the password grant.
+    /// </summary>
+    public string? IpAddress { get; set; }
+
+    /// <summary>
     /// Additional parameters from the request
     /// </summary>
     public Dictionary<string, string> CustomParameters { get; set; } = [];
