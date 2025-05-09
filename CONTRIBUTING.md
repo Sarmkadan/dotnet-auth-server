@@ -1,31 +1,77 @@
 # Contributing to dotnet-auth-server
 
-Thank you for your interest in contributing to dotnet-auth-server! We welcome contributions from the community.
+Thank you for your interest in contributing! Contributions of all kinds are welcome — bug fixes, features, documentation improvements, and test coverage.
 
-## How to Contribute
+## Prerequisites
 
-1. **Fork the repository** on GitHub.
-2. **Clone your fork** locally.
-3. **Create a branch** for your feature or bug fix (`git checkout -b feature/my-feature`).
-4. **Make your changes**.
-5. **Run the tests** to ensure everything is working correctly.
-6. **Commit your changes** and push them to your fork.
-7. **Submit a Pull Request** to the main repository.
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- Git
+- A text editor or IDE with C# support (Visual Studio, Rider, VS Code + C# Dev Kit)
 
-## Development Requirements
+## Building Locally
 
-- **.NET 10.0 SDK**: Ensure you have the .NET 10.0 SDK installed on your machine to build and test the project.
+```bash
+# Clone the repository
+git clone https://github.com/sarmkadan/dotnet-auth-server.git
+cd dotnet-auth-server
+
+# Restore dependencies
+dotnet restore
+
+# Build
+dotnet build --configuration Release
+```
+
+## Running Tests
+
+```bash
+# Run all tests
+dotnet test --configuration Release --verbosity normal
+
+# Run with TRX output for CI-style results
+dotnet test --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+# Run a specific test project
+dotnet test tests/dotnet-auth-server.Tests/ --verbosity normal
+```
+
+## Running Locally with Docker
+
+```bash
+# Build and start all services
+docker compose up --build
+
+# Development mode (with hot reload)
+docker compose -f docker-compose.dev.yml up
+```
 
 ## Code Style
 
-- **Conventions**: Please follow the existing code conventions used throughout the repository.
-- **Documentation**: Use XML documentation comments for public classes, methods, and properties.
-- **Author Headers**: Keep all existing author headers intact. Do not remove them when editing files.
+- Follow the [EditorConfig](.editorconfig) settings already present in the repository.
+- Use `PascalCase` for types and public members, `camelCase` for local variables and parameters.
+- Prefer `var` only when the type is apparent from the right-hand side.
+- Always use braces for control flow blocks.
+- Add XML documentation comments (`/// <summary>`) to all public APIs.
+- Keep existing author headers in files you edit.
+
+## Pull Request Guidelines
+
+1. **Fork** the repository and create a branch from `main`.
+2. Branch names should follow the pattern: `feature/<short-description>` or `fix/<short-description>`.
+3. Keep PRs focused — one logical change per PR.
+4. Ensure all tests pass before opening a PR.
+5. Add or update tests for any new behaviour.
+6. Update relevant documentation (README, docs/) if your change affects public APIs or configuration.
+7. Use clear, descriptive commit messages.
 
 ## Reporting Issues
 
-If you find a bug or have a feature request, please use GitHub Issues. When reporting an issue, include detailed reproduction steps to help us understand and resolve the problem quickly.
+Use [GitHub Issues](https://github.com/sarmkadan/dotnet-auth-server/issues). When filing a bug, include:
+- .NET version (`dotnet --version`)
+- OS and version
+- Steps to reproduce
+- Expected vs. actual behaviour
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
