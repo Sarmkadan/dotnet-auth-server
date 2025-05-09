@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents a refresh token for obtaining new access tokens
 /// </summary>
-public sealed class RefreshToken sealed
+public sealed class RefreshToken
 {
     /// <summary>
     /// Unique refresh token identifier

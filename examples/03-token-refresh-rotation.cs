@@ -21,7 +21,7 @@ namespace DotnetAuthServer.Examples;
 /// - Limits damage from token leaks
 /// - Detects token reuse attacks
 /// </summary>
-public sealed class TokenRefreshRotationExample sealed
+public sealed class TokenRefreshRotationExample
 {
     private readonly HttpClient _httpClient;
     private readonly string _authServerUrl;
@@ -153,7 +153,7 @@ public sealed class TokenRefreshRotationExample sealed
 /// <summary>
 /// Example: Token lifecycle management in mobile app
 /// </summary>
-public sealed class MobileAppTokenManager sealed
+public sealed class MobileAppTokenManager
 {
     private TokenResponse? _currentToken;
     private readonly string _authServerUrl;
@@ -260,7 +260,7 @@ public sealed class MobileAppTokenManager sealed
 /// <summary>
 /// Example: Handling token refresh failures and fallback
 /// </summary>
-public sealed class ResilientTokenRefreshExample sealed
+public sealed class ResilientTokenRefreshExample
 {
     private readonly string _authServerUrl;
     private int _refreshAttempts;
@@ -347,7 +347,7 @@ public sealed class ResilientTokenRefreshExample sealed
 /// <summary>
 /// DTO for token response
 /// </summary>
-public sealed class TokenResponse sealed
+public sealed class TokenResponse
 {
     [JsonPropertyName("access_token")]
     public string AccessToken { get; set; } = string.Empty;

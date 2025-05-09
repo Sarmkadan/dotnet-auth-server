@@ -42,7 +42,7 @@ public interface IUserRepository : IRepository<User, string>
 /// <summary>
 /// In-memory implementation of user repository
 /// </summary>
-public sealed class UserRepository : IUserRepository sealed
+public sealed class UserRepository : IUserRepository
 {
     private readonly Dictionary<string, User> _users = new(StringComparer.OrdinalIgnoreCase);
 
@@ -80,10 +80,10 @@ public sealed class UserRepository : IUserRepository sealed
         await DeleteByIdAsync(entity.UserId, cancellationToken);
     }
 
-    public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _users.Remove(id);
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)

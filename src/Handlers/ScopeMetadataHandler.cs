@@ -13,7 +13,7 @@ using DotnetAuthServer.Caching;
 /// Provides information about available scopes including descriptions and required consent.
 /// Used by clients to display scope consent screens and by servers for validation.
 /// </summary>
-public sealed class ScopeMetadataHandler sealed
+public sealed class ScopeMetadataHandler
 {
     private readonly ICacheService _cacheService;
     private readonly ILogger<ScopeMetadataHandler> _logger;
@@ -185,7 +185,7 @@ public sealed class ScopeMetadataHandler sealed
 /// <summary>
 /// Metadata about an OAuth2 scope.
 /// </summary>
-public sealed class ScopeMetadata sealed
+public sealed class ScopeMetadata
 {
     public string Name { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;

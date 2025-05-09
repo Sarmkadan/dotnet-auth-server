@@ -19,7 +19,7 @@ using DotnetAuthServer.Exceptions;
 /// Validates the registration request, creates a <see cref="Client"/> record,
 /// and returns the registered metadata plus credentials for confidential clients.
 /// </summary>
-public sealed class DynamicClientRegistrationService sealed
+public sealed class DynamicClientRegistrationService
 {
     private static readonly IReadOnlySet<string> SupportedGrantTypes = new HashSet<string>(
         StringComparer.OrdinalIgnoreCase)

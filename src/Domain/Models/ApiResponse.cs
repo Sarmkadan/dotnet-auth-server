@@ -10,7 +10,7 @@ namespace DotnetAuthServer.Domain.Models;
 /// Standard API response wrapper for consistent response format across all endpoints.
 /// Supports both success and error responses with metadata.
 /// </summary>
-public sealed class ApiResponse<T> sealed
+public sealed class ApiResponse<T>
 {
     public bool Success { get; set; } = true;
     public T? Data { get; set; }
@@ -53,7 +53,7 @@ public sealed class ApiResponse<T> sealed
 /// <summary>
 /// Non-generic API response for endpoints that don't return data.
 /// </summary>
-public sealed class ApiResponse sealed
+public sealed class ApiResponse
 {
     public bool Success { get; set; } = true;
     public string? Message { get; set; }
@@ -88,7 +88,7 @@ public sealed class ApiResponse sealed
 /// <summary>
 /// Paginated response wrapper for list endpoints.
 /// </summary>
-public sealed class PaginatedResponse<T> sealed
+public sealed class PaginatedResponse<T>
 {
     public bool Success { get; set; } = true;
     public List<T> Items { get; set; } = new();

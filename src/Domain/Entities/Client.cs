@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents an OAuth2/OIDC client application
 /// </summary>
-public sealed class Client sealed
+public sealed class Client
 {
     /// <summary>
     /// Unique client identifier

@@ -37,7 +37,7 @@ public interface IAuthorizationGrantRepository : IRepository<AuthorizationGrant,
 /// <summary>
 /// In-memory implementation of authorization grant repository
 /// </summary>
-public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository sealed
+public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 {
     private readonly Dictionary<string, AuthorizationGrant> _grants = new(StringComparer.OrdinalIgnoreCase);
 
@@ -74,10 +74,10 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
         await DeleteByIdAsync(entity.GrantId, cancellationToken);
     }
 
-    public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _grants.Remove(id);
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
@@ -106,7 +106,7 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
         return await Task.FromResult(grants);
     }
 
-    public async Task DeleteExpiredAsync(CancellationToken cancellationToken = default)
+    public Task DeleteExpiredAsync(CancellationToken cancellationToken = default)
     {
         var expiredIds = _grants.Values
             .Where(g => g.IsExpired())
@@ -118,6 +118,6 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
             _grants.Remove(id);
         }
 
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 }

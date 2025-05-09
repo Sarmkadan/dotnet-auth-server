@@ -47,7 +47,7 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken, string>
 /// <summary>
 /// In-memory implementation of refresh token repository
 /// </summary>
-public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
+public sealed class RefreshTokenRepository : IRefreshTokenRepository
 {
     private readonly Dictionary<string, RefreshToken> _tokens = new(StringComparer.OrdinalIgnoreCase);
 
@@ -85,10 +85,10 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
         await DeleteByIdAsync(entity.TokenId, cancellationToken);
     }
 
-    public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _tokens.Remove(id);
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
@@ -125,7 +125,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
         return await Task.FromResult(tokens);
     }
 
-    public async Task RevokeAllUserTokensAsync(string userId, string reason, CancellationToken cancellationToken = default)
+    public Task RevokeAllUserTokensAsync(string userId, string reason, CancellationToken cancellationToken = default)
     {
         var userTokens = _tokens.Values.Where(t =>
             t.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -135,10 +135,10 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
             token.Revoke(reason);
         }
 
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
-    public async Task DeleteExpiredAsync(CancellationToken cancellationToken = default)
+    public Task DeleteExpiredAsync(CancellationToken cancellationToken = default)
     {
         var expiredIds = _tokens.Values
             .Where(t => t.IsExpired())
@@ -150,6 +150,6 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
             _tokens.Remove(id);
         }
 
-        return await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 }

@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Exceptions;
 /// <summary>
 /// Thrown when requested scopes are invalid or not available
 /// </summary>
-public sealed class InvalidScopeException : AuthServerException sealed
+public sealed class InvalidScopeException : AuthServerException
 {
     public InvalidScopeException(
         string message = "The requested scope is invalid, unknown, or malformed",

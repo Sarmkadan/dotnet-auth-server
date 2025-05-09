@@ -14,7 +14,7 @@ using DotnetAuthServer.Domain.Entities;
 /// Stores user consent data for audit and permission tracking.
 /// In production, should be persisted to a database.
 /// </summary>
-public sealed class ConsentRepository : IConsentRepository sealed
+public sealed class ConsentRepository : IConsentRepository
 {
     private readonly Dictionary<string, Consent> _consents = new();
 
@@ -29,36 +29,47 @@ public sealed class ConsentRepository : IConsentRepository sealed
         return Task.FromResult(_consents.Values.AsEnumerable());
     }
 
-    public Task<Consent?> CreateAsync(Consent entity, CancellationToken cancellationToken = default)
+    public Task<Consent> CreateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (entity is null)
-            return Task.FromResult<Consent?>(null);
+            throw new ArgumentNullException(nameof(entity));
 
-        var id = Guid.NewGuid().ToString();
+        var id = string.IsNullOrWhiteSpace(entity.ConsentId) ? Guid.NewGuid().ToString() : entity.ConsentId;
         entity.ConsentId = id;
         _consents[id] = entity;
 
-        return Task.FromResult<Consent?>(entity);
+        return Task.FromResult(entity);
     }
 
-    public Task<bool> UpdateAsync(Consent entity, CancellationToken cancellationToken = default)
+    public Task<Consent> UpdateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (entity is null || string.IsNullOrWhiteSpace(entity.ConsentId))
-            return Task.FromResult(false);
+            throw new ArgumentException("Consent must have a valid ID", nameof(entity));
 
         if (!_consents.ContainsKey(entity.ConsentId))
-            return Task.FromResult(false);
+            throw new InvalidOperationException($"Consent with ID {entity.ConsentId} not found");
 
         _consents[entity.ConsentId] = entity;
-        return Task.FromResult(true);
+        return Task.FromResult(entity);
     }
 
-    public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(Consent entity, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(id))
-            return Task.FromResult(false);
+        if (entity is not null && !string.IsNullOrWhiteSpace(entity.ConsentId))
+            _consents.Remove(entity.ConsentId);
+        return Task.CompletedTask;
+    }
 
-        return Task.FromResult(_consents.Remove(id));
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrWhiteSpace(id))
+            _consents.Remove(id);
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(!string.IsNullOrWhiteSpace(id) && _consents.ContainsKey(id));
     }
 
     public Task<IEnumerable<Consent>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)

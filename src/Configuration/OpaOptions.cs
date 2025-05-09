@@ -12,7 +12,7 @@ namespace DotnetAuthServer.Configuration;
 /// delegates policy decisions to the OPA REST API instead of evaluating them
 /// locally, allowing teams to manage and version policies externally using Rego.
 /// </summary>
-public sealed class OpaOptions sealed
+public sealed class OpaOptions
 {
     /// <summary>
     /// Enables OPA-backed policy evaluation.

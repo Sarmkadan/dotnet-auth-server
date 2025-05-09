@@ -15,7 +15,7 @@ using DotnetAuthServer.Extensions;
 /// Manages the scope registry, validates requested scopes, and handles scope inheritance.
 /// Caches scope definitions to optimize repeated validations.
 /// </summary>
-public sealed class ScopeValidationService sealed
+public sealed class ScopeValidationService
 {
     private readonly ScopeService _scopeService;
     private readonly ICacheService _cacheService;
@@ -92,15 +92,15 @@ public sealed class ScopeValidationService sealed
             return true;
 
         var cacheKey = $"scope:valid:{scope}";
-        var cachedResult = await _cacheService.GetAsync<bool>(cacheKey, cancellationToken);
-        if (cachedResult.HasValue)
-            return cachedResult.Value;
+        var cachedResult = await _cacheService.GetAsync<string>(cacheKey, cancellationToken);
+        if (bool.TryParse(cachedResult, out var isValid))
+            return isValid;
 
         // Check if scope exists in system
         var exists = true; // In real implementation, would query database
 
         // Cache result for 24 hours
-        await _cacheService.SetAsync(cacheKey, exists, TimeSpan.FromHours(24), cancellationToken);
+        await _cacheService.SetAsync(cacheKey, exists.ToString(), TimeSpan.FromHours(24), cancellationToken);
 
         return exists;
     }

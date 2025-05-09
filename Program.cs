@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotnetAuthServer.BackgroundWorkers;
 using DotnetAuthServer.Caching;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
@@ -66,7 +67,9 @@ builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IClientRepository, ClientRepository>();
 builder.Services.AddSingleton<IAuthorizationGrantRepository, AuthorizationGrantRepository>();
 builder.Services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
-builder.Services.AddSingleton<IConsentRepository, ConsentRepository>();
+builder.Services.AddSingleton<DotnetAuthServer.Services.IConsentRepository, DotnetAuthServer.Services.ConsentRepository>();
+builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
+builder.Services.AddSingleton<ITotpCredentialRepository, TotpCredentialRepository>();
 
 // Phase 1 Services
 builder.Services.AddScoped<TokenService>();
@@ -105,6 +108,12 @@ builder.Services.AddScoped<JwtTokenFormatter>();
 // Additional Services
 builder.Services.AddScoped<SecretsService>();
 builder.Services.AddScoped<ClaimsEnrichmentService>();
+builder.Services.AddScoped<UserService>();
+
+// Phase 3 Services — User Management, Session Dashboard, MFA/TOTP
+builder.Services.AddScoped<UserManagementService>();
+builder.Services.AddScoped<UserSessionService>();
+builder.Services.AddScoped<TotpService>();
 
 // Background workers
 builder.Services.AddHostedService<TokenCleanupWorker>();
@@ -127,25 +136,7 @@ if (opaOptions.Enabled)
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new()
-    {
-        Title = "OAuth2/OIDC Authorization Server",
-        Version = "v1",
-        Description = "Minimal OAuth2/OIDC authorization server with PKCE, refresh token rotation, consent, RBAC+ABAC",
-        Contact = new()
-        {
-            Name = "Vladyslav Zaiets",
-            Url = new Uri("https://sarmkadan.com")
-        },
-        License = new()
-        {
-            Name = "MIT",
-            Url = new Uri("https://github.com/sarmkadan/dotnet-auth-server/blob/main/LICENSE")
-        }
-    });
-});
+builder.Services.AddSwaggerGen();
 
 // Add CORS
 builder.Services.AddCors(options =>

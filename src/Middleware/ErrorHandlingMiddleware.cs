@@ -16,7 +16,7 @@ using DotnetAuthServer.Exceptions;
 /// This ensures consistent error formatting across the entire API and prevents
 /// sensitive internal error details from leaking to clients.
 /// </summary>
-public sealed class ErrorHandlingMiddleware sealed
+public sealed class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
@@ -66,7 +66,7 @@ public sealed class ErrorHandlingMiddleware sealed
             response.ErrorDescription = "An internal server error occurred";
         }
 
-        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseNamingPolicy };
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
         return context.Response.WriteAsJsonAsync(response, options);
     }
 

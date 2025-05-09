@@ -17,7 +17,7 @@ using DotnetAuthServer.Extensions;
 /// Caches client information to improve performance and reduce database queries.
 /// Validates client credentials, redirect URIs, allowed scopes, and other requirements.
 /// </summary>
-public sealed class ClientValidationService sealed
+public sealed class ClientValidationService
 {
     private readonly IClientRepository _clientRepository;
     private readonly ICacheService _cacheService;
@@ -65,7 +65,7 @@ public sealed class ClientValidationService sealed
             }
 
             // Compare secrets securely (constant-time comparison)
-            if (!SecureStringCompare(clientSecret, client.ClientSecret))
+            if (!SecureStringCompare(clientSecret, client.ClientSecretHash))
             {
                 _logger.LogWarning("Invalid secret provided for client {ClientId}", clientId);
                 throw new InvalidClientException("Invalid client credentials");
@@ -94,7 +94,7 @@ public sealed class ClientValidationService sealed
         if (client is null)
             throw new InvalidClientException("Client not found");
 
-        if (!client.AllowedRedirectUris.Any(uri => uri.Equals(redirectUri, StringComparison.Ordinal)))
+        if (!client.RedirectUris.Any(uri => uri.Equals(redirectUri, StringComparison.Ordinal)))
         {
             _logger.LogWarning(
                 "Redirect URI {Uri} not allowed for client {ClientId}",

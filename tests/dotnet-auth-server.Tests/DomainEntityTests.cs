@@ -10,7 +10,7 @@ using DotnetAuthServer.Domain.Entities;
 using FluentAssertions;
 using Xunit;
 
-public sealed class DomainEntityTests sealed
+public sealed class DomainEntityTests
 {
     // -------------------------------------------------------------------------
     // User
