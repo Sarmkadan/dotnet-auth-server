@@ -7,6 +7,7 @@
 namespace DotnetAuthServer.BackgroundWorkers;
 
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Security;
 
 /// <summary>
 /// Background worker that periodically removes expired tokens from storage.
@@ -17,12 +18,17 @@ public sealed class TokenCleanupWorker : BackgroundService sealed
 {
     private readonly ILogger<TokenCleanupWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly RevokedTokenStore _revokedTokenStore;
     private readonly TimeSpan _cleanupInterval;
 
-    public TokenCleanupWorker(ILogger<TokenCleanupWorker> logger, IServiceProvider serviceProvider)
+    public TokenCleanupWorker(
+        ILogger<TokenCleanupWorker> logger,
+        IServiceProvider serviceProvider,
+        RevokedTokenStore revokedTokenStore)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _revokedTokenStore = revokedTokenStore;
         _cleanupInterval = TimeSpan.FromHours(1); // Run cleanup hourly
     }
 
@@ -39,6 +45,7 @@ public sealed class TokenCleanupWorker : BackgroundService sealed
             {
                 await CleanupExpiredTokensAsync(stoppingToken);
                 await CleanupExpiredGrantsAsync(stoppingToken);
+                _revokedTokenStore.PurgeExpired();
             }
             catch (Exception ex)
             {
