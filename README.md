@@ -14,16 +14,17 @@
 2. [Features](#features)
 3. [Quick Start](#quick-start)
 4. [Installation](#installation)
-5. [Usage Examples](#usage-examples)
-6. [API Reference](#api-reference)
-7. [Configuration](#configuration)
-8. [Architecture](#architecture)
-9. [Security](#security)
-10. [Performance](#performance)
-11. [Testing](#testing)
-12. [Related Projects](#related-projects)
-13. [Contributing](#contributing)
-14. [Troubleshooting](#troubleshooting)
+5. [Docker Usage](#docker-usage)
+6. [Usage Examples](#usage-examples)
+7. [API Reference](#api-reference)
+8. [Configuration](#configuration)
+9. [Architecture](#architecture)
+10. [Security](#security)
+11. [Performance](#performance)
+12. [Testing](#testing)
+13. [Related Projects](#related-projects)
+14. [Contributing](#contributing)
+15. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -319,7 +320,20 @@ dotnet build
 dotnet run
 ```
 
-### Option 2: Docker Deployment (Production)
+### Option 2: Publish as Self-Contained
+
+```bash
+# Publish as standalone executable (no .NET runtime required on target)
+dotnet publish -c Release -r linux-x64 --self-contained
+
+# Deploy the executable to production
+cd bin/Release/net10.0/linux-x64/publish
+./DotnetAuthServer
+```
+
+## Docker Usage
+
+### Build and Run
 
 ```bash
 # Build Docker image
@@ -334,7 +348,7 @@ docker run -d \
   dotnet-auth-server:latest
 ```
 
-### Option 3: Docker Compose (Full Stack)
+### Docker Compose (Full Stack)
 
 ```bash
 # Start with database, cache, and monitoring
@@ -342,17 +356,6 @@ docker-compose up -d
 
 # View logs
 docker-compose logs -f auth-server
-```
-
-### Option 4: Publish as Self-Contained
-
-```bash
-# Publish as standalone executable (no .NET runtime required on target)
-dotnet publish -c Release -r linux-x64 --self-contained
-
-# Deploy the executable to production
-cd bin/Release/net10.0/linux-x64/publish
-./DotnetAuthServer
 ```
 
 ---
