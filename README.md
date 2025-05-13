@@ -443,6 +443,14 @@ Define scopes in `appsettings.json`:
 
 All examples use realistic scenarios and production patterns.
 
+You can find more complete, runnable examples in the [`/examples`](./examples) directory:
+
+- [`BasicUsage.cs`](./examples/BasicUsage.cs) - Minimal setup and first call.
+- [`AdvancedUsage.cs`](./examples/AdvancedUsage.cs) - Advanced configuration, custom options, error handling.
+- [`IntegrationExample.cs`](./examples/IntegrationExample.cs) - How to wire into ASP.NET DI.
+
+For specific flows and integration guides, see below:
+
 ### Example 1: Browser-Based SPA with Authorization Code + PKCE
 
 ```bash
