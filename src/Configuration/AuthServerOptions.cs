@@ -1,8 +1,5 @@
 #nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
+using System.ComponentModel.DataAnnotations;
 
 namespace DotnetAuthServer.Configuration;
 
@@ -11,87 +8,47 @@ namespace DotnetAuthServer.Configuration;
 /// </summary>
 public sealed class AuthServerOptions
 {
-    /// <summary>
-    /// The issuer URL (will be used in JWT tokens)
-    /// </summary>
+    [Required, Url]
     public string IssuerUrl { get; set; } = null!;
 
-    /// <summary>
-    /// JWT signing key (minimum 256 bits/32 bytes for HS256)
-    /// </summary>
+    [Required, MinLength(32)]
     public string JwtSigningKey { get; set; } = null!;
 
-    /// <summary>
-    /// Algorithm for JWT signing (HS256, RS256, etc.)
-    /// </summary>
+    [Required]
     public string JwtAlgorithm { get; set; } = "HS256";
 
-    /// <summary>
-    /// Access token lifetime in seconds
-    /// </summary>
+    [Range(1, int.MaxValue)]
     public int AccessTokenLifetimeSeconds { get; set; } = 3600;
 
-    /// <summary>
-    /// Refresh token lifetime in seconds
-    /// </summary>
+    [Range(1, int.MaxValue)]
     public int RefreshTokenLifetimeSeconds { get; set; } = 2592000;
 
-    /// <summary>
-    /// Authorization code lifetime in seconds
-    /// </summary>
+    [Range(1, int.MaxValue)]
     public int AuthorizationCodeLifetimeSeconds { get; set; } = 300;
 
-    /// <summary>
-    /// Whether to require PKCE for all clients
-    /// </summary>
     public bool RequirePkceForAllClients { get; set; } = true;
 
-    /// <summary>
-    /// Whether to automatically rotate refresh tokens
-    /// </summary>
     public bool AutoRefreshTokenRotation { get; set; } = true;
 
-    /// <summary>
-    /// Maximum number of refresh token generations to track (for replay detection)
-    /// </summary>
+    [Range(1, int.MaxValue)]
     public int MaxRefreshTokenGenerations { get; set; } = 10;
 
-    /// <summary>
-    /// Maximum allowed clock skew in seconds between the client and server.
-    /// Refresh tokens whose server-side expiry falls within this window are still
-    /// accepted, preventing spurious rejections when clocks diverge slightly.
-    /// Defaults to 300 seconds (5 minutes).
-    /// </summary>
+    [Range(0, int.MaxValue)]
     public int ClockSkewToleranceSeconds { get; set; } = 300;
 
-    /// <summary>
-    /// Database connection string
-    /// </summary>
+    [Required]
     public string DatabaseConnectionString { get; set; } = null!;
 
-    /// <summary>
-    /// Whether to use in-memory database (for testing)
-    /// </summary>
     public bool UseInMemoryDatabase { get; set; } = false;
 
-    /// <summary>
-    /// Failed login attempt threshold before account lockout
-    /// </summary>
+    [Range(1, int.MaxValue)]
     public int FailedLoginAttemptThreshold { get; set; } = 5;
 
-    /// <summary>
-    /// Account lockout duration in minutes
-    /// </summary>
+    [Range(1, int.MaxValue)]
     public int AccountLockoutDurationMinutes { get; set; } = 15;
 
-    /// <summary>
-    /// Whether to require user consent for scope access
-    /// </summary>
     public bool RequireUserConsent { get; set; } = true;
 
-    /// <summary>
-    /// Supported scopes
-    /// </summary>
     public ICollection<string> SupportedScopes { get; set; } =
     [
         Constants.Scopes.OpenId,
@@ -102,9 +59,6 @@ public sealed class AuthServerOptions
         Constants.Scopes.OfflineAccess
     ];
 
-    /// <summary>
-    /// Supported grant types
-    /// </summary>
     public ICollection<string> SupportedGrantTypes { get; set; } =
     [
         Constants.GrantTypes.AuthorizationCode,
@@ -112,18 +66,4 @@ public sealed class AuthServerOptions
         Constants.GrantTypes.ClientCredentials,
         Constants.GrantTypes.Password
     ];
-
-    /// <summary>
-    /// Validates the configuration is correct
-    /// </summary>
-    public bool IsValid()
-    {
-        return !string.IsNullOrWhiteSpace(IssuerUrl) &&
-               !string.IsNullOrWhiteSpace(JwtSigningKey) &&
-               JwtSigningKey.Length >= 32 &&
-               !string.IsNullOrWhiteSpace(DatabaseConnectionString) &&
-               AccessTokenLifetimeSeconds > 0 &&
-               RefreshTokenLifetimeSeconds > 0 &&
-               AuthorizationCodeLifetimeSeconds > 0;
-    }
 }
