@@ -20,15 +20,18 @@ public sealed class AuthorizationService
     private readonly AuthServerOptions _options;
     private readonly IClientRepository _clientRepository;
     private readonly IAuthorizationGrantRepository _grantRepository;
+    private readonly ILogger<AuthorizationService> _logger;
 
     public AuthorizationService(
         AuthServerOptions options,
         IClientRepository clientRepository,
-        IAuthorizationGrantRepository grantRepository)
+        IAuthorizationGrantRepository grantRepository,
+        ILogger<AuthorizationService> logger)
     {
         _options = options;
         _clientRepository = clientRepository;
         _grantRepository = grantRepository;
+        _logger = logger;
     }
 
     /// <summary>
@@ -39,51 +42,73 @@ public sealed class AuthorizationService
         CancellationToken cancellationToken = default)
     {
         if (!request.IsValid())
+        {
+            _logger.LogWarning("Authorization request validation failed: missing parameters for client={ClientId}", request.ClientId);
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
                 "Authorization request is missing required parameters",
                 400);
+        }
 
         // Validate client
         var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
         if (client is null)
+        {
+            _logger.LogWarning("Authorization request failed: client not found or inactive, client={ClientId}", request.ClientId);
             throw new InvalidClientException("Client not found or inactive");
+        }
 
         // Validate response type
         if (!IsValidResponseType(request.ResponseType))
+        {
+            _logger.LogWarning("Authorization request failed: unsupported response type={ResponseType}, client={ClientId}", request.ResponseType, request.ClientId);
             throw new AuthServerException(
                 Constants.ErrorCodes.UnsupportedResponseType,
                 $"Response type '{request.ResponseType}' is not supported",
                 400);
+        }
 
         // Validate redirect URI
         if (!client.IsRedirectUriValid(request.RedirectUri))
+        {
+            _logger.LogWarning("Authorization request failed: invalid redirect URI={RedirectUri}, client={ClientId}", request.RedirectUri, request.ClientId);
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
                 "The redirect_uri is not registered",
                 400);
+        }
 
         // Validate scopes
         var requestedScopes = request.GetRequestedScopes();
         foreach (var scope in requestedScopes)
         {
             if (!_options.SupportedScopes.Contains(scope, StringComparer.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Authorization request failed: unsupported scope={Scope}, client={ClientId}", scope, request.ClientId);
                 throw new InvalidScopeException($"Scope '{scope}' is not supported");
+            }
         }
 
         // Validate PKCE
         if (request.HasPkce() && !IsValidCodeChallenge(request.CodeChallenge!))
+        {
+            _logger.LogWarning("Authorization request failed: invalid code challenge, client={ClientId}", request.ClientId);
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
                 "Invalid code_challenge format",
                 400);
+        }
 
         if (_options.RequirePkceForAllClients && !request.HasPkce() && client.RequirePkce)
+        {
+            _logger.LogWarning("Authorization request failed: PKCE required, client={ClientId}", request.ClientId);
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
                 "PKCE is required for this client",
                 400);
+        }
 
+        _logger.LogDebug("Authorization request validated successfully for client={ClientId}", request.ClientId);
         return request;
     }
 
@@ -119,6 +144,7 @@ public sealed class AuthorizationService
         };
 
         await _grantRepository.CreateAsync(grant, cancellationToken);
+        _logger.LogInformation("Authorization grant created successfully for user={UserId}, client={ClientId}", userId, clientId);
         return grant;
     }
 
