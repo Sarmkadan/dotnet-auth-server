@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ====================================================================
 
 namespace DotnetAuthServer.Services;
 
@@ -10,6 +10,7 @@ using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Exceptions;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Manages the lifecycle of authenticated user sessions.
@@ -30,9 +31,9 @@ public sealed class UserSessionService
         ILogger<UserSessionService> logger,
         AuthServerOptions options)
     {
-        _sessionRepository = sessionRepository;
-        _logger = logger;
-        _options = options;
+        _sessionRepository = sessionRepository ?? throw new ArgumentNullException(nameof(sessionRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     /// <summary>
@@ -53,39 +54,108 @@ public sealed class UserSessionService
         string? userAgent = null,
         CancellationToken cancellationToken = default)
     {
-        var session = new UserSession
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+
+        if (string.IsNullOrWhiteSpace(clientId))
+            throw new ArgumentException("Client ID cannot be null or whitespace", nameof(clientId));
+
+        if (string.IsNullOrWhiteSpace(grantedScopes))
+            throw new ArgumentException("Granted scopes cannot be null or whitespace", nameof(grantedScopes));
+
+        try
         {
-            UserId = userId,
-            ClientId = clientId,
-            GrantedScopes = grantedScopes,
-            IpAddress = ipAddress,
-            UserAgent = userAgent,
-            ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds),
-            LastActivityAt = DateTime.UtcNow
-        };
+            var session = new UserSession
+            {
+                UserId = userId,
+                ClientId = clientId,
+                GrantedScopes = grantedScopes,
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds),
+                LastActivityAt = DateTime.UtcNow
+            };
 
-        await _sessionRepository.CreateAsync(session, cancellationToken);
+            await _sessionRepository.CreateAsync(session, cancellationToken);
 
-        _logger.LogInformation(
-            "Session {SessionId} created for user {UserId} via client {ClientId}",
-            session.SessionId, userId, clientId);
+            _logger.LogInformation(
+                "Session {SessionId} created for user {UserId} via client {ClientId}",
+                session.SessionId,
+                userId,
+                clientId);
 
-        return session;
+            return session;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(
+                ex,
+                "Error creating session for user {UserId} via client {ClientId}",
+                userId,
+                clientId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Session creation failed",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
     /// Returns all active sessions for the specified user.
     /// </summary>
     public async Task<IEnumerable<UserSession>> GetActiveSessionsAsync(
-        string userId, CancellationToken cancellationToken = default)
-        => await _sessionRepository.GetActiveByUserIdAsync(userId, cancellationToken);
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+
+        try
+        {
+            return await _sessionRepository.GetActiveByUserIdAsync(userId, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error retrieving active sessions for user {UserId}", userId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Failed to retrieve active sessions",
+                500,
+                null,
+                null,
+                ex);
+        }
+    }
 
     /// <summary>
     /// Returns all sessions (including revoked and expired) for the specified user.
     /// </summary>
     public async Task<IEnumerable<UserSession>> GetAllSessionsAsync(
-        string userId, CancellationToken cancellationToken = default)
-        => await _sessionRepository.GetByUserIdAsync(userId, cancellationToken);
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+
+        try
+        {
+            return await _sessionRepository.GetByUserIdAsync(userId, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error retrieving all sessions for user {UserId}", userId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Failed to retrieve sessions",
+                500,
+                null,
+                null,
+                ex);
+        }
+    }
 
     /// <summary>
     /// Returns a global view of all currently active sessions across all users.
@@ -93,7 +163,23 @@ public sealed class UserSessionService
     /// </summary>
     public async Task<IEnumerable<UserSession>> GetAllActiveSessionsAsync(
         CancellationToken cancellationToken = default)
-        => await _sessionRepository.GetAllActiveAsync(cancellationToken);
+    {
+        try
+        {
+            return await _sessionRepository.GetAllActiveAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error retrieving all active sessions");
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Failed to retrieve active sessions",
+                500,
+                null,
+                null,
+                ex);
+        }
+    }
 
     /// <summary>
     /// Revokes a single session by ID.
@@ -104,13 +190,37 @@ public sealed class UserSessionService
         string? reason = null,
         CancellationToken cancellationToken = default)
     {
-        var session = await _sessionRepository.GetByIdAsync(sessionId, cancellationToken)
-            ?? throw new AuthServerException(Constants.ErrorCodes.InvalidRequest, $"Session '{sessionId}' not found", 404);
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new ArgumentException("Session ID cannot be null or whitespace", nameof(sessionId));
 
-        session.Revoke(reason);
-        await _sessionRepository.UpdateAsync(session, cancellationToken);
+        try
+        {
+            var session = await _sessionRepository.GetByIdAsync(sessionId, cancellationToken)
+                ?? throw new AuthServerException(
+                    Constants.ErrorCodes.InvalidRequest,
+                    $"Session '{sessionId}' not found",
+                    404);
 
-        _logger.LogInformation("Session {SessionId} revoked. Reason: {Reason}", sessionId, reason ?? "none");
+            session.Revoke(reason);
+            await _sessionRepository.UpdateAsync(session, cancellationToken);
+
+            _logger.LogInformation("Session {SessionId} revoked. Reason: {Reason}", sessionId, reason ?? "none");
+        }
+        catch (AuthServerException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error revoking session {SessionId}", sessionId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Session revocation failed",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -121,13 +231,32 @@ public sealed class UserSessionService
         string? reason = null,
         CancellationToken cancellationToken = default)
     {
-        var count = await _sessionRepository.RevokeAllUserSessionsAsync(userId, reason, cancellationToken);
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
 
-        _logger.LogInformation(
-            "Revoked {Count} session(s) for user {UserId}. Reason: {Reason}",
-            count, userId, reason ?? "none");
+        try
+        {
+            var count = await _sessionRepository.RevokeAllUserSessionsAsync(userId, reason, cancellationToken);
 
-        return count;
+            _logger.LogInformation(
+                "Revoked {Count} session(s) for user {UserId}. Reason: {Reason}",
+                count,
+                userId,
+                reason ?? "none");
+
+            return count;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error revoking all sessions for user {UserId}", userId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Session revocation failed",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -135,11 +264,29 @@ public sealed class UserSessionService
     /// </summary>
     public async Task TouchSessionAsync(string sessionId, CancellationToken cancellationToken = default)
     {
-        var session = await _sessionRepository.GetByIdAsync(sessionId, cancellationToken);
-        if (session is null || !session.IsActive()) return;
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new ArgumentException("Session ID cannot be null or whitespace", nameof(sessionId));
 
-        session.Touch();
-        await _sessionRepository.UpdateAsync(session, cancellationToken);
+        try
+        {
+            var session = await _sessionRepository.GetByIdAsync(sessionId, cancellationToken);
+            if (session is null || !session.IsActive())
+                return;
+
+            session.Touch();
+            await _sessionRepository.UpdateAsync(session, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error touching session {SessionId}", sessionId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Session touch failed",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -147,17 +294,31 @@ public sealed class UserSessionService
     /// </summary>
     public async Task<SessionStats> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        var all = await _sessionRepository.GetAllAsync(cancellationToken);
-        var list = all.ToList();
-
-        return new SessionStats
+        try
         {
-            TotalSessions = list.Count,
-            ActiveSessions = list.Count(s => s.IsActive()),
-            RevokedSessions = list.Count(s => s.IsRevoked),
-            ExpiredSessions = list.Count(s => !s.IsRevoked && s.ExpiresAt <= DateTime.UtcNow),
-            UniqueUsers = list.Select(s => s.UserId).Distinct(StringComparer.OrdinalIgnoreCase).Count()
-        };
+            var all = await _sessionRepository.GetAllAsync(cancellationToken);
+            var list = all.ToList();
+
+            return new SessionStats
+            {
+                TotalSessions = list.Count,
+                ActiveSessions = list.Count(s => s.IsActive()),
+                RevokedSessions = list.Count(s => s.IsRevoked),
+                ExpiredSessions = list.Count(s => !s.IsRevoked && s.ExpiresAt <= DateTime.UtcNow),
+                UniqueUsers = list.Select(s => s.UserId).Distinct(StringComparer.OrdinalIgnoreCase).Count()
+            };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error retrieving session statistics");
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Failed to retrieve session statistics",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -165,10 +326,24 @@ public sealed class UserSessionService
     /// </summary>
     public async Task<int> CleanupExpiredSessionsAsync(CancellationToken cancellationToken = default)
     {
-        var removed = await _sessionRepository.DeleteExpiredAsync(cancellationToken);
-        if (removed > 0)
-            _logger.LogInformation("Cleaned up {Count} expired session(s)", removed);
-        return removed;
+        try
+        {
+            var removed = await _sessionRepository.DeleteExpiredAsync(cancellationToken);
+            if (removed > 0)
+                _logger.LogInformation("Cleaned up {Count} expired session(s)", removed);
+            return removed;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error cleaning up expired sessions");
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Session cleanup failed",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 }
 

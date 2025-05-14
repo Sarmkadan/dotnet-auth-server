@@ -2,11 +2,13 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ====================================================================
 
 namespace DotnetAuthServer.Events;
 
 using System.Collections.Generic;
+using DotnetAuthServer.Exceptions;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// In-process event publisher for synchronous event distribution.
@@ -22,7 +24,7 @@ public sealed class EventPublisher : IEventPublisher
 
     public EventPublisher(ILogger<EventPublisher> logger)
     {
-        _logger = logger;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -32,6 +34,9 @@ public sealed class EventPublisher : IEventPublisher
     public void Subscribe<TEvent>(IEventSubscriber<TEvent> subscriber)
         where TEvent : IDomainEvent
     {
+        if (subscriber is null)
+            throw new ArgumentNullException(nameof(subscriber));
+
         lock (_lock)
         {
             var eventType = typeof(TEvent);
@@ -51,6 +56,9 @@ public sealed class EventPublisher : IEventPublisher
     public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default)
         where TEvent : IDomainEvent
     {
+        if (@event is null)
+            throw new ArgumentNullException(nameof(@event));
+
         var eventType = typeof(TEvent);
 
         _logger.LogInformation(
@@ -71,6 +79,7 @@ public sealed class EventPublisher : IEventPublisher
             return;
         }
 
+        var exceptions = new List<Exception>();
         foreach (var handler in handlers)
         {
             try
@@ -81,15 +90,41 @@ public sealed class EventPublisher : IEventPublisher
                     await subscriber.HandleAsync(@event, cancellationToken);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Event {EventType} handling was cancelled", @event.EventType);
+                // Don't suppress cancellation exceptions
+                throw;
+            }
+            catch (AuthServerException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "AuthServerException handling event {EventType} in subscriber {SubscriberType}",
+                    @event.EventType,
+                    handler.GetType().Name);
+                exceptions.Add(ex);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
                     "Error handling event {EventType} in subscriber {SubscriberType}",
-                    eventType.Name,
+                    @event.EventType,
                     handler.GetType().Name);
-                // Continue processing other subscribers despite one failing
+                exceptions.Add(ex);
             }
+        }
+
+        // If any subscriber failed with AuthServerException, rethrow it
+        if (exceptions.Count > 0)
+        {
+            if (exceptions.Count == 1)
+            {
+                throw exceptions[0];
+            }
+
+            throw new AggregateException("Multiple subscribers failed to handle event", exceptions);
         }
     }
 }

@@ -2,13 +2,16 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ====================================================================
 
 namespace DotnetAuthServer.Services;
 
 using DotnetAuthServer.Caching;
+using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Exceptions;
 using DotnetAuthServer.Extensions;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Service for scope validation and resolution.
@@ -37,9 +40,9 @@ public sealed class ScopeValidationService
         ICacheService cacheService,
         ILogger<ScopeValidationService> logger)
     {
-        _scopeService = scopeService;
-        _cacheService = cacheService;
-        _logger = logger;
+        _scopeService = scopeService ?? throw new ArgumentNullException(nameof(scopeService));
+        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -50,35 +53,47 @@ public sealed class ScopeValidationService
         string? scopeString,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(scopeString))
-            return Enumerable.Empty<string>();
-
-        var requestedScopes = scopeString.ParseScopes().ToList();
-
-        // Validate each scope exists
-        var validScopes = new List<string>();
-        var invalidScopes = new List<string>();
-
-        foreach (var scope in requestedScopes)
+        try
         {
-            if (await IsScopeValidAsync(scope, cancellationToken))
-            {
-                validScopes.Add(scope);
-            }
-            else
-            {
-                invalidScopes.Add(scope);
-            }
-        }
+            if (string.IsNullOrWhiteSpace(scopeString))
+                return Enumerable.Empty<string>();
 
-        if (invalidScopes.Any())
+            var requestedScopes = scopeString.ParseScopes().ToList();
+
+            // Validate each scope exists
+            var validScopes = new List<string>();
+            var invalidScopes = new List<string>();
+
+            foreach (var scope in requestedScopes)
+            {
+                if (await IsScopeValidAsync(scope, cancellationToken))
+                {
+                    validScopes.Add(scope);
+                }
+                else
+                {
+                    invalidScopes.Add(scope);
+                }
+            }
+
+            if (invalidScopes.Any())
+            {
+                _logger.LogWarning("Invalid scopes requested: {InvalidScopes}", string.Join(" ", invalidScopes));
+            }
+
+            return validScopes;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(
-                "Invalid scopes requested: {InvalidScopes}",
-                string.Join(" ", invalidScopes));
+            _logger.LogError(ex, "Error validating scopes");
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Scope validation failed",
+                500,
+                null,
+                null,
+                ex);
         }
-
-        return validScopes;
     }
 
     /// <summary>
@@ -87,22 +102,30 @@ public sealed class ScopeValidationService
     /// </summary>
     private async Task<bool> IsScopeValidAsync(string scope, CancellationToken cancellationToken)
     {
-        // Standard scopes are always valid
-        if (StandardScopes.Contains(scope))
-            return true;
+        try
+        {
+            // Standard scopes are always valid
+            if (StandardScopes.Contains(scope))
+                return true;
 
-        var cacheKey = $"scope:valid:{scope}";
-        var cachedResult = await _cacheService.GetAsync<string>(cacheKey, cancellationToken);
-        if (bool.TryParse(cachedResult, out var isValid))
-            return isValid;
+            var cacheKey = $"scope:valid:{scope}";
+            var cachedResult = await _cacheService.GetAsync<string>(cacheKey, cancellationToken);
+            if (bool.TryParse(cachedResult, out var isValid))
+                return isValid;
 
-        // Check if scope exists in system
-        var exists = true; // In real implementation, would query database
+            // Check if scope exists in system
+            var exists = true; // In real implementation, would query database
 
-        // Cache result for 24 hours
-        await _cacheService.SetAsync(cacheKey, exists.ToString(), TimeSpan.FromHours(24), cancellationToken);
+            // Cache result for 24 hours
+            await _cacheService.SetAsync(cacheKey, exists.ToString(), TimeSpan.FromHours(24), cancellationToken);
 
-        return exists;
+            return exists;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error checking scope validity for scope: {Scope}", scope);
+            return false;
+        }
     }
 
     /// <summary>
@@ -122,10 +145,18 @@ public sealed class ScopeValidationService
         IEnumerable<string> requestedScopes,
         bool isOidc = true)
     {
-        var required = GetRequiredScopes(isOidc).ToHashSet();
-        var requested = new HashSet<string>(requestedScopes);
+        try
+        {
+            var required = GetRequiredScopes(isOidc).ToHashSet();
+            var requested = new HashSet<string>(requestedScopes);
 
-        return required.IsSubsetOf(requested);
+            return required.IsSubsetOf(requested);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error checking required scopes");
+            return false;
+        }
     }
 
     /// <summary>
@@ -133,17 +164,31 @@ public sealed class ScopeValidationService
     /// </summary>
     public string MergeScopes(params IEnumerable<string>[] scopeLists)
     {
-        var merged = new HashSet<string>();
-
-        foreach (var list in scopeLists)
+        try
         {
-            foreach (var scope in list)
-            {
-                merged.Add(scope);
-            }
-        }
+            var merged = new HashSet<string>();
 
-        return merged.OrderBy(s => s).JoinScopes();
+            foreach (var list in scopeLists)
+            {
+                foreach (var scope in list)
+                {
+                    merged.Add(scope);
+                }
+            }
+
+            return merged.OrderBy(s => s).JoinScopes();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error merging scopes");
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Scope merging failed",
+                500,
+                null,
+                null,
+                ex);
+        }
     }
 
     /// <summary>
@@ -154,10 +199,18 @@ public sealed class ScopeValidationService
         IEnumerable<string> grantedScopes,
         IEnumerable<string> requestedScopes)
     {
-        var granted = new HashSet<string>(grantedScopes);
-        var requested = new HashSet<string>(requestedScopes);
+        try
+        {
+            var granted = new HashSet<string>(grantedScopes);
+            var requested = new HashSet<string>(requestedScopes);
 
-        // Return intersection - only scopes that are both granted and requested
-        return granted.Intersect(requested);
+            // Return intersection - only scopes that are both granted and requested
+            return granted.Intersect(requested);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error filtering scopes");
+            return Enumerable.Empty<string>();
+        }
     }
 }

@@ -192,7 +192,7 @@ public sealed class UserManagementService
     // -------------------------------------------------------------------------
 
     private UserService BuildUserService()
-        => new UserService(_userRepository, _refreshTokenRepository, _options);
+        => new UserService(_userRepository, _refreshTokenRepository, _options, _logger.WithName<UserService>());
 
     private static UserResponse MapToResponse(User user) => new UserResponse
     {
