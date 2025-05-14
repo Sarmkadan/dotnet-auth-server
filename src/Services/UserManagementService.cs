@@ -23,6 +23,7 @@ public sealed class UserManagementService
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserSessionRepository _sessionRepository;
     private readonly ILogger<UserManagementService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly AuthServerOptions _options;
 
     /// <summary>
@@ -33,12 +34,14 @@ public sealed class UserManagementService
         IRefreshTokenRepository refreshTokenRepository,
         IUserSessionRepository sessionRepository,
         ILogger<UserManagementService> logger,
+        ILoggerFactory loggerFactory,
         AuthServerOptions options)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _sessionRepository = sessionRepository;
         _logger = logger;
+        _loggerFactory = loggerFactory;
         _options = options;
     }
 
@@ -192,7 +195,7 @@ public sealed class UserManagementService
     // -------------------------------------------------------------------------
 
     private UserService BuildUserService()
-        => new UserService(_userRepository, _refreshTokenRepository, _options, _logger.WithName<UserService>());
+        => new UserService(_userRepository, _refreshTokenRepository, _options, _loggerFactory.CreateLogger<UserService>());
 
     private static UserResponse MapToResponse(User user) => new UserResponse
     {

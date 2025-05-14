@@ -24,6 +24,7 @@
     <Compile Remove="tests/**" />
     <Compile Remove="examples/**" />
     <Compile Remove="src/**" />
+    <Compile Remove="dotnet-auth-server.Benchmarks/**" />
   </ItemGroup>
 
   <ItemGroup>

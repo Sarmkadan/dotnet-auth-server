@@ -130,7 +130,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 var authServerOptions = app.Services.GetRequiredService<AuthServerOptions>();
-var opaOptions = app.Services.GetRequiredService<OpaOptions>();
+var resolvedOpaOptions = app.Services.GetRequiredService<OpaOptions>();
 var webhookOptions = app.Services.GetRequiredService<WebhookOptions>();
 
 // Configure middleware pipeline

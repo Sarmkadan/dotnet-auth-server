@@ -30,6 +30,10 @@ public sealed class UserManagementTests
         _sessionRepository = new UserSessionRepository();
 
         var logger = new Mock<ILogger<UserManagementService>>().Object;
+        var loggerFactory = new Mock<ILoggerFactory>();
+        loggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
         var options = new AuthServerOptions
         {
             IssuerUrl = "https://auth.example.com",
@@ -42,6 +46,7 @@ public sealed class UserManagementTests
             _refreshTokenRepository,
             _sessionRepository,
             logger,
+            loggerFactory.Object,
             options);
     }
 
