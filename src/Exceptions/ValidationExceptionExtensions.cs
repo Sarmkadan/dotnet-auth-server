@@ -3,7 +3,7 @@
 namespace DotnetAuthServer.Exceptions;
 
 /// <summary>
-/// Extension methods for ValidationException to provide additional functionality
+/// Extension methods for <see cref="ValidationException"/> to provide additional functionality
 /// </summary>
 public static class ValidationExceptionExtensions
 {
@@ -13,15 +13,15 @@ public static class ValidationExceptionExtensions
     /// <param name="exception">The ValidationException instance</param>
     /// <param name="errors">Dictionary of field names and error messages</param>
     /// <returns>The ValidationException instance for method chaining</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="exception"/> or <paramref name="errors"/> is <see langword="null"/></exception>
     public static ValidationException AddErrors(this ValidationException exception, Dictionary<string, string> errors)
     {
-        if (errors == null)
-        {
-            throw new ArgumentNullException(nameof(errors));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
+        ArgumentNullException.ThrowIfNull(errors);
 
         foreach (var error in errors)
         {
+            ArgumentNullException.ThrowIfNull(error.Value);
             exception.AddError(error.Key, error.Value);
         }
 
@@ -36,27 +36,14 @@ public static class ValidationExceptionExtensions
     /// <param name="errorMessage">Error message describing the validation failure</param>
     /// <param name="contextData">Additional context data to include with the error</param>
     /// <returns>The ValidationException instance for method chaining</returns>
+    /// <exception cref="ArgumentNullException">Thrown when any parameter is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="fieldName"/> is <see cref="string.IsNullOrEmpty"/> or whitespace</exception>
     public static ValidationException AddErrorWithContext(this ValidationException exception, string fieldName, string errorMessage, Dictionary<string, object> contextData)
     {
-        if (exception == null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
-
-        if (fieldName == null)
-        {
-            throw new ArgumentNullException(nameof(fieldName));
-        }
-
-        if (errorMessage == null)
-        {
-            throw new ArgumentNullException(nameof(errorMessage));
-        }
-
-        if (contextData == null)
-        {
-            throw new ArgumentNullException(nameof(contextData));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
+        ArgumentException.ThrowIfNullOrEmpty(fieldName);
+        ArgumentNullException.ThrowIfNull(errorMessage);
+        ArgumentNullException.ThrowIfNull(contextData);
 
         exception.AddError(fieldName, errorMessage);
         exception.Errors[fieldName] = contextData;
@@ -70,17 +57,11 @@ public static class ValidationExceptionExtensions
     /// <param name="target">The target ValidationException to merge into</param>
     /// <param name="source">The source ValidationException to merge from</param>
     /// <returns>The target ValidationException instance for method chaining</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> or <paramref name="source"/> is <see langword="null"/></exception>
     public static ValidationException MergeErrors(this ValidationException target, ValidationException source)
     {
-        if (target == null)
-        {
-            throw new ArgumentNullException(nameof(target));
-        }
-
-        if (source == null)
-        {
-            throw new ArgumentNullException(nameof(source));
-        }
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(source);
 
         foreach (var error in source.Errors)
         {
@@ -96,17 +77,12 @@ public static class ValidationExceptionExtensions
     /// <param name="exception">The ValidationException instance</param>
     /// <param name="fieldName">Name of the field to check</param>
     /// <returns>True if the field has an error, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="exception"/> or <paramref name="fieldName"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="fieldName"/> is <see cref="string.IsNullOrEmpty"/> or whitespace</exception>
     public static bool HasError(this ValidationException exception, string fieldName)
     {
-        if (exception == null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
-
-        if (fieldName == null)
-        {
-            throw new ArgumentNullException(nameof(fieldName));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
+        ArgumentException.ThrowIfNullOrEmpty(fieldName);
 
         return exception.Errors.ContainsKey(fieldName);
     }
