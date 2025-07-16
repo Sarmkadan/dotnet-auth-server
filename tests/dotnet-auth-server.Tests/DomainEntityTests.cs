@@ -10,12 +10,18 @@ using DotnetAuthServer.Domain.Entities;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Tests for domain entity classes.
+/// </summary>
 public sealed class DomainEntityTests
 {
     // -------------------------------------------------------------------------
     // User
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Verifies that a user's account is locked after reaching the default threshold of failed login attempts.
+    /// </summary>
     [Fact]
     public void User_RecordFailedLogin_WhenThresholdReached_LocksAccountAndResetsCounter()
     {
@@ -39,6 +45,9 @@ public sealed class DomainEntityTests
             "LockAccount resets the counter so the lockout duration is not extended unfairly");
     }
 
+    /// <summary>
+    /// Verifies that a user's account is not locked when the number of failed login attempts is below the default threshold.
+    /// </summary>
     [Fact]
     public void User_RecordFailedLogin_BelowThreshold_DoesNotLockAccount()
     {
@@ -60,6 +69,9 @@ public sealed class DomainEntityTests
         user.FailedLoginAttempts.Should().Be(4);
     }
 
+    /// <summary>
+    /// Verifies that a user's failed login attempts are reset and last login time is updated after a successful login.
+    /// </summary>
     [Fact]
     public void User_RecordSuccessfulLogin_ResetsFailedAttemptsAndSetsLastLoginAt()
     {
@@ -83,6 +95,9 @@ public sealed class DomainEntityTests
         user.LockedUntil.Should().BeNull("a successful login clears any existing lockout");
     }
 
+    /// <summary>
+    /// Verifies that a user's account is unlocked when the lockout period has expired.
+    /// </summary>
     [Fact]
     public void User_IsLocked_WhenLockHasExpired_ReturnsFalseAndClearsLockedUntil()
     {
@@ -108,6 +123,9 @@ public sealed class DomainEntityTests
     // Client
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Verifies that a confidential client is invalid when it does not have a secret hash.
+    /// </summary>
     [Fact]
     public void Client_IsValid_WhenConfidentialClientHasNoSecretHash_ReturnsFalse()
     {
@@ -130,6 +148,9 @@ public sealed class DomainEntityTests
             "a confidential client must have a hashed secret to authenticate");
     }
 
+    /// <summary>
+    /// Verifies that a client's redirect URI is valid when compared case-insensitively.
+    /// </summary>
     [Fact]
     public void Client_IsRedirectUriValid_MatchesCaseInsensitively()
     {
@@ -149,6 +170,9 @@ public sealed class DomainEntityTests
         result.Should().BeTrue("redirect URI comparison must be case-insensitive per OAuth2 spec");
     }
 
+    /// <summary>
+    /// Verifies that a client's grant type is allowed when it is registered.
+    /// </summary>
     [Fact]
     public void Client_IsGrantTypeAllowed_WhenGrantTypeRegistered_ReturnsTrue()
     {
@@ -174,6 +198,9 @@ public sealed class DomainEntityTests
     // RefreshToken
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Verifies that a refresh token's version is incremented and previous hash is preserved after rotation.
+    /// </summary>
     [Fact]
     public void RefreshToken_Rotate_IncrementsVersionAndPreservesPreviousHash()
     {
@@ -201,6 +228,9 @@ public sealed class DomainEntityTests
             "the previous hash is stored to detect stolen token re-use");
     }
 
+    /// <summary>
+    /// Verifies that a refresh token's usage is not recorded when it is revoked.
+    /// </summary>
     [Fact]
     public void RefreshToken_RecordUsage_WhenTokenIsRevoked_ThrowsInvalidOperationException()
     {
@@ -224,6 +254,9 @@ public sealed class DomainEntityTests
             .WithMessage("*revoked*", "using a revoked token must always fail");
     }
 
+    /// <summary>
+    /// Verifies that a refresh token is invalid when it is revoked and not expired.
+    /// </summary>
     [Fact]
     public void RefreshToken_IsValid_WhenRevokedAndNotExpired_ReturnsFalse()
     {
