@@ -8,8 +8,9 @@ using DotnetAuthServer.Exceptions;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace DotnetAuthServer.Tests;
-
+/// <summary>
+/// Tests for the ClientValidationService class.
+/// </summary>
 public sealed class ClientValidationServiceTests
 {
     private readonly Mock<IClientRepository> _clientRepositoryMock;
@@ -17,6 +18,9 @@ public sealed class ClientValidationServiceTests
     private readonly Mock<ILogger<ClientValidationService>> _loggerMock;
     private readonly ClientValidationService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ClientValidationServiceTests"/> class.
+    /// </summary>
     public ClientValidationServiceTests()
     {
         _clientRepositoryMock = new Mock<IClientRepository>();
@@ -25,6 +29,10 @@ public sealed class ClientValidationServiceTests
         _service = new ClientValidationService(_clientRepositoryMock.Object, _cacheServiceMock.Object, _loggerMock.Object);
     }
 
+    /// <summary>
+    /// Tests that a valid confidential client returns the client.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ValidateClientCredentialsAsync_ValidConfidentialClient_ReturnsClient()
     {
@@ -51,6 +59,10 @@ public sealed class ClientValidationServiceTests
         result.Should().Be(client);
     }
 
+    /// <summary>
+    /// Tests that an invalid client ID throws an <see cref="InvalidClientException"/>.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ValidateClientCredentialsAsync_InvalidClientId_ThrowsInvalidClientException()
     {
@@ -68,6 +80,10 @@ public sealed class ClientValidationServiceTests
         await act.Should().ThrowAsync<InvalidClientException>();
     }
 
+    /// <summary>
+    /// Tests that an invalid client secret throws an <see cref="InvalidClientException"/>.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ValidateClientCredentialsAsync_InvalidSecret_ThrowsInvalidClientException()
     {
@@ -93,6 +109,10 @@ public sealed class ClientValidationServiceTests
         await act.Should().ThrowAsync<InvalidClientException>();
     }
 
+    /// <summary>
+    /// Tests that a valid redirect URI does not throw an exception.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ValidateRedirectUriAsync_ValidUri_DoesNotThrow()
     {
@@ -117,6 +137,10 @@ public sealed class ClientValidationServiceTests
         await act.Should().NotThrowAsync();
     }
 
+    /// <summary>
+    /// Tests that an invalid redirect URI throws an <see cref="InvalidClientException"/>.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ValidateRedirectUriAsync_InvalidUri_ThrowsInvalidClientException()
     {
@@ -141,6 +165,10 @@ public sealed class ClientValidationServiceTests
         await act.Should().ThrowAsync<InvalidClientException>();
     }
 
+    /// <summary>
+    /// Tests that invalid scopes throw an <see cref="InvalidScopeException"/>.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ValidateScopesAsync_InvalidScopes_ThrowsInvalidScopeException()
     {
