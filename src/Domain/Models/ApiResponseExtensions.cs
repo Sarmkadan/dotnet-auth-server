@@ -12,8 +12,10 @@ public static class ApiResponseExtensions
     /// <param name="response">The source ApiResponse instance.</param>
     /// <param name="data">The data to include in the response.</param>
     /// <returns>A new ApiResponse{T} with the specified data.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
     public static ApiResponse<T> WithData<T>(this ApiResponse response, T data)
     {
+        ArgumentNullException.ThrowIfNull(response);
         return ApiResponse<T>.SuccessResponse(data);
     }
 
@@ -23,8 +25,12 @@ public static class ApiResponseExtensions
     /// <param name="response">The source ApiResponse instance.</param>
     /// <param name="errorMessage">The error message to include in the response.</param>
     /// <returns>A new ApiResponse with the specified error message.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="errorMessage"/> is <see langword="null"/></exception>
     public static ApiResponse WithError(this ApiResponse response, string errorMessage)
     {
+        ArgumentNullException.ThrowIfNull(response);
+        ArgumentNullException.ThrowIfNull(errorMessage);
         return ApiResponse.ErrorResponse(errorMessage);
     }
 
@@ -33,10 +39,14 @@ public static class ApiResponseExtensions
     /// </summary>
     /// <param name="response">The source ApiResponse instance.</param>
     /// <param name="errorMessage">The error message to include in the response.</param>
-    /// <param name="statusCode">The HTTP status code to include in the response.</param>
+    /// <param name="statusCode">The HTTP status code to set.</param>
     /// <returns>A new ApiResponse with the specified error message and status code.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="errorMessage"/> is <see langword="null"/></exception>
     public static ApiResponse WithError(this ApiResponse response, string errorMessage, int statusCode)
     {
+        ArgumentNullException.ThrowIfNull(response);
+        ArgumentNullException.ThrowIfNull(errorMessage);
         var result = ApiResponse.ErrorResponse(errorMessage);
         result.Code = statusCode;
         return result;
@@ -49,8 +59,13 @@ public static class ApiResponseExtensions
     /// <param name="response">The source ApiResponse instance.</param>
     /// <param name="message">The message to add to the response.</param>
     /// <returns>The same ApiResponse instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="message"/> is <see langword="null"/></exception>
     public static ApiResponse WithMessage(this ApiResponse response, string message)
     {
+        ArgumentNullException.ThrowIfNull(response);
+        ArgumentNullException.ThrowIfNull(message);
+
         if (string.IsNullOrEmpty(response.Message))
         {
             response.Message = message;
@@ -69,8 +84,10 @@ public static class ApiResponseExtensions
     /// <typeparam name="T">The type of data in the response.</typeparam>
     /// <param name="response">The source ApiResponse{T} instance.</param>
     /// <returns>True if the response contains data; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
     public static bool HasData<T>(this ApiResponse<T> response)
     {
+        ArgumentNullException.ThrowIfNull(response);
         return response.Data != null;
     }
 
@@ -80,8 +97,10 @@ public static class ApiResponseExtensions
     /// </summary>
     /// <param name="response">The source ApiResponse instance.</param>
     /// <returns>True if Success is true; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
     public static bool IsSuccess(this ApiResponse response)
     {
+        ArgumentNullException.ThrowIfNull(response);
         return response.Success;
     }
 
@@ -93,8 +112,10 @@ public static class ApiResponseExtensions
     /// <param name="response">The source ApiResponse{T} instance.</param>
     /// <param name="newData">The new data value to set.</param>
     /// <returns>A new ApiResponse{T} with updated data.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
     public static ApiResponse<T> UpdateData<T>(this ApiResponse<T> response, T newData)
     {
+        ArgumentNullException.ThrowIfNull(response);
         return new ApiResponse<T>
         {
             Success = response.Success,
@@ -113,8 +134,10 @@ public static class ApiResponseExtensions
     /// <param name="response">The source ApiResponse instance.</param>
     /// <param name="statusCode">The HTTP status code to set.</param>
     /// <returns>The same ApiResponse instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
     public static ApiResponse WithStatusCode(this ApiResponse response, int statusCode)
     {
+        ArgumentNullException.ThrowIfNull(response);
         response.Code = statusCode;
         return response;
     }
@@ -124,8 +147,10 @@ public static class ApiResponseExtensions
     /// </summary>
     /// <param name="response">The source ApiResponse instance.</param>
     /// <returns>The same ApiResponse instance for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="response"/> is <see langword="null"/></exception>
     public static ApiResponse WithTraceId(this ApiResponse response)
     {
+        ArgumentNullException.ThrowIfNull(response);
         response.TraceId = Guid.NewGuid().ToString();
         return response;
     }
