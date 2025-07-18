@@ -17,6 +17,7 @@ public static class ClientExtensions
     /// </summary>
     /// <param name="client">The client to check</param>
     /// <returns>True if the client is public; otherwise false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="client"/> is null</exception>
     public static bool IsPublicClient(this Client client)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -28,6 +29,7 @@ public static class ClientExtensions
     /// </summary>
     /// <param name="client">The client to check</param>
     /// <returns>True if PKCE is required; otherwise false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="client"/> is null</exception>
     public static bool RequiresPkce(this Client client)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -40,6 +42,8 @@ public static class ClientExtensions
     /// <param name="client">The client to get lifetime for</param>
     /// <param name="tokenType">Type of token (access or refresh)</param>
     /// <returns>Token lifetime in minutes</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="client"/> is null</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="tokenType"/> is not a valid value</exception>
     public static int GetTokenLifetimeMinutes(this Client client, TokenType tokenType)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -56,6 +60,7 @@ public static class ClientExtensions
     /// </summary>
     /// <param name="client">The client to check</param>
     /// <returns>True if CORS origins are configured; otherwise false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="client"/> is null</exception>
     public static bool HasCorsOrigins(this Client client)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -64,10 +69,17 @@ public static class ClientExtensions
 }
 
 /// <summary>
-/// Enum representing different token types for extension methods
+/// Enum representing different token types for Client extension methods
 /// </summary>
+/// <remarks>
+/// This enum is scoped to ClientExtensions to avoid naming conflicts with
+/// <see cref="DotnetAuthServer.Domain.Enums.TokenType"/> in the Domain.Enums namespace.
+/// </remarks>
 public enum TokenType
 {
+    /// <summary>Access token type</summary>
     Access,
+
+    /// <summary>Refresh token type</summary>
     Refresh
 }
