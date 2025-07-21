@@ -14,12 +14,15 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Tests for the <see cref="ScopeAndExtensionTests"/> class.
+/// </summary>
 public sealed class ScopeAndExtensionTests
 {
-    // -------------------------------------------------------------------------
-    // ScopeValidationService — pure methods tested via mocked dependencies
-    // -------------------------------------------------------------------------
-
+    /// <summary>
+    /// Builds a <see cref="ScopeValidationService"/> instance with mocked dependencies.
+    /// </summary>
+    /// <returns>A <see cref="ScopeValidationService"/> instance.</returns>
     private static ScopeValidationService BuildScopeValidationService()
     {
         // IScopeRepository is an interface, so Moq resolves it cleanly
@@ -31,6 +34,9 @@ public sealed class ScopeAndExtensionTests
         return new ScopeValidationService(scopeService, cacheMock.Object, loggerMock.Object);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="ScopeValidationService.ContainsRequiredScopes"/> returns false when the OIDC scope is absent and OIDC is required.
+    /// </summary>
     [Fact]
     public void ContainsRequiredScopes_WhenOpenIdScopeAbsentAndOidcRequired_ReturnsFalse()
     {
@@ -46,6 +52,9 @@ public sealed class ScopeAndExtensionTests
             "OIDC requests must include 'openid' scope; without it the ID token cannot be issued");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="ScopeValidationService.ContainsRequiredScopes"/> returns true when the OIDC scope is present and OIDC is required.
+    /// </summary>
     [Fact]
     public void ContainsRequiredScopes_WhenOpenIdScopePresentAndOidcRequired_ReturnsTrue()
     {
@@ -60,6 +69,9 @@ public sealed class ScopeAndExtensionTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="ScopeValidationService.MergeScopes"/> merges overlapping lists and deduplicates scopes, sorting them alphabetically.
+    /// </summary>
     [Fact]
     public void MergeScopes_WithOverlappingLists_DeduplicatesAndSortsAlphabetically()
     {
@@ -76,6 +88,9 @@ public sealed class ScopeAndExtensionTests
             "scopes must be sorted alphabetically and deduplicated so token comparisons are stable");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="ScopeValidationService.FilterScopes"/> returns only the intersection of granted and requested scopes.
+    /// </summary>
     [Fact]
     public void FilterScopes_ReturnsOnlyIntersectionOfGrantedAndRequestedScopes()
     {
@@ -93,10 +108,9 @@ public sealed class ScopeAndExtensionTests
                 "only scopes that are both granted and requested should be issued");
     }
 
-    // -------------------------------------------------------------------------
-    // StringExtensions
-    // -------------------------------------------------------------------------
-
+    /// <summary>
+    /// Verifies that <see cref="StringExtensions.ParseScopes"/> returns distinct non-empty scopes when given a string with duplicates and extra whitespace.
+    /// </summary>
     [Fact]
     public void ParseScopes_WithDuplicatesAndExtraWhitespace_ReturnsDistinctNonEmptyScopes()
     {
@@ -112,6 +126,9 @@ public sealed class ScopeAndExtensionTests
         scopes.Should().HaveCount(3);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="StringExtensions.ParseScopes"/> returns an empty collection when given a null input.
+    /// </summary>
     [Fact]
     public void ParseScopes_WithNullInput_ReturnsEmptyCollection()
     {
@@ -125,6 +142,9 @@ public sealed class ScopeAndExtensionTests
         scopes.Should().BeEmpty("a null scope string represents an absent scope parameter");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="StringExtensions.IsValidAbsoluteUri"/> returns true for an HTTPS URI.
+    /// </summary>
     [Fact]
     public void IsValidAbsoluteUri_WithHttpsUri_ReturnsTrue()
     {
@@ -135,6 +155,9 @@ public sealed class ScopeAndExtensionTests
         uri.IsValidAbsoluteUri().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="StringExtensions.IsValidAbsoluteUri"/> returns false for a relative URI.
+    /// </summary>
     [Fact]
     public void IsValidAbsoluteUri_WithRelativeUri_ReturnsFalse()
     {
@@ -146,10 +169,9 @@ public sealed class ScopeAndExtensionTests
             "relative URIs are not permitted as redirect targets per RFC 6749");
     }
 
-    // -------------------------------------------------------------------------
-    // DateTimeExtensions
-    // -------------------------------------------------------------------------
-
+    /// <summary>
+    /// Verifies that <see cref="DateTimeExtensions.IsExpired"/> returns true when the expiration falls within a 5-second clock skew buffer.
+    /// </summary>
     [Fact]
     public void IsExpired_WhenExpirationFallsWithinFiveSecondClockSkewBuffer_ReturnsTrue()
     {
@@ -164,6 +186,9 @@ public sealed class ScopeAndExtensionTests
             "tokens expiring within 5 seconds are treated as expired to prevent race conditions at validation time");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="DateTimeExtensions.IsExpired"/> returns false when the expiration is far in the future.
+    /// </summary>
     [Fact]
     public void IsExpired_WhenExpirationIsFarInFuture_ReturnsFalse()
     {
@@ -174,6 +199,9 @@ public sealed class ScopeAndExtensionTests
         expiresAt.IsExpired().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="DateTimeExtensions.ToUnixTimestamp"/> returns zero for the Unix epoch date.
+    /// </summary>
     [Fact]
     public void ToUnixTimestamp_WithKnownEpochDate_ReturnsZero()
     {
@@ -187,6 +215,9 @@ public sealed class ScopeAndExtensionTests
         timestamp.Should().Be(0L, "Unix epoch is the zero point for all timestamp calculations");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="DateTimeExtensions.AddLifetime"/> clamps negative lifetimes to the base time.
+    /// </summary>
     [Fact]
     public void AddLifetime_WithNegativeSeconds_ClampsToBaseTime()
     {
