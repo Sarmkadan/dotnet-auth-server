@@ -17,26 +17,47 @@ using DotnetAuthServer.Exceptions;
 /// </summary>
 public static class ErrorHandlingMiddlewareExtensions
 {
-    private static readonly System.Reflection.FieldInfo _errorField = typeof(ErrorHandlingMiddleware).GetField(
-        "_error", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance) ?? throw new InvalidOperationException("Error field not found in ErrorHandlingMiddleware");
+    private const string ErrorFieldName = "_error";
+    private const string ErrorDescriptionFieldName = "_errorDescription";
+    private const string ErrorUriFieldName = "_errorUri";
 
-    private static readonly System.Reflection.FieldInfo _errorDescriptionField = typeof(ErrorHandlingMiddleware).GetField(
-        "_errorDescription", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance) ?? throw new InvalidOperationException("ErrorDescription field not found in ErrorHandlingMiddleware");
+    private static readonly System.Reflection.FieldInfo _errorField = GetErrorField();
+    private static readonly System.Reflection.FieldInfo _errorDescriptionField = GetErrorDescriptionField();
+    private static readonly System.Reflection.FieldInfo _errorUriField = GetErrorUriField();
 
-    private static readonly System.Reflection.FieldInfo _errorUriField = typeof(ErrorHandlingMiddleware).GetField(
-        "_errorUri", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance) ?? throw new InvalidOperationException("ErrorUri field not found in ErrorHandlingMiddleware");
+    private static System.Reflection.FieldInfo GetErrorField()
+    {
+        var field = typeof(ErrorHandlingMiddleware).GetField(
+            ErrorFieldName,
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return field ?? throw new InvalidOperationException("Error field not found in ErrorHandlingMiddleware");
+    }
+
+    private static System.Reflection.FieldInfo GetErrorDescriptionField()
+    {
+        var field = typeof(ErrorHandlingMiddleware).GetField(
+            ErrorDescriptionFieldName,
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return field ?? throw new InvalidOperationException("ErrorDescription field not found in ErrorHandlingMiddleware");
+    }
+
+    private static System.Reflection.FieldInfo GetErrorUriField()
+    {
+        var field = typeof(ErrorHandlingMiddleware).GetField(
+            ErrorUriFieldName,
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return field ?? throw new InvalidOperationException("ErrorUri field not found in ErrorHandlingMiddleware");
+    }
 
     /// <summary>
     /// Creates a standardized error response from the middleware's error properties.
     /// </summary>
     /// <param name="middleware">The error handling middleware instance.</param>
     /// <returns>A new ErrorResponse object populated with the middleware's error data.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="middleware"/> is <see langword="null"/>.</exception>
     public static ErrorResponse ToErrorResponse(this ErrorHandlingMiddleware middleware)
     {
-        if (middleware is null)
-        {
-            throw new ArgumentNullException(nameof(middleware));
-        }
+        ArgumentNullException.ThrowIfNull(middleware);
 
         return new ErrorResponse
         {
@@ -51,35 +72,31 @@ public static class ErrorHandlingMiddlewareExtensions
     /// </summary>
     /// <param name="middleware">The error handling middleware instance.</param>
     /// <param name="exception">The exception to extract error information from.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="middleware"/> or <paramref name="exception"/> is <see langword="null"/>.</exception>
     public static void SetErrorFromException(this ErrorHandlingMiddleware middleware, Exception exception)
     {
-        if (middleware is null)
-        {
-            throw new ArgumentNullException(nameof(middleware));
-        }
+        ArgumentNullException.ThrowIfNull(middleware);
+        ArgumentNullException.ThrowIfNull(exception);
 
-        if (exception is null)
+        switch (exception)
         {
-            throw new ArgumentNullException(nameof(exception));
-        }
+            case AuthServerException authException:
+                _errorField.SetValue(middleware, authException.ErrorCode);
+                _errorDescriptionField.SetValue(middleware, authException.Message);
+                _errorUriField.SetValue(middleware, authException.ErrorUri);
+                break;
 
-        if (exception is AuthServerException authException)
-        {
-            _errorField.SetValue(middleware, authException.ErrorCode);
-            _errorDescriptionField.SetValue(middleware, authException.Message);
-            _errorUriField.SetValue(middleware, authException.ErrorUri);
-        }
-        else if (exception is InvalidOperationException)
-        {
-            _errorField.SetValue(middleware, "invalid_request");
-            _errorDescriptionField.SetValue(middleware, exception.Message);
-            _errorUriField.SetValue(middleware, null);
-        }
-        else
-        {
-            _errorField.SetValue(middleware, "server_error");
-            _errorDescriptionField.SetValue(middleware, "An internal server error occurred");
-            _errorUriField.SetValue(middleware, null);
+            case InvalidOperationException:
+                _errorField.SetValue(middleware, "invalid_request");
+                _errorDescriptionField.SetValue(middleware, exception.Message);
+                _errorUriField.SetValue(middleware, null);
+                break;
+
+            default:
+                _errorField.SetValue(middleware, "server_error");
+                _errorDescriptionField.SetValue(middleware, "An internal server error occurred");
+                _errorUriField.SetValue(middleware, null);
+                break;
         }
     }
 
@@ -88,12 +105,10 @@ public static class ErrorHandlingMiddlewareExtensions
     /// </summary>
     /// <param name="middleware">The error handling middleware instance.</param>
     /// <returns>A JSON string representation of the error response.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="middleware"/> is <see langword="null"/>.</exception>
     public static string SerializeErrorToJson(this ErrorHandlingMiddleware middleware)
     {
-        if (middleware is null)
-        {
-            throw new ArgumentNullException(nameof(middleware));
-        }
+        ArgumentNullException.ThrowIfNull(middleware);
 
         var error = _errorField.GetValue(middleware) as string;
         var errorDescription = _errorDescriptionField.GetValue(middleware) as string;
@@ -150,8 +165,13 @@ public static class ErrorHandlingMiddlewareExtensions
     /// </summary>
     public sealed class ErrorResponse
     {
+        /// <summary>Gets or sets the error code.</summary>
         public string? Error { get; set; }
+
+        /// <summary>Gets or sets the human-readable error description.</summary>
         public string? ErrorDescription { get; set; }
+
+        /// <summary>Gets or sets a URI that provides additional information about the error.</summary>
         public string? ErrorUri { get; set; }
     }
 }
