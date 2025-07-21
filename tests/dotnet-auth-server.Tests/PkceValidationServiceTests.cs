@@ -13,12 +13,18 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Tests for the PkceValidationService class.
+/// </summary>
 public sealed class PkceValidationServiceTests
 {
     private readonly Mock<ILogger<PkceValidationService>> _loggerMock;
     private readonly AuthServerOptions _options;
     private readonly PkceValidationService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PkceValidationServiceTests"/> class.
+    /// </summary>
     public PkceValidationServiceTests()
     {
         _loggerMock = new Mock<ILogger<PkceValidationService>>();
@@ -32,6 +38,9 @@ public sealed class PkceValidationServiceTests
         _service = new PkceValidationService(_options, _loggerMock.Object);
     }
 
+    /// <summary>
+    /// Verifies that the GenerateCodeVerifier method returns a string within the RFC 7636 length bounds.
+    /// </summary>
     [Fact]
     public void GenerateCodeVerifier_WhenCalled_ReturnsStringWithinRfc7636LengthBounds()
     {
@@ -44,6 +53,9 @@ public sealed class PkceValidationServiceTests
             "RFC 7636 mandates code verifiers between 43 and 128 characters");
     }
 
+    /// <summary>
+    /// Verifies that the GenerateCodeVerifier method returns a string containing only URL-safe characters.
+    /// </summary>
     [Fact]
     public void GenerateCodeVerifier_WhenCalled_ContainsOnlyUrlSafeCharacters()
     {
@@ -55,6 +67,9 @@ public sealed class PkceValidationServiceTests
             "code verifiers must use only unreserved URL-safe characters");
     }
 
+    /// <summary>
+    /// Verifies that the GenerateCodeChallenge method with the "plain" method returns the verifier unchanged.
+    /// </summary>
     [Fact]
     public void GenerateCodeChallenge_WithPlainMethod_ReturnsVerifierUnchanged()
     {
@@ -69,6 +84,9 @@ public sealed class PkceValidationServiceTests
             "plain method echoes the verifier directly without transformation");
     }
 
+    /// <summary>
+    /// Verifies that the GenerateCodeChallenge method with the "S256" method produces a deterministic base64 URL hash.
+    /// </summary>
     [Fact]
     public void GenerateCodeChallenge_WithS256Method_ProducesDeterministicBase64UrlHash()
     {
@@ -85,6 +103,9 @@ public sealed class PkceValidationServiceTests
         first.Should().NotBe(verifier, "the challenge must differ from the verifier for S256");
     }
 
+    /// <summary>
+    /// Verifies that the ValidateCodeVerifier method returns true when the verifier matches the stored S256 challenge.
+    /// </summary>
     [Fact]
     public void ValidateCodeVerifier_WhenVerifierMatchesStoredS256Challenge_ReturnsTrue()
     {
@@ -99,6 +120,9 @@ public sealed class PkceValidationServiceTests
         result.Should().BeTrue("the generated challenge must be verifiable with its source verifier");
     }
 
+    /// <summary>
+    /// Verifies that the ValidateCodeVerifier method returns false when the verifier is null.
+    /// </summary>
     [Fact]
     public void ValidateCodeVerifier_WhenVerifierIsNull_ReturnsFalseWithoutThrowing()
     {
@@ -112,6 +136,9 @@ public sealed class PkceValidationServiceTests
         result.Should().BeFalse("a null verifier cannot satisfy any challenge");
     }
 
+    /// <summary>
+    /// Verifies that the IsPkceRequired method returns true when the global requirement is enabled and the client is confidential.
+    /// </summary>
     [Fact]
     public void IsPkceRequired_WhenGlobalRequirementEnabled_ReturnsTrueForConfidentialClients()
     {
@@ -125,6 +152,9 @@ public sealed class PkceValidationServiceTests
             "the server-wide PKCE flag overrides per-client confidentiality settings");
     }
 
+    /// <summary>
+    /// Verifies that the IsPkceRequired method returns true when the global requirement is disabled and the client is public.
+    /// </summary>
     [Fact]
     public void IsPkceRequired_WhenGlobalRequirementDisabledAndClientIsPublic_ReturnsTrue()
     {
@@ -140,6 +170,9 @@ public sealed class PkceValidationServiceTests
             "public clients cannot securely store secrets, so PKCE is mandatory");
     }
 
+    /// <summary>
+    /// Verifies that the IsPkceRequired method returns false when the global requirement is disabled and the client is confidential.
+    /// </summary>
     [Fact]
     public void IsPkceRequired_WhenGlobalRequirementDisabledAndClientIsConfidential_ReturnsFalse()
     {
