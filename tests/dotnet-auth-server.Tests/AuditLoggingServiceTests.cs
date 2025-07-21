@@ -5,13 +5,17 @@ using DotnetAuthServer.Middleware;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace DotnetAuthServer.Tests;
-
+/// <summary>
+/// Tests for the AuditLoggingService class.
+/// </summary>
 public sealed class AuditLoggingServiceTests
 {
     private readonly Mock<ILogger<AuditLoggingService>> _loggerMock;
     private readonly AuditLoggingService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuditLoggingServiceTests"/> class.
+    /// </summary>
     public AuditLoggingServiceTests()
     {
         _loggerMock = new Mock<ILogger<AuditLoggingService>>();
@@ -21,6 +25,9 @@ public sealed class AuditLoggingServiceTests
         LogicalContext.RequestId = "test-request-id";
     }
 
+    /// <summary>
+    /// Verifies that logging a token issuance adds an entry to the log.
+    /// </summary>
     [Fact]
     public void LogTokenIssuance_AddsEntryToLog()
     {
@@ -36,6 +43,9 @@ public sealed class AuditLoggingServiceTests
         entries[0].Details["grant_type"].Should().Be("authorization_code");
     }
 
+    /// <summary>
+    /// Verifies that logging an authentication adds an entry to the log.
+    /// </summary>
     [Fact]
     public void LogAuthentication_AddsEntryToLog()
     {
@@ -48,6 +58,9 @@ public sealed class AuditLoggingServiceTests
         entries[0].EventType.Should().Be("AUTH_SUCCESS");
     }
 
+    /// <summary>
+    /// Verifies that getting recent entries limits the results.
+    /// </summary>
     [Fact]
     public void GetRecentEntries_LimitsResults()
     {
@@ -64,6 +77,9 @@ public sealed class AuditLoggingServiceTests
         entries.Should().HaveCount(10);
     }
 
+    /// <summary>
+    /// Verifies that clearing the log removes all entries.
+    /// </summary>
     [Fact]
     public void Clear_RemovesAllEntries()
     {
