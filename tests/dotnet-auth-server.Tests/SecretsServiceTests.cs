@@ -4,19 +4,26 @@ using DotnetAuthServer.Services;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace DotnetAuthServer.Tests;
-
+/// <summary>
+/// Tests for the SecretsService class.
+/// </summary>
 public sealed class SecretsServiceTests
 {
     private readonly Mock<ILogger<SecretsService>> _loggerMock;
     private readonly SecretsService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SecretsServiceTests"/> class.
+    /// </summary>
     public SecretsServiceTests()
     {
         _loggerMock = new Mock<ILogger<SecretsService>>();
         _service = new SecretsService(_loggerMock.Object);
     }
 
+    /// <summary>
+    /// Verifies that GenerateSecureSecret returns a secret of the correct length.
+    /// </summary>
     [Fact]
     public void GenerateSecureSecret_ReturnsSecretOfCorrectLength()
     {
@@ -30,6 +37,9 @@ public sealed class SecretsServiceTests
         secret.Length.Should().BeGreaterThanOrEqualTo(20);
     }
 
+    /// <summary>
+    /// Verifies that GenerateSecureSecret throws an ArgumentException when given an invalid length.
+    /// </summary>
     [Fact]
     public void GenerateSecureSecret_InvalidLength_ThrowsArgumentException()
     {
@@ -40,6 +50,9 @@ public sealed class SecretsServiceTests
         act.Should().Throw<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that HashAndVerifySecret returns true for a valid secret.
+    /// </summary>
     [Fact]
     public void HashAndVerifySecret_ValidSecret_ReturnsTrue()
     {
@@ -54,6 +67,9 @@ public sealed class SecretsServiceTests
         isValid.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that HashAndVerifySecret returns false for an invalid secret.
+    /// </summary>
     [Fact]
     public void HashAndVerifySecret_InvalidSecret_ReturnsFalse()
     {
@@ -68,6 +84,9 @@ public sealed class SecretsServiceTests
         isValid.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that MaskSecret returns a masked string.
+    /// </summary>
     [Fact]
     public void MaskSecret_ReturnsMaskedString()
     {
