@@ -16,11 +16,18 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Contains unit tests for user session management, including creation, revocation, and status checks.
+/// </summary>
 public sealed class SessionManagementTests
 {
     private readonly UserSessionRepository _sessionRepository;
     private readonly UserSessionService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SessionManagementTests"/> class.
+    /// Sets up the <see cref="UserSessionRepository"/>, mock logger, <see cref="AuthServerOptions"/>, and <see cref="UserSessionService"/>.
+    /// </summary>
     public SessionManagementTests()
     {
         _sessionRepository = new UserSessionRepository();
@@ -36,6 +43,9 @@ public sealed class SessionManagementTests
         _service = new UserSessionService(_sessionRepository, logger, options);
     }
 
+    /// <summary>
+    /// Verifies that creating a session with valid parameters returns an active session with correct properties.
+    /// </summary>
     [Fact]
     public async Task CreateSession_WithValidParams_ReturnsActiveSession()
     {
@@ -58,6 +68,9 @@ public sealed class SessionManagementTests
         session.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
     }
 
+    /// <summary>
+    /// Verifies that revoking an existing session marks it as revoked, sets the reason, and makes it inactive.
+    /// </summary>
     [Fact]
     public async Task RevokeSession_ExistingSession_MarksAsRevoked()
     {
@@ -76,6 +89,9 @@ public sealed class SessionManagementTests
         revoked.IsActive().Should().BeFalse("a revoked session cannot be active");
     }
 
+    /// <summary>
+    /// Verifies that attempting to revoke a non-existent session throws an <see cref="AuthServerException"/> with a 404 status code.
+    /// </summary>
     [Fact]
     public async Task RevokeSession_NonExistentSession_ThrowsAuthServerException()
     {
@@ -88,6 +104,9 @@ public sealed class SessionManagementTests
             .Where(ex => ex.StatusCode == 404);
     }
 
+    /// <summary>
+    /// Verifies that retrieving active sessions excludes sessions that have been revoked.
+    /// </summary>
     [Fact]
     public async Task GetActiveSessions_AfterRevoke_ExcludesRevokedSession()
     {
@@ -105,6 +124,9 @@ public sealed class SessionManagementTests
         active[0].SessionId.Should().Be(session2.SessionId);
     }
 
+    /// <summary>
+    /// Verifies that revoking all sessions for a specific user only affects that user's sessions and leaves other users' sessions untouched.
+    /// </summary>
     [Fact]
     public async Task RevokeAllUserSessions_RevokesOnlyThatUsersActiveSessions()
     {
@@ -123,6 +145,9 @@ public sealed class SessionManagementTests
         userBSessions.Should().HaveCount(1, "userB's session must not be affected");
     }
 
+    /// <summary>
+    /// Verifies that the session statistics accurately reflect the total, active, and revoked session counts.
+    /// </summary>
     [Fact]
     public async Task GetStats_ReflectsSessionCounts()
     {
@@ -140,6 +165,9 @@ public sealed class SessionManagementTests
         stats.RevokedSessions.Should().BeGreaterThanOrEqualTo(1);
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="UserSession.IsActive"/> method returns false for a session that has already expired.
+    /// </summary>
     [Fact]
     public void UserSession_IsActive_WhenExpired_ReturnsFalse()
     {
@@ -156,6 +184,9 @@ public sealed class SessionManagementTests
         session.IsActive().Should().BeFalse("an expired session is no longer active");
     }
 
+    /// <summary>
+    /// Verifies that calling <see cref="UserSession.Revoke"/> sets the revocation flag and reason, and ensures the session is inactive even if not expired.
+    /// </summary>
     [Fact]
     public void UserSession_Revoke_SetsRevocationFieldsCorrectly()
     {
