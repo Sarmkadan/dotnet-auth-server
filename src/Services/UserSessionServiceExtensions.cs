@@ -23,16 +23,16 @@ public static class UserSessionServiceExtensions
     /// <param name="userId">The user ID to retrieve sessions for.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A dictionary mapping session IDs to <see cref="UserSession"/> objects.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="userId"/> is null or whitespace.</exception>
     public static async Task<Dictionary<string, UserSession>> GetActiveSessionsDictionaryAsync(
         this UserSessionService service,
         string userId,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
-        if (string.IsNullOrWhiteSpace(userId))
-            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+        ArgumentException.ThrowIfNullOrEmpty(userId);
 
         var sessions = await service.GetActiveSessionsAsync(userId, cancellationToken);
         return sessions.ToDictionary(s => s.SessionId, StringComparer.OrdinalIgnoreCase);
@@ -46,16 +46,16 @@ public static class UserSessionServiceExtensions
     /// <param name="userId">The user ID to retrieve sessions for.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A dictionary mapping session IDs to <see cref="UserSession"/> objects.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="userId"/> is null or whitespace.</exception>
     public static async Task<Dictionary<string, UserSession>> GetAllSessionsDictionaryAsync(
         this UserSessionService service,
         string userId,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
-        if (string.IsNullOrWhiteSpace(userId))
-            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+        ArgumentException.ThrowIfNullOrEmpty(userId);
 
         var sessions = await service.GetAllSessionsAsync(userId, cancellationToken);
         return sessions.ToDictionary(s => s.SessionId, StringComparer.OrdinalIgnoreCase);
@@ -68,16 +68,16 @@ public static class UserSessionServiceExtensions
     /// <param name="userId">The user ID to check.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if the user has at least one active session; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="userId"/> is null or whitespace.</exception>
     public static async Task<bool> HasActiveSessionsAsync(
         this UserSessionService service,
         string userId,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
-        if (string.IsNullOrWhiteSpace(userId))
-            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+        ArgumentException.ThrowIfNullOrEmpty(userId);
 
         var activeSessions = await service.GetActiveSessionsAsync(userId, cancellationToken);
         return activeSessions.Any();
@@ -90,12 +90,12 @@ public static class UserSessionServiceExtensions
     /// <param name="service">The session service instance.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The count of active sessions.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
     public static async Task<int> GetTotalActiveSessionsCountAsync(
         this UserSessionService service,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
         var activeSessions = await service.GetAllActiveSessionsAsync(cancellationToken);
         return activeSessions.Count();
@@ -109,16 +109,16 @@ public static class UserSessionServiceExtensions
     /// <param name="clientId">The client ID to filter sessions by.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An enumerable of sessions matching the client ID.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="clientId"/> is null or whitespace.</exception>
     public static async Task<IEnumerable<UserSession>> GetSessionsByClientIdAsync(
         this UserSessionService service,
         string clientId,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
-        if (string.IsNullOrWhiteSpace(clientId))
-            throw new ArgumentException("Client ID cannot be null or whitespace", nameof(clientId));
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
 
         var allSessions = await service.GetAllActiveSessionsAsync(cancellationToken);
         return allSessions.Where(s => string.Equals(s.ClientId, clientId, StringComparison.OrdinalIgnoreCase));
@@ -132,16 +132,16 @@ public static class UserSessionServiceExtensions
     /// <param name="clientId">The client ID to filter sessions by.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An enumerable of active sessions matching the client ID.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="clientId"/> is null or whitespace.</exception>
     public static async Task<IEnumerable<UserSession>> GetActiveSessionsByClientIdAsync(
         this UserSessionService service,
         string clientId,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
-        if (string.IsNullOrWhiteSpace(clientId))
-            throw new ArgumentException("Client ID cannot be null or whitespace", nameof(clientId));
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
 
         var activeSessions = await service.GetAllActiveSessionsAsync(cancellationToken);
         return activeSessions
@@ -158,23 +158,22 @@ public static class UserSessionServiceExtensions
     /// <param name="reason">Optional reason for revoking the sessions.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The total number of sessions revoked across all users.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> or <paramref name="userIds"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="userIds"/> contains null or whitespace entries.</exception>
     public static async Task<int> RevokeAllSessionsForUsersAsync(
         this UserSessionService service,
         IEnumerable<string> userIds,
         string? reason = null,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
-
-        if (userIds is null)
-            throw new ArgumentNullException(nameof(userIds));
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(userIds);
 
         var userIdList = userIds.ToList();
         if (userIdList.Count == 0)
             return 0;
 
-        if (userIdList.Any(string.IsNullOrWhiteSpace))
+        if (userIdList.Any(static id => string.IsNullOrWhiteSpace(id)))
             throw new ArgumentException("User IDs cannot be null or whitespace", nameof(userIds));
 
         var totalRevoked = 0;
@@ -195,13 +194,13 @@ public static class UserSessionServiceExtensions
     /// <param name="expiryThreshold">The time window before expiry to consider sessions as expiring soon.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An enumerable of sessions that will expire within the threshold.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
     public static async Task<IEnumerable<UserSession>> GetExpiringSessionsAsync(
         this UserSessionService service,
         TimeSpan expiryThreshold,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
         var thresholdDate = DateTime.UtcNow.Add(expiryThreshold);
         var allSessions = await service.GetAllActiveSessionsAsync(cancellationToken);
@@ -218,30 +217,27 @@ public static class UserSessionServiceExtensions
     /// <param name="service">The session service instance.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A tuple containing the basic stats and additional derived metrics.</returns>
-    public static async Task<(SessionStats Stats, int ExpiredSoonCount, double ActiveSessionRatio)>
-        GetEnhancedStatsAsync(
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/>.</exception>
+    public static async Task<(SessionStats Stats, int ExpiredSoonCount, double ActiveSessionRatio)> GetEnhancedStatsAsync(
         this UserSessionService service,
         CancellationToken cancellationToken = default)
     {
-        if (service is null)
-            throw new ArgumentNullException(nameof(service));
+        ArgumentNullException.ThrowIfNull(service);
 
         var stats = await service.GetStatsAsync(cancellationToken);
 
         // Calculate sessions expiring soon (within 24 hours)
-        var expiringSoonCount = 0;
-        if (stats.TotalSessions > 0)
-        {
-            var expiringSoonThreshold = DateTime.UtcNow.AddHours(24);
-            var allSessions = await service.GetAllActiveSessionsAsync(cancellationToken);
-            expiringSoonCount = allSessions.Count(s => s.ExpiresAt <= expiringSoonThreshold);
-        }
+        var expiringSoonCount = stats.TotalSessions > 0
+            ? (await service.GetAllActiveSessionsAsync(cancellationToken))
+                .Count(s => s.ExpiresAt <= DateTime.UtcNow.AddHours(24))
+            : 0;
 
         // Calculate active session ratio
         var activeSessionRatio = stats.TotalSessions > 0
             ? (double)stats.ActiveSessions / stats.TotalSessions
             : 0.0;
 
+        stats.ComputedAt = DateTime.UtcNow;
         return (stats, expiringSoonCount, activeSessionRatio);
     }
 }
