@@ -16,6 +16,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Tests for the UserManagementService.
+/// </summary>
 public sealed class UserManagementTests
 {
     private readonly IUserRepository _userRepository;
@@ -23,6 +26,9 @@ public sealed class UserManagementTests
     private readonly IUserSessionRepository _sessionRepository;
     private readonly UserManagementService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UserManagementTests"/> class.
+    /// </summary>
     public UserManagementTests()
     {
         _userRepository = new UserRepository();
@@ -50,6 +56,9 @@ public sealed class UserManagementTests
             options);
     }
 
+    /// <summary>
+    /// Tests that creating a user with a valid request returns a user with the correct fields.
+    /// </summary>
     [Fact]
     public async Task CreateUser_WithValidRequest_ReturnsUserWithCorrectFields()
     {
@@ -60,7 +69,7 @@ public sealed class UserManagementTests
             Email = "testuser@example.com",
             Password = "SecurePass123!",
             FullName = "Test User",
-            Roles = ["viewer"]
+            Roles = new[] { "viewer" }
         };
 
         // Act
@@ -76,6 +85,9 @@ public sealed class UserManagementTests
         result.UserId.Should().NotBeNullOrWhiteSpace();
     }
 
+    /// <summary>
+    /// Tests that creating a user with a duplicate username throws an AuthServerException.
+    /// </summary>
     [Fact]
     public async Task CreateUser_WithDuplicateUsername_ThrowsAuthServerException()
     {
@@ -105,6 +117,9 @@ public sealed class UserManagementTests
                 "creating a user with an existing username must be rejected");
     }
 
+    /// <summary>
+    /// Tests that updating a user's full name is persisted.
+    /// </summary>
     [Fact]
     public async Task UpdateUser_FullNameChange_IsPersisted()
     {
@@ -126,6 +141,9 @@ public sealed class UserManagementTests
         updated.FullName.Should().Be("Updated Name");
     }
 
+    /// <summary>
+    /// Tests that deleting an existing user removes it from the repository.
+    /// </summary>
     [Fact]
     public async Task DeleteUser_ExistingUser_RemovesFromRepository()
     {
@@ -146,6 +164,9 @@ public sealed class UserManagementTests
             .Where(ex => ex.StatusCode == 404, "deleted user should no longer be found");
     }
 
+    /// <summary>
+    /// Tests that assigning a new role to a user appears in the user's roles.
+    /// </summary>
     [Fact]
     public async Task AssignRole_NewRole_AppearsInUserRoles()
     {
@@ -165,6 +186,9 @@ public sealed class UserManagementTests
         user.Roles.Should().Contain("admin");
     }
 
+    /// <summary>
+    /// Tests that locking a user and then unlocking it clears the lockout.
+    /// </summary>
     [Fact]
     public async Task LockUser_ThenUnlock_ClearsLockout()
     {
@@ -189,6 +213,9 @@ public sealed class UserManagementTests
         unlocked.LockedUntil.Should().BeNull("lockout expiry must be cleared on unlock");
     }
 
+    /// <summary>
+    /// Tests that getting a user by ID with a non-existent user throws a NotFound exception.
+    /// </summary>
     [Fact]
     public async Task GetUserById_NonExistentUser_ThrowsNotFound()
     {
@@ -200,6 +227,9 @@ public sealed class UserManagementTests
             .Where(ex => ex.StatusCode == 404);
     }
 
+    /// <summary>
+    /// Tests that searching for users by username returns matching users.
+    /// </summary>
     [Fact]
     public async Task SearchUsers_ByUsername_ReturnsMatchingUsers()
     {
