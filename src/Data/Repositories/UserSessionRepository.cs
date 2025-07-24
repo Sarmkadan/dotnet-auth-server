@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Data.Repositories;
 
+using System.Collections.Concurrent;
 using DotnetAuthServer.Domain.Entities;
 
 /// <summary>
@@ -46,7 +47,7 @@ public interface IUserSessionRepository : IRepository<UserSession, string>
 /// </summary>
 public sealed class UserSessionRepository : IUserSessionRepository
 {
-    private readonly Dictionary<string, UserSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, UserSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
 
     /// <inheritdoc />
     public Task<UserSession?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -59,10 +60,8 @@ public sealed class UserSessionRepository : IUserSessionRepository
     /// <inheritdoc />
     public Task<UserSession> CreateAsync(UserSession entity, CancellationToken cancellationToken = default)
     {
-        if (_sessions.ContainsKey(entity.SessionId))
+        if (!_sessions.TryAdd(entity.SessionId, entity))
             throw new InvalidOperationException($"Session {entity.SessionId} already exists");
-
-        _sessions[entity.SessionId] = entity;
         return Task.FromResult(entity);
     }
 
@@ -83,7 +82,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
     /// <inheritdoc />
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _sessions.Remove(id);
+        _sessions.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
@@ -138,7 +137,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
             .ToList();
 
         foreach (var id in expired)
-            _sessions.Remove(id);
+            _sessions.TryRemove(id, out _);
 
         return Task.FromResult(expired.Count);
     }

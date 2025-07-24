@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Data.Repositories;
 
+using System.Collections.Concurrent;
 using DotnetAuthServer.Domain.Entities;
 
 /// <summary>
@@ -39,7 +40,7 @@ public interface IAuthorizationGrantRepository : IRepository<AuthorizationGrant,
 /// </summary>
 public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 {
-    private readonly Dictionary<string, AuthorizationGrant> _grants = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, AuthorizationGrant> _grants = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task<AuthorizationGrant?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
@@ -53,10 +54,8 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
     public async Task<AuthorizationGrant> CreateAsync(AuthorizationGrant entity, CancellationToken cancellationToken = default)
     {
-        if (_grants.ContainsKey(entity.GrantId))
+        if (!_grants.TryAdd(entity.GrantId, entity))
             throw new InvalidOperationException($"Grant with ID {entity.GrantId} already exists");
-
-        _grants[entity.GrantId] = entity;
         return await Task.FromResult(entity);
     }
 
@@ -76,7 +75,7 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _grants.Remove(id);
+        _grants.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
@@ -115,7 +114,7 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
         foreach (var id in expiredIds)
         {
-            _grants.Remove(id);
+            _grants.TryRemove(id, out _);
         }
 
         return Task.CompletedTask;

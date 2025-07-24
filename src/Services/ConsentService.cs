@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Services;
 
+using System.Collections.Concurrent;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
@@ -43,7 +44,7 @@ public interface IConsentRepository : IRepository<Consent, string>
 /// </summary>
 public sealed class ConsentRepository : IConsentRepository
 {
-    private readonly Dictionary<string, Consent> _consents = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Consent> _consents = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task<Consent?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
@@ -57,10 +58,8 @@ public sealed class ConsentRepository : IConsentRepository
 
     public async Task<Consent> CreateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
-        if (_consents.ContainsKey(entity.ConsentId))
+        if (!_consents.TryAdd(entity.ConsentId, entity))
             throw new InvalidOperationException($"Consent with ID {entity.ConsentId} already exists");
-
-        _consents[entity.ConsentId] = entity;
         return await Task.FromResult(entity);
     }
 
@@ -81,7 +80,7 @@ public sealed class ConsentRepository : IConsentRepository
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _consents.Remove(id);
+        _consents.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 

@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Data.Repositories;
 
+using System.Collections.Concurrent;
 using DotnetAuthServer.Domain.Entities;
 
 /// <summary>
@@ -29,7 +30,7 @@ public interface ITotpCredentialRepository : IRepository<TotpCredential, string>
 /// </summary>
 public sealed class TotpCredentialRepository : ITotpCredentialRepository
 {
-    private readonly Dictionary<string, TotpCredential> _credentials = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, TotpCredential> _credentials = new(StringComparer.OrdinalIgnoreCase);
 
     /// <inheritdoc />
     public Task<TotpCredential?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -42,10 +43,8 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
     /// <inheritdoc />
     public Task<TotpCredential> CreateAsync(TotpCredential entity, CancellationToken cancellationToken = default)
     {
-        if (_credentials.ContainsKey(entity.Id))
+        if (!_credentials.TryAdd(entity.Id, entity))
             throw new InvalidOperationException($"TOTP credential {entity.Id} already exists");
-
-        _credentials[entity.Id] = entity;
         return Task.FromResult(entity);
     }
 
@@ -66,7 +65,7 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
     /// <inheritdoc />
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _credentials.Remove(id);
+        _credentials.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
@@ -91,7 +90,7 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
             .ToList();
 
         foreach (var id in toRemove)
-            _credentials.Remove(id);
+            _credentials.TryRemove(id, out _);
 
         return Task.CompletedTask;
     }

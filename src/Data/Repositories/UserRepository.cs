@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Data.Repositories;
 
+using System.Collections.Concurrent;
 using DotnetAuthServer.Domain.Entities;
 
 /// <summary>
@@ -44,7 +45,7 @@ public interface IUserRepository : IRepository<User, string>
 /// </summary>
 public sealed class UserRepository : IUserRepository
 {
-    private readonly Dictionary<string, User> _users = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, User> _users = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
@@ -58,10 +59,8 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<User> CreateAsync(User entity, CancellationToken cancellationToken = default)
     {
-        if (_users.ContainsKey(entity.UserId))
+        if (!_users.TryAdd(entity.UserId, entity))
             throw new InvalidOperationException($"User with ID {entity.UserId} already exists");
-
-        _users[entity.UserId] = entity;
         return await Task.FromResult(entity);
     }
 
@@ -82,7 +81,7 @@ public sealed class UserRepository : IUserRepository
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _users.Remove(id);
+        _users.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 

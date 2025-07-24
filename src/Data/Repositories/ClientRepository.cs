@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Data.Repositories;
 
+using System.Collections.Concurrent;
 using DotnetAuthServer.Domain.Entities;
 
 /// <summary>
@@ -34,7 +35,7 @@ public interface IClientRepository : IRepository<Client, string>
 /// </summary>
 public sealed class ClientRepository : IClientRepository
 {
-    private readonly Dictionary<string, Client> _clients = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Client> _clients = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task<Client?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
@@ -48,10 +49,8 @@ public sealed class ClientRepository : IClientRepository
 
     public async Task<Client> CreateAsync(Client entity, CancellationToken cancellationToken = default)
     {
-        if (_clients.ContainsKey(entity.ClientId))
+        if (!_clients.TryAdd(entity.ClientId, entity))
             throw new InvalidOperationException($"Client with ID {entity.ClientId} already exists");
-
-        _clients[entity.ClientId] = entity;
         return await Task.FromResult(entity);
     }
 
@@ -72,7 +71,7 @@ public sealed class ClientRepository : IClientRepository
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _clients.Remove(id);
+        _clients.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 

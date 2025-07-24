@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Data.Repositories;
 
+using System.Collections.Concurrent;
 using DotnetAuthServer.Domain.Entities;
 
 /// <summary>
@@ -49,7 +50,7 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken, string>
 /// </summary>
 public sealed class RefreshTokenRepository : IRefreshTokenRepository
 {
-    private readonly Dictionary<string, RefreshToken> _tokens = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, RefreshToken> _tokens = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task<RefreshToken?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
@@ -63,10 +64,8 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken> CreateAsync(RefreshToken entity, CancellationToken cancellationToken = default)
     {
-        if (_tokens.ContainsKey(entity.TokenId))
+        if (!_tokens.TryAdd(entity.TokenId, entity))
             throw new InvalidOperationException($"Token with ID {entity.TokenId} already exists");
-
-        _tokens[entity.TokenId] = entity;
         return await Task.FromResult(entity);
     }
 
@@ -87,7 +86,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _tokens.Remove(id);
+        _tokens.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
@@ -147,7 +146,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
         foreach (var id in expiredIds)
         {
-            _tokens.Remove(id);
+            _tokens.TryRemove(id, out _);
         }
 
         return Task.CompletedTask;

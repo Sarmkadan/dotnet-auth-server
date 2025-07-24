@@ -6,6 +6,7 @@
 
 namespace DotnetAuthServer.Data.Repositories;
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DotnetAuthServer.Domain.Entities;
 
@@ -16,7 +17,7 @@ using DotnetAuthServer.Domain.Entities;
 /// </summary>
 public sealed class ConsentRepository : IConsentRepository
 {
-    private readonly Dictionary<string, Consent> _consents = new();
+    private readonly ConcurrentDictionary<string, Consent> _consents = new();
 
     public Task<Consent?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
@@ -56,14 +57,14 @@ public sealed class ConsentRepository : IConsentRepository
     public Task DeleteAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (entity is not null && !string.IsNullOrWhiteSpace(entity.ConsentId))
-            _consents.Remove(entity.ConsentId);
+            _consents.TryRemove(entity.ConsentId, out _);
         return Task.CompletedTask;
     }
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(id))
-            _consents.Remove(id);
+            _consents.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
@@ -102,7 +103,7 @@ public sealed class ConsentRepository : IConsentRepository
 
         foreach (var consent in consentsToRemove)
         {
-            if (_consents.Remove(consent.ConsentId))
+            if (_consents.TryRemove(consent.ConsentId, out _))
             {
                 count++;
             }
@@ -122,6 +123,6 @@ public sealed class ConsentRepository : IConsentRepository
         if (consent is null)
             return Task.FromResult(false);
 
-        return Task.FromResult(_consents.Remove(consent.ConsentId));
+        return Task.FromResult(_consents.TryRemove(consent.ConsentId, out _));
     }
 }
