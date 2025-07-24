@@ -17,6 +17,8 @@ public static class ScopeValidationServiceExtensions
     /// <param name="requestedScopes">The requested scopes to check</param>
     /// <param name="requiredScopes">The scopes that are required to be present</param>
     /// <returns>True if any required scope is present, otherwise false</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="requiredScopes"/> is <see langword="null"/></exception>
     public static bool ContainsAnyRequiredScope(
         this ScopeValidationService service,
         IEnumerable<string> requestedScopes,
@@ -39,11 +41,13 @@ public static class ScopeValidationServiceExtensions
     /// <returns>
     /// A tuple where Item1 is the list of valid scopes and Item2 is the list of invalid scopes.
     /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="scopes"/> is <see langword="null"/></exception>
     public static async Task<(IReadOnlyList<string> Valid, IReadOnlyList<string> Invalid)>
         ValidateScopesWithResultsAsync(
-        this ScopeValidationService service,
-        IEnumerable<string> scopes,
-        CancellationToken cancellationToken = default)
+            this ScopeValidationService service,
+            IEnumerable<string> scopes,
+            CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(scopes);
@@ -74,6 +78,7 @@ public static class ScopeValidationServiceExtensions
     /// <param name="service">The scope validation service</param>
     /// <param name="scopeString">The scope string to check</param>
     /// <returns>True if all scopes are standard OIDC scopes, otherwise false</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
     public static bool IsStandardScopesOnly(
         this ScopeValidationService service,
         string? scopeString)
@@ -81,7 +86,9 @@ public static class ScopeValidationServiceExtensions
         ArgumentNullException.ThrowIfNull(service);
 
         if (string.IsNullOrWhiteSpace(scopeString))
-            return true;
+        {
+            return false;
+        }
 
         var scopes = scopeString.ParseScopes();
         var standardScopes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -100,6 +107,9 @@ public static class ScopeValidationServiceExtensions
     /// <param name="currentScopes">The current set of scopes</param>
     /// <param name="previousScopes">The previous set of scopes to compare against</param>
     /// <returns>Scopes that are in current but not in previous</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="currentScopes"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="previousScopes"/> is <see langword="null"/></exception>
     public static IEnumerable<string> GetAddedScopes(
         this ScopeValidationService service,
         IEnumerable<string> currentScopes,
