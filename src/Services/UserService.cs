@@ -80,8 +80,6 @@ public sealed class UserService
                     403);
             }
 
-            // In production, use bcrypt.VerifyHashedPassword or similar
-            // For this implementation, we assume password hashing is done elsewhere
             if (!VerifyPassword(password, user.PasswordHash))
             {
                 user.RecordFailedLogin(_options.FailedLoginAttemptThreshold);
@@ -285,7 +283,8 @@ public sealed class UserService
                     400);
 
             user.PasswordHash = HashPassword(newPassword);
-            user.RecordFailedLogin(0); // Reset failed attempts
+            user.FailedLoginAttempts = 0;
+            user.LockedUntil = null;
             await _userRepository.UpdateAsync(user, cancellationToken);
 
             // Revoke all refresh tokens on password change
@@ -422,26 +421,41 @@ public sealed class UserService
     }
 
     /// <summary>
-    /// Hashes a password (simplified - use bcrypt in production)
+    /// Hashes a password using bcrypt with a per-password salt.
     /// </summary>
-    private static string HashPassword(string password)
-    {
-        // In production, use BCrypt: BCrypt.Net.BCrypt.HashPassword(password, 12)
-        // This is a simplified version for demo
-        using (var sha256 = System.Security.Cryptography.SHA256.Create())
-        {
-            var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
-        }
-    }
+    private static string HashPassword(string password) =>
+        BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
 
     /// <summary>
-    /// Verifies a password against its hash
+    /// Verifies a password against its stored hash.
+    /// Accepts bcrypt hashes; falls back to the legacy unsalted SHA-256 format
+    /// for accounts created before the bcrypt migration.
     /// </summary>
     private static bool VerifyPassword(string password, string hash)
     {
-        // In production, use BCrypt: BCrypt.Net.BCrypt.Verify(password, hash)
-        var hashOfInput = HashPassword(password);
-        return hashOfInput.Equals(hash, StringComparison.Ordinal);
+        if (string.IsNullOrEmpty(hash))
+            return false;
+
+        if (hash.StartsWith("$2", StringComparison.Ordinal))
+        {
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, hash);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                return false;
+            }
+        }
+
+        // Legacy format: base64(SHA256(password)) written by earlier versions.
+        var sha256Bytes = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(password));
+        var storedBytes = new byte[hash.Length];
+        if (!Convert.TryFromBase64String(hash, storedBytes, out var written))
+            return false;
+
+        return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+            sha256Bytes, storedBytes.AsSpan(0, written));
     }
 }

@@ -20,13 +20,11 @@ public static class StringExtensions
     /// Parses a space-delimited scope string into individual scope names.
     /// Removes duplicates and empty values to ensure consistent scope handling.
     /// </summary>
-    /// <param name="scopes">The space-delimited scope string to parse.</param>
+    /// <param name="scopes">The space-delimited scope string to parse. May be <see langword="null"/>,
+    /// which represents an absent scope parameter and yields an empty result.</param>
     /// <returns>An enumerable of distinct, non-empty scope names.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="scopes"/> is <see langword="null"/>.</exception>
     public static IEnumerable<string> ParseScopes(this string? scopes)
     {
-        ArgumentNullException.ThrowIfNull(scopes);
-
         if (string.IsNullOrWhiteSpace(scopes))
             return Enumerable.Empty<string>();
 
