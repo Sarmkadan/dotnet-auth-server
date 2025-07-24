@@ -8,6 +8,7 @@ namespace DotnetAuthServer.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
 using DotnetAuthServer.Configuration;
+using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
 using DotnetAuthServer.Services;
@@ -20,13 +21,19 @@ using DotnetAuthServer.Services;
 public sealed class AuthorizationController : ControllerBase
 {
     private readonly AuthorizationService _authorizationService;
+    private readonly ConsentService _consentService;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger<AuthorizationController> _logger;
 
     public AuthorizationController(
         AuthorizationService authorizationService,
+        ConsentService consentService,
+        IUserRepository userRepository,
         ILogger<AuthorizationController> logger)
     {
         _authorizationService = authorizationService;
+        _consentService = consentService;
+        _userRepository = userRepository;
         _logger = logger;
     }
 
@@ -135,15 +142,31 @@ public sealed class AuthorizationController : ControllerBase
                 });
             }
 
-            // In a real implementation, retrieve user and client details
-            var consentResponse = new
+            var user = await _userRepository.GetByIdAsync(user_id, cancellationToken);
+            if (user is null)
             {
-                clientId = client_id,
-                userId = user_id,
-                requestedScopes = scope?.Split(' ') ?? Array.Empty<string>()
+                return NotFound(new
+                {
+                    error = Constants.ErrorCodes.InvalidRequest,
+                    error_description = "User not found"
+                });
+            }
+
+            var authRequest = new AuthorizationRequest
+            {
+                ClientId = client_id,
+                Scope = scope
             };
 
+            var consentResponse = await _authorizationService.GetConsentPromptAsync(
+                authRequest, user, cancellationToken);
+
             return Ok(consentResponse);
+        }
+        catch (AuthServerException ex)
+        {
+            _logger.LogWarning("Consent prompt error: {ErrorCode} - {Message}", ex.ErrorCode, ex.Message);
+            return StatusCode(ex.StatusCode, ex.ToErrorResponse());
         }
         catch (Exception ex)
         {
@@ -167,7 +190,8 @@ public sealed class AuthorizationController : ControllerBase
         [FromForm] bool approved,
         [FromForm] string? granted_scopes,
         [FromForm] string? state,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromForm] bool remember_consent = false)
     {
         try
         {
@@ -186,17 +210,28 @@ public sealed class AuthorizationController : ControllerBase
                 UserId = user_id,
                 Approved = approved,
                 GrantedScopes = (granted_scopes ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList(),
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+                RememberConsent = remember_consent,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers.UserAgent.ToString()
             };
 
-            // In a real implementation, process the consent and issue an authorization code
+            var consent = await _consentService.RecordConsentAsync(consentRequest, cancellationToken);
+
             return Ok(new
             {
                 message = "Consent submitted",
+                consentId = consent.ConsentId,
                 clientId = client_id,
                 approved = approved,
+                grantedScopes = consent.GetGrantedScopes(),
+                expiresAt = consent.ExpiresAt,
                 state = state
             });
+        }
+        catch (AuthServerException ex)
+        {
+            _logger.LogWarning("Consent submission error: {ErrorCode} - {Message}", ex.ErrorCode, ex.Message);
+            return StatusCode(ex.StatusCode, ex.ToErrorResponse());
         }
         catch (Exception ex)
         {

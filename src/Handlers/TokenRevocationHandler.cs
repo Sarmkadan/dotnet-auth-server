@@ -104,9 +104,9 @@ public sealed class TokenRevocationHandler
 
         try
         {
-            // In a real system, would delete all tokens for this user
-            // For this implementation, we log the attempt
-            _logger.LogInformation("User {UserId} requested revocation of all tokens", userId);
+            await _refreshTokenRepository.RevokeAllUserTokensAsync(
+                userId, "All tokens revoked for user", cancellationToken);
+            _logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
             return new RevocationResult { Success = true, Revoked = true };
         }
         catch (Exception ex)

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
+using DotnetAuthServer.Handlers;
 using DotnetAuthServer.Services;
 
 /// <summary>
@@ -20,11 +21,19 @@ using DotnetAuthServer.Services;
 public sealed class TokenController : ControllerBase
 {
     private readonly TokenService _tokenService;
+    private readonly TokenIntrospectionHandler _introspectionHandler;
+    private readonly TokenRevocationHandler _revocationHandler;
     private readonly ILogger<TokenController> _logger;
 
-    public TokenController(TokenService tokenService, ILogger<TokenController> logger)
+    public TokenController(
+        TokenService tokenService,
+        TokenIntrospectionHandler introspectionHandler,
+        TokenRevocationHandler revocationHandler,
+        ILogger<TokenController> logger)
     {
         _tokenService = tokenService;
+        _introspectionHandler = introspectionHandler;
+        _revocationHandler = revocationHandler;
         _logger = logger;
     }
 
@@ -85,9 +94,11 @@ public sealed class TokenController : ControllerBase
     }
 
     /// <summary>
-    /// Introspects a token to get its claims and validity
+    /// Introspects a token to get its claims and validity (RFC 7662).
+    /// Invalid, expired, or revoked tokens are reported as inactive.
     /// </summary>
     [HttpPost("introspect")]
+    [HttpPost("/oauth/introspect")]
     [Consumes("application/x-www-form-urlencoded")]
     [Produces("application/json")]
     public IActionResult IntrospectToken(
@@ -107,15 +118,22 @@ public sealed class TokenController : ControllerBase
                 });
             }
 
-            // In a real implementation, validate the token and return its claims
-            // For now, this is a placeholder
-            var response = new
-            {
-                active = false,
-                error = Constants.ErrorCodes.InvalidGrant
-            };
+            var result = _introspectionHandler.IntrospectToken(token);
 
-            return Ok(response);
+            if (!result.Active)
+                return Ok(new { active = false });
+
+            return Ok(new
+            {
+                active = true,
+                scope = result.Scope,
+                client_id = result.ClientId,
+                username = result.Username,
+                token_type = result.TokenType,
+                exp = result.Exp,
+                iat = result.Iat,
+                sub = result.Sub
+            });
         }
         catch (Exception ex)
         {
@@ -129,15 +147,19 @@ public sealed class TokenController : ControllerBase
     }
 
     /// <summary>
-    /// Revokes a token (access token or refresh token)
+    /// Revokes a token (access token or refresh token) per RFC 7009.
+    /// Always returns 200 OK for valid requests, even when the token is unknown,
+    /// to prevent token enumeration.
     /// </summary>
     [HttpPost("revoke")]
+    [HttpPost("/oauth/revoke")]
     [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult RevokeToken(
+    public async Task<IActionResult> RevokeToken(
         [FromForm] string? token,
         [FromForm] string? token_type_hint,
         [FromForm] string? client_id,
-        [FromForm] string? client_secret)
+        [FromForm] string? client_secret,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -150,8 +172,7 @@ public sealed class TokenController : ControllerBase
                 });
             }
 
-            // In a real implementation, revoke the token
-            // For now, this is a placeholder
+            await _revocationHandler.RevokeTokenAsync(token, token_type_hint, cancellationToken);
             return Ok();
         }
         catch (Exception ex)
