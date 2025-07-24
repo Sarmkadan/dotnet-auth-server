@@ -1,8 +1,9 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 using System;
 using DotnetAuthServer.Configuration;
@@ -21,17 +22,12 @@ public static class CacheOptionsExtensions
     /// <param name="options">The cache options to configure.</param>
     /// <param name="connectionString">The Redis connection string.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="connectionString"/> is <see langword="null"/>, empty, or consists only of whitespace.</exception>
     public static CacheOptions UseRedis(this CacheOptions options, string connectionString)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
-
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new ArgumentException("Redis connection string cannot be null or empty.", nameof(connectionString));
-        }
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentException.ThrowIfNullOrEmpty(connectionString, nameof(connectionString));
 
         options.Backend = "Redis";
         options.ConnectionString = connectionString;
@@ -43,13 +39,10 @@ public static class CacheOptionsExtensions
     /// </summary>
     /// <param name="options">The cache options to configure.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static CacheOptions UseMemory(this CacheOptions options)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
-
+        ArgumentNullException.ThrowIfNull(options);
         options.Backend = "Memory";
         options.ConnectionString = null;
         return options;
@@ -61,16 +54,15 @@ public static class CacheOptionsExtensions
     /// <param name="options">The cache options to configure.</param>
     /// <param name="expirationSeconds">Expiration time in seconds.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="expirationSeconds"/> is less than 1.</exception>
     public static CacheOptions SetDefaultExpiration(this CacheOptions options, int expirationSeconds)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
 
         if (expirationSeconds < 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(expirationSeconds), "Expiration must be at least 1 second.");
+            throw new ArgumentOutOfRangeException(nameof(expirationSeconds), expirationSeconds, "Expiration must be at least 1 second.");
         }
 
         options.DefaultExpirationSeconds = expirationSeconds;
@@ -83,16 +75,15 @@ public static class CacheOptionsExtensions
     /// <param name="options">The cache options to configure.</param>
     /// <param name="maxEntries">Maximum number of entries.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxEntries"/> is less than 1.</exception>
     public static CacheOptions SetMaxEntries(this CacheOptions options, int maxEntries)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
 
         if (maxEntries < 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(maxEntries), "Max entries must be at least 1.");
+            throw new ArgumentOutOfRangeException(nameof(maxEntries), maxEntries, "Max entries must be at least 1.");
         }
 
         options.MaxEntries = maxEntries;
@@ -105,16 +96,15 @@ public static class CacheOptionsExtensions
     /// <param name="options">The cache options to configure.</param>
     /// <param name="intervalSeconds">Scan interval in seconds.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="intervalSeconds"/> is less than 1.</exception>
     public static CacheOptions SetExpirationScanInterval(this CacheOptions options, int intervalSeconds)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
 
         if (intervalSeconds < 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(intervalSeconds), "Interval must be at least 1 second.");
+            throw new ArgumentOutOfRangeException(nameof(intervalSeconds), intervalSeconds, "Interval must be at least 1 second.");
         }
 
         options.ExpirationScanIntervalSeconds = intervalSeconds;
@@ -127,12 +117,10 @@ public static class CacheOptionsExtensions
     /// <param name="options">The cache options.</param>
     /// <param name="itemType">Type of cache item to get expiration for.</param>
     /// <returns>Expiration time in seconds for the specified item type.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static int GetExpirationSeconds(this CacheOptions options, CacheItemType itemType)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
 
         return itemType switch
         {
@@ -152,16 +140,15 @@ public static class CacheOptionsExtensions
     /// <param name="itemType">Type of cache item to configure.</param>
     /// <param name="seconds">Expiration time in seconds.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="seconds"/> is less than 1 or <paramref name="itemType"/> is unknown.</exception>
     public static CacheOptions SetExpiration(this CacheOptions options, CacheItemType itemType, int seconds)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
 
         if (seconds < 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(seconds), "Expiration must be at least 1 second.");
+            throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "Expiration must be at least 1 second.");
         }
 
         switch (itemType)
@@ -193,13 +180,10 @@ public static class CacheOptionsExtensions
     /// </summary>
     /// <param name="options">The cache options to configure.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static CacheOptions Disable(this CacheOptions options)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
-
+        ArgumentNullException.ThrowIfNull(options);
         options.Enabled = false;
         return options;
     }
@@ -209,13 +193,10 @@ public static class CacheOptionsExtensions
     /// </summary>
     /// <param name="options">The cache options to configure.</param>
     /// <returns>The configured <see cref="CacheOptions"/> for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static CacheOptions Enable(this CacheOptions options)
     {
-        if (options == null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
-
+        ArgumentNullException.ThrowIfNull(options);
         options.Enabled = true;
         return options;
     }
@@ -228,12 +209,16 @@ public enum CacheItemType
 {
     /// <summary>Client information.</summary>
     Client,
+
     /// <summary>User information.</summary>
     User,
+
     /// <summary>Scope definitions.</summary>
     Scope,
+
     /// <summary>Authorization grant information.</summary>
     Grant,
+
     /// <summary>JWKS (public keys).</summary>
     Jwks
 }
