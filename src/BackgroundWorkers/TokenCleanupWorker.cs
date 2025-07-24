@@ -1,4 +1,5 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -72,21 +73,11 @@ public sealed class TokenCleanupWorker : BackgroundService
         {
             var refreshTokenRepo = scope.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
 
-            // Get all refresh tokens and remove expired ones
-            // Note: In production, this would query database directly for efficiency
-            var now = DateTime.UtcNow;
-            var deletedCount = 0;
-
             _logger.LogInformation("Starting cleanup of expired refresh tokens");
 
-            // This is a placeholder - actual implementation would depend on repository capabilities
-            // For in-memory storage, you might iterate and delete
-            // For database, you'd run a DELETE query with WHERE ExpiresAt <= NOW()
+            await refreshTokenRepo.DeleteExpiredAsync(cancellationToken);
 
-            if (deletedCount > 0)
-            {
-                _logger.LogInformation("Cleaned up {Count} expired refresh tokens", deletedCount);
-            }
+            _logger.LogInformation("Completed cleanup of expired refresh tokens");
         }
     }
 
@@ -96,18 +87,11 @@ public sealed class TokenCleanupWorker : BackgroundService
         {
             var grantRepo = scope.ServiceProvider.GetRequiredService<IAuthorizationGrantRepository>();
 
-            var now = DateTime.UtcNow;
-            var deletedCount = 0;
-
             _logger.LogInformation("Starting cleanup of expired authorization grants");
 
-            // Similar cleanup for authorization codes
-            // Only keep codes that haven't expired yet
+            await grantRepo.DeleteExpiredAsync(cancellationToken);
 
-            if (deletedCount > 0)
-            {
-                _logger.LogInformation("Cleaned up {Count} expired authorization grants", deletedCount);
-            }
+            _logger.LogInformation("Completed cleanup of expired authorization grants");
         }
     }
 }
