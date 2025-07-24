@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DotnetAuthServer.Configuration;
 
@@ -15,10 +14,12 @@ public static class AuthServerOptionsExtensions
     /// Validates that the required configuration values are properly set
     /// </summary>
     /// <param name="options">The auth server options to validate</param>
-    /// <returns>True if validation passes, false otherwise</returns>
-    /// <exception cref="ArgumentNullException">Thrown when required properties are null or empty</exception>
+    /// <returns>True if validation passes</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null or when required properties are null or empty</exception>
     public static bool Validate(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         if (string.IsNullOrWhiteSpace(options.IssuerUrl))
         {
             throw new ArgumentNullException(nameof(options.IssuerUrl), "IssuerUrl must be configured");
@@ -39,12 +40,12 @@ public static class AuthServerOptionsExtensions
             throw new ArgumentException("AccessTokenLifetimeSeconds must be greater than 0", nameof(options.AccessTokenLifetimeSeconds));
         }
 
-        if (options.SupportedScopes == null || options.SupportedScopes.Count == 0)
+        if (options.SupportedScopes is not { Count: > 0 })
         {
             throw new ArgumentException("At least one supported scope must be configured", nameof(options.SupportedScopes));
         }
 
-        if (options.SupportedGrantTypes == null || options.SupportedGrantTypes.Count == 0)
+        if (options.SupportedGrantTypes is not { Count: > 0 })
         {
             throw new ArgumentException("At least one supported grant type must be configured", nameof(options.SupportedGrantTypes));
         }
@@ -58,8 +59,12 @@ public static class AuthServerOptionsExtensions
     /// <param name="options">The auth server options</param>
     /// <param name="scope">The scope to check</param>
     /// <returns>True if the scope is supported, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="scope"/> is null</exception>
     public static bool SupportsScope(this AuthServerOptions options, string scope)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(scope);
+
         return options.SupportedScopes.Contains(scope, StringComparer.Ordinal);
     }
 
@@ -69,8 +74,12 @@ public static class AuthServerOptionsExtensions
     /// <param name="options">The auth server options</param>
     /// <param name="grantType">The grant type to check</param>
     /// <returns>True if the grant type is supported, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="grantType"/> is null</exception>
     public static bool SupportsGrantType(this AuthServerOptions options, string grantType)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(grantType);
+
         return options.SupportedGrantTypes.Contains(grantType, StringComparer.Ordinal);
     }
 
@@ -79,8 +88,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>TimeSpan representing the access token lifetime</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static TimeSpan GetAccessTokenLifetime(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return TimeSpan.FromSeconds(options.AccessTokenLifetimeSeconds);
     }
 
@@ -89,8 +100,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>TimeSpan representing the refresh token lifetime</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static TimeSpan GetRefreshTokenLifetime(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return TimeSpan.FromSeconds(options.RefreshTokenLifetimeSeconds);
     }
 
@@ -99,8 +112,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>TimeSpan representing the authorization code lifetime</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static TimeSpan GetAuthorizationCodeLifetime(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return TimeSpan.FromSeconds(options.AuthorizationCodeLifetimeSeconds);
     }
 
@@ -109,8 +124,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>TimeSpan representing the clock skew tolerance</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static TimeSpan GetClockSkewTolerance(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return TimeSpan.FromSeconds(options.ClockSkewToleranceSeconds);
     }
 
@@ -119,8 +136,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>TimeSpan representing the account lockout duration</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static TimeSpan GetAccountLockoutDuration(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return TimeSpan.FromMinutes(options.AccountLockoutDurationMinutes);
     }
 
@@ -129,8 +148,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>True if PKCE is required for all clients, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static bool IsPkceRequired(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return options.RequirePkceForAllClients;
     }
 
@@ -139,8 +160,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>True if auto-rotation is enabled, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static bool IsTokenRotationEnabled(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return options.AutoRefreshTokenRotation;
     }
 
@@ -149,8 +172,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>The maximum refresh token generations allowed</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static int GetMaxRefreshTokenGenerations(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return options.MaxRefreshTokenGenerations;
     }
 
@@ -159,8 +184,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>The number of failed attempts allowed before lockout</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static int GetFailedLoginAttemptThreshold(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return options.FailedLoginAttemptThreshold;
     }
 
@@ -169,8 +196,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>True if user consent is required, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static bool IsUserConsentRequired(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return options.RequireUserConsent;
     }
 
@@ -179,8 +208,10 @@ public static class AuthServerOptionsExtensions
     /// </summary>
     /// <param name="options">The auth server options</param>
     /// <returns>True if in-memory database is enabled, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null</exception>
     public static bool UsesInMemoryDatabase(this AuthServerOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         return options.UseInMemoryDatabase;
     }
 }
