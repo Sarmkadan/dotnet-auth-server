@@ -1,4 +1,5 @@
 #nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Linq;
 namespace DotnetAuthServer.Examples;
 
 /// <summary>
-/// Provides validation methods for ClientCredentialsFlowExample and TokenResponse.
+/// Provides validation methods for ClientCredentialsFlowExample and related response types.
 /// </summary>
 public static class ClientCredentialsFlowExampleValidation
 {
@@ -15,14 +16,11 @@ public static class ClientCredentialsFlowExampleValidation
     /// </summary>
     /// <param name="value">The ClientCredentialsFlowExample instance to validate.</param>
     /// <returns>A list of validation problems.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this ClientCredentialsFlowExample? value)
     {
-        var problems = new List<string>();
-        if (value is null)
-        {
-            problems.Add("Value cannot be null.");
-        }
-        return problems;
+        ArgumentNullException.ThrowIfNull(value);
+        return [];
     }
 
     /// <summary>
@@ -30,17 +28,17 @@ public static class ClientCredentialsFlowExampleValidation
     /// </summary>
     /// <param name="value">The ClientCredentialsFlowExample instance to check.</param>
     /// <returns>True if the instance is valid, false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this ClientCredentialsFlowExample? value) => value is not null;
 
     /// <summary>
     /// Ensures the ClientCredentialsFlowExample instance is valid.
     /// </summary>
     /// <param name="value">The ClientCredentialsFlowExample instance to ensure is valid.</param>
-    /// <exception cref="ArgumentException">Thrown if the instance is invalid.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static void EnsureValid(this ClientCredentialsFlowExample? value)
     {
-        if (!value.IsValid())
-            throw new ArgumentException("ClientCredentialsFlowExample is invalid.", nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
     }
 
     /// <summary>
@@ -48,21 +46,22 @@ public static class ClientCredentialsFlowExampleValidation
     /// </summary>
     /// <param name="value">The TokenResponse instance to validate.</param>
     /// <returns>A list of validation problems.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this TokenResponse? value)
     {
+        ArgumentNullException.ThrowIfNull(value);
+
         var problems = new List<string>();
-        if (value is null)
-        {
-            problems.Add("TokenResponse cannot be null.");
-            return problems;
-        }
 
         if (string.IsNullOrWhiteSpace(value.AccessToken))
             problems.Add("AccessToken cannot be empty.");
+
         if (string.IsNullOrWhiteSpace(value.TokenType))
             problems.Add("TokenType cannot be empty.");
+
         if (value.ExpiresIn <= 0)
             problems.Add("ExpiresIn must be greater than zero.");
+
         if (string.IsNullOrWhiteSpace(value.Scope))
             problems.Add("Scope cannot be empty.");
 
@@ -74,12 +73,14 @@ public static class ClientCredentialsFlowExampleValidation
     /// </summary>
     /// <param name="value">The TokenResponse instance to check.</param>
     /// <returns>True if the instance is valid, false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this TokenResponse? value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures the TokenResponse instance is valid.
     /// </summary>
     /// <param name="value">The TokenResponse instance to ensure is valid.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if the instance is invalid.</exception>
     public static void EnsureValid(this TokenResponse? value)
     {
@@ -93,17 +94,11 @@ public static class ClientCredentialsFlowExampleValidation
     /// </summary>
     /// <param name="value">The IntrospectResponse instance to validate.</param>
     /// <returns>A list of validation problems.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this IntrospectResponse? value)
     {
-        var problems = new List<string>();
-        if (value is null)
-        {
-            problems.Add("IntrospectResponse cannot be null.");
-            return problems;
-        }
-
-        // Active, Scope, ClientId, Subject, ExpiresAt are optional/nullable or bool, so not much to validate.
-        return problems;
+        ArgumentNullException.ThrowIfNull(value);
+        return [];
     }
 
     /// <summary>
@@ -111,12 +106,14 @@ public static class ClientCredentialsFlowExampleValidation
     /// </summary>
     /// <param name="value">The IntrospectResponse instance to check.</param>
     /// <returns>True if the instance is valid, false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this IntrospectResponse? value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures the IntrospectResponse instance is valid.
     /// </summary>
     /// <param name="value">The IntrospectResponse instance to ensure is valid.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if the instance is invalid.</exception>
     public static void EnsureValid(this IntrospectResponse? value)
     {
