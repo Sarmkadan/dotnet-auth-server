@@ -14,11 +14,17 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Contains unit tests for Multi-Factor Authentication (MFA) using Time-based One-Time Passwords (TOTP).
+/// </summary>
 public sealed class MfaTotpTests
 {
     private readonly TotpCredentialRepository _credentialRepository;
     private readonly TotpService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MfaTotpTests"/> class, setting up the repository and TOTP service.
+    /// </summary>
     public MfaTotpTests()
     {
         _credentialRepository = new TotpCredentialRepository();
@@ -37,6 +43,9 @@ public sealed class MfaTotpTests
     // Base32 encoding/decoding
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that Base32 encoding and decoding correctly round-trips the original byte array.
+    /// </summary>
     [Fact]
     public void EncodeBase32_ThenDecodeBase32_RoundTripsSuccessfully()
     {
@@ -53,6 +62,9 @@ public sealed class MfaTotpTests
         decoded.Should().Equal(original, "decoding the encoded value must reproduce the original bytes");
     }
 
+    /// <summary>
+    /// Tests that 20 zero-bytes are correctly encoded to a Base32 string consisting only of 'A' characters.
+    /// </summary>
     [Fact]
     public void EncodeBase32_20ZeroBytes_ProducesOnlyAChars()
     {
@@ -72,6 +84,9 @@ public sealed class MfaTotpTests
     // TOTP verification
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that verifying an incorrect TOTP code returns false.
+    /// </summary>
     [Fact]
     public void VerifyTotpCode_WrongCode_ReturnsFalse()
     {
@@ -86,6 +101,9 @@ public sealed class MfaTotpTests
         var _ = result; // method must return without throwing
     }
 
+    /// <summary>
+    /// Tests that verifying a non-numeric TOTP code returns false.
+    /// </summary>
     [Fact]
     public void VerifyTotpCode_NonNumericCode_ReturnsFalse()
     {
@@ -99,6 +117,9 @@ public sealed class MfaTotpTests
         result.Should().BeFalse("a non-numeric 6-character string cannot be a valid TOTP code");
     }
 
+    /// <summary>
+    /// Tests that verifying a TOTP code with an incorrect length returns false.
+    /// </summary>
     [Fact]
     public void VerifyTotpCode_WrongLength_ReturnsFalse()
     {
@@ -116,6 +137,9 @@ public sealed class MfaTotpTests
     // Enrollment flow
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests the initiation of an MFA setup, ensuring an unconfirmed credential is created with a secret and backup codes.
+    /// </summary>
     [Fact]
     public async Task InitiateSetup_CreatesUnconfirmedCredential_WithSecretAndBackupCodes()
     {
@@ -133,6 +157,9 @@ public sealed class MfaTotpTests
         status.IsEnabled.Should().BeFalse("MFA must not be enabled before confirmation");
     }
 
+    /// <summary>
+    /// Tests that calling the setup initiation twice replaces the old credential with a new one.
+    /// </summary>
     [Fact]
     public async Task InitiateSetup_CalledTwice_ReplacesOldCredential()
     {
@@ -145,6 +172,9 @@ public sealed class MfaTotpTests
             "a new secret must be generated on re-enrollment");
     }
 
+    /// <summary>
+    /// Tests that confirming an MFA setup with an invalid code throws an <see cref="DotnetAuthServer.Exceptions.AuthServerException"/>.
+    /// </summary>
     [Fact]
     public async Task ConfirmSetup_WithInvalidCode_ThrowsAuthServerException()
     {
@@ -164,6 +194,9 @@ public sealed class MfaTotpTests
     // Backup codes
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that a valid backup code correctly verifies the user and is then consumed (cannot be used again).
+    /// </summary>
     [Fact]
     public async Task VerifyAsync_WithValidBackupCode_ReturnsTrueAndConsumesCode()
     {
@@ -193,6 +226,9 @@ public sealed class MfaTotpTests
     // Disable
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that disabling MFA for a user correctly updates the status to disabled.
+    /// </summary>
     [Fact]
     public async Task DisableMfa_AfterEnable_StatusShowsDisabled()
     {
@@ -211,6 +247,9 @@ public sealed class MfaTotpTests
     // Provisioning URI
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the provisioning URI is correctly built with all required parameters.
+    /// </summary>
     [Fact]
     public void BuildProvisioningUri_ContainsAllRequiredParameters()
     {
