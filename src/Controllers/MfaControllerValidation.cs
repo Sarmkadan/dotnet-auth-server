@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Microsoft.Extensions.Logging;
 using DotnetAuthServer.Services;
 
@@ -10,6 +9,8 @@ namespace DotnetAuthServer.Controllers
 {
     /// <summary>
     /// Validation helpers for <see cref="MfaController"/>.
+    /// Provides validation methods to ensure MfaController instances are properly initialized
+    /// with all required dependencies.
     /// </summary>
     public static class MfaControllerValidation
     {
@@ -19,25 +20,22 @@ namespace DotnetAuthServer.Controllers
         /// </summary>
         /// <param name="value">The controller instance to validate.</param>
         /// <returns>A list of validation error messages. Empty if the instance is valid.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
         public static IReadOnlyList<string> Validate(this MfaController? value)
         {
             var problems = new List<string>();
 
-            if (value is null)
-            {
-                problems.Add("MfaController instance is null.");
-                return problems;
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             // Validate required injected services via reflection (they are private fields).
-            // _totpService
-            var totpField = typeof(MfaController).GetField("_totpService", BindingFlags.Instance | BindingFlags.NonPublic);
+            // _totpService - required dependency
+            var totpField = typeof(MfaController).GetField("_totpService", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             var totpService = totpField?.GetValue(value) as TotpService;
             if (totpService is null)
                 problems.Add("TotpService dependency is null.");
 
-            // _logger
-            var loggerField = typeof(MfaController).GetField("_logger", BindingFlags.Instance | BindingFlags.NonPublic);
+            // _logger - required dependency
+            var loggerField = typeof(MfaController).GetField("_logger", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             var logger = loggerField?.GetValue(value) as ILogger<MfaController>;
             if (logger is null)
                 problems.Add("ILogger<MfaController> dependency is null.");
@@ -52,17 +50,18 @@ namespace DotnetAuthServer.Controllers
         /// </summary>
         /// <param name="value">The controller instance to check.</param>
         /// <returns>True if no validation problems were found; otherwise false.</returns>
-        public static bool IsValid(this MfaController? value) => !value.Validate().Any();
+        public static bool IsValid(this MfaController? value) => value?.Validate().Count == 0;
 
         /// <summary>
         /// Ensures that the supplied <see cref="MfaController"/> instance is valid.
         /// Throws an <see cref="ArgumentException"/> if validation fails.
         /// </summary>
         /// <param name="value">The controller instance to validate.</param>
+        /// <exception cref="ArgumentException">Thrown when validation fails with details of the problems.</exception>
         public static void EnsureValid(this MfaController? value)
         {
             var problems = value.Validate();
-            if (problems.Any())
+            if (problems.Count > 0)
             {
                 var message = $"MfaController validation failed: {string.Join("; ", problems)}";
                 throw new ArgumentException(message, nameof(value));
