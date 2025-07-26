@@ -12,6 +12,9 @@ using Moq;
 
 namespace DotnetAuthServer.Benchmarks;
 
+/// <summary>
+/// Benchmark tests for token-related operations in the DotnetAuthServer.
+/// </summary>
 [MemoryDiagnoser]
 [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
@@ -34,6 +37,9 @@ public class TokenBenchmarks
     private Mock<IRefreshTokenRepository> _refreshTokenRepositoryMock;
     private Mock<ICacheService> _cacheServiceMock;
 
+    /// <summary>
+    /// Initializes benchmark environment, configures options, mocks, and prepares token request.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -91,24 +97,40 @@ public class TokenBenchmarks
         };
     }
 
+    /// <summary>
+    /// Benchmarks token introspection by calling IntrospectToken with an invalid token.
+    /// </summary>
+    /// <returns>The introspection response for the invalid token.</returns>
     [Benchmark]
     public IntrospectionResponse IntrospectToken()
     {
         return _tokenIntrospectionHandler.IntrospectToken("invalid-token");
     }
 
+    /// <summary>
+    /// Benchmarks PKCE validation by verifying the code verifier against the code challenge.
+    /// </summary>
+    /// <returns>True if the verifier matches the challenge; otherwise false.</returns>
     [Benchmark]
     public bool ValidatePkce()
     {
         return _pkceValidationService.ValidateCodeVerifier(_codeVerifier, _codeChallenge);
     }
 
+    /// <summary>
+    /// Benchmarks client credential validation by invoking ValidateClientCredentialsAsync.
+    /// </summary>
+    /// <returns>A task that resolves to the validated client.</returns>
     [Benchmark]
     public async Task<Client> ValidateClientCredentials()
     {
         return await _clientValidationService.ValidateClientCredentialsAsync("test-client", "secret");
     }
 
+    /// <summary>
+    /// Benchmarks handling of client credentials grant by calling HandleTokenRequestAsync.
+    /// </summary>
+    /// <returns>A task that resolves to the token response.</returns>
     [Benchmark]
     public async Task<TokenResponse> HandleClientCredentialsGrant()
     {
