@@ -1409,6 +1409,58 @@ code_challenge_method="S256"
 
 ---
 
+## UserinfoHandlerExtensions
+
+Provides extension methods for `UserinfoResponse` objects to simplify common user information operations. These methods help with formatting display names, checking verification status, and determining what user information is available.
+
+**Key features:**
+- Generate display names from given name and family name
+- Check email and phone verification status
+- Format address information into readable strings
+- Determine which user information categories are present
+
+**Usage Example:**
+
+```csharp
+// After obtaining userinfo from the OAuth2 userinfo endpoint
+var userinfo = await httpClient.GetFromJsonAsync<UserinfoResponse>(
+    "https://auth.example.com/oauth/userinfo");
+
+// Use extension methods to work with user information
+if (userinfo != null)
+{
+    // Get a formatted display name
+    var displayName = userinfo.GetDisplayName();
+    Console.WriteLine($"User: {displayName}");
+    
+    // Check verification status
+    if (userinfo.HasVerifiedEmail())
+    {
+        Console.WriteLine("Email is verified");
+    }
+    
+    if (userinfo.HasVerifiedPhone())
+    {
+        Console.WriteLine("Phone is verified");
+    }
+    
+    // Format address for display
+    var formattedAddress = userinfo.FormatAddress();
+    if (formattedAddress != null)
+    {
+        Console.WriteLine($"Address: {formattedAddress}");
+    }
+    
+    // Check what information is available
+    Console.WriteLine($"Has profile: {userinfo.HasProfileInformation()}");
+    Console.WriteLine($"Has email: {userinfo.HasEmailInformation()}");
+    Console.WriteLine($"Has address: {userinfo.HasAddressInformation()}");
+    Console.WriteLine($"Has phone: {userinfo.HasPhoneInformation()}");
+}
+```
+
+---
+
 ## Contributing
 
 **We welcome contributions!** Please follow these guidelines:
