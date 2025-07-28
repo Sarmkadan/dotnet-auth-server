@@ -1409,6 +1409,76 @@ code_challenge_method="S256"
 
 ---
 
+## UserExtensions
+
+Provides extension methods for the `User` entity to simplify common user operations including role management, attribute handling, authentication checks, and display formatting.
+
+**Key features:**
+- Role-based access control helpers (`HasRole`, `HasAnyRole`, `IsAdmin`)
+- User attribute management (`GetAttribute`, `SetAttribute`)
+- Authentication eligibility checks (`CanAuthenticate`)
+- Display name formatting (`GetDisplayName`)
+- Session tracking utilities (`SecondsSinceLastLogin`)
+
+**Usage Example:**
+
+```csharp
+// Working with a user entity in your service layer
+var user = new User
+{
+    Username = "johndoe",
+    Email = "john@example.com",
+    FullName = "John Doe",
+    Roles = new List<string> { "user", "editor" },
+    Attributes = new Dictionary<string, object> { { "department", "engineering" } },
+    EmailVerified = true,
+    IsActive = true,
+    LastLoginAt = DateTime.UtcNow.AddMinutes(-30)
+};
+
+// Check if user has specific roles
+if (user.HasRole("admin"))
+{
+    Console.WriteLine("User is an admin");
+}
+
+if (user.HasAnyRole(new[] { "admin", "moderator" }))
+{
+    Console.WriteLine("User has admin or moderator role");
+}
+
+if (user.IsAdmin())
+{
+    Console.WriteLine("User is an administrator");
+}
+
+// Work with user attributes
+var department = user.GetAttribute<string>("department");
+Console.WriteLine($"Department: {department}");
+
+user.SetAttribute("preferred_language", "en-US");
+user.SetAttribute("theme", "dark");
+
+// Check authentication eligibility
+if (user.CanAuthenticate())
+{
+    Console.WriteLine("User can authenticate");
+}
+
+// Get display name (FullName if available, otherwise Username)
+var displayName = user.GetDisplayName();
+Console.WriteLine($"Display name: {displayName}");
+
+// Check time since last login
+var secondsSinceLogin = user.SecondsSinceLastLogin();
+if (secondsSinceLogin.HasValue)
+{
+    Console.WriteLine($"Last login was {secondsSinceLogin} seconds ago");
+}
+```
+
+---
+
 ## UserinfoHandlerExtensions
 
 Provides extension methods for `UserinfoResponse` objects to simplify common user information operations. These methods help with formatting display names, checking verification status, and determining what user information is available.
