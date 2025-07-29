@@ -1531,6 +1531,72 @@ if (userinfo != null)
 
 ---
 
+## ApiResponseExtensions
+
+Provides fluent extension methods for `ApiResponse` and `ApiResponse<T>` types to simplify common response manipulation patterns. These methods enable method chaining for building and transforming API responses in a clean, readable way.
+
+**Key features:**
+- Create new responses with data using `WithData<T>`
+- Add error messages with `WithError`
+- Chain messages with `WithMessage`
+- Check for data presence with `HasData<T>`
+- Test success status with `IsSuccess`
+- Update response data with `UpdateData<T>`
+- Set HTTP status codes with `WithStatusCode`
+- Generate trace IDs with `WithTraceId`
+
+**Usage Example:**
+
+```csharp
+// Example: Building a response chain for a user profile endpoint
+var user = await _userRepository.GetUserByIdAsync(userId);
+
+if (user == null)
+{
+    // Chain error responses with status codes
+    return new ApiResponse()
+        .WithError("User not found", 404)
+        .WithTraceId();
+}
+
+// Create a typed response with data
+var response = new ApiResponse()
+    .WithMessage("User retrieved successfully")
+    .WithData(new { user.Id, user.Username, user.Email })
+    .WithStatusCode(200)
+    .WithTraceId();
+
+// Check if response has data
+if (response.HasData())
+{
+    Console.WriteLine("Response contains data");
+}
+
+// Update data in a fluent way
+var updatedResponse = response.UpdateData(new
+{
+    user.Id,
+    user.Username,
+    user.Email,
+    FullName = $"{user.FirstName} {user.LastName}",
+    IsActive = user.IsActive
+});
+
+// Check success status
+if (updatedResponse.IsSuccess())
+{
+    Console.WriteLine("Operation completed successfully");
+}
+
+// Add additional messages to existing response
+var finalResponse = updatedResponse.WithMessage("Data enriched with additional fields");
+
+// Return the final response
+return finalResponse;
+```
+
+---
+
 ## Contributing
 
 **We welcome contributions!** Please follow these guidelines:
