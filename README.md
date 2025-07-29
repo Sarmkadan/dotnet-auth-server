@@ -1597,6 +1597,40 @@ return finalResponse;
 
 ---
 
+## ConsentRequestExtensions
+
+Provides extension methods for `ConsentRequest` to simplify common operations, such as checking approval status, retrieving requested scopes, and extracting user or client IDs.
+
+**Usage Example:**
+
+```csharp
+// Assuming you have an instance of ConsentRequest in your controller or service
+var consentRequest = GetConsentRequest(); // Hypothetical method
+
+// Check the status of the consent request
+if (consentRequest.IsApproved())
+{
+    Console.WriteLine("Consent already approved.");
+}
+else if (consentRequest.IsDenied())
+{
+    Console.WriteLine("Consent was denied.");
+}
+else if (consentRequest.IsPending())
+{
+    Console.WriteLine("Consent is still pending.");
+}
+
+// Retrieve scopes and identifiers
+var scopes = consentRequest.GetRequestedScopes();
+var userId = consentRequest.GetUserIdOrThrow();
+var clientId = consentRequest.GetClientIdOrThrow();
+
+Console.WriteLine($"Request for Client {clientId} by User {userId} with scopes: {string.Join(", ", scopes)}");
+```
+
+---
+
 ## Contributing
 
 **We welcome contributions!** Please follow these guidelines:
