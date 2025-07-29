@@ -39,3 +39,22 @@ catch (Exception ex)
     ErrorHandlingMiddlewareExtensions.SetErrorFromException(errorResponse, ex);
 }
 ```
+
+## UserSessionServiceExtensions
+The `UserSessionServiceExtensions` class provides a set of extension methods for managing user sessions. It allows you to retrieve active sessions, get sessions by client ID, revoke sessions, and more. 
+
+### Usage Example
+```csharp
+// Get all active sessions
+var activeSessions = await UserSessionServiceExtensions.GetActiveSessionsDictionaryAsync();
+Console.WriteLine($"Active sessions count: {activeSessions.Count}");
+
+// Get sessions by client ID
+var clientId = "some-client-id";
+var sessionsByClientId = await UserSessionServiceExtensions.GetSessionsByClientIdAsync(clientId);
+Console.WriteLine($"Sessions for client {clientId}: {sessionsByClientId.Count()}");
+
+// Revoke all sessions for users
+var revokedSessionsCount = await UserSessionServiceExtensions.RevokeAllSessionsForUsersAsync();
+Console.WriteLine($"Revoked sessions count: {revokedSessionsCount}");
+```
