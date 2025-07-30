@@ -1,43 +1,23 @@
 // existing content ...
 
-## ErrorHandlingMiddlewareExtensions
+## AuthServerOptionsExtensions
 
-The `ErrorHandlingMiddlewareExtensions` class provides a set of extension methods for handling errors in a .NET Core application. It allows you to convert exceptions to error responses, serialize errors to JSON, and check if an error exists.
+The `AuthServerOptionsExtensions` class provides a set of extension methods for validating and retrieving configuration settings from `AuthServerOptions`. It allows you to check if certain features are supported, get lifetimes of access tokens, refresh tokens, and authorization codes, as well as other configuration settings.
 
 ### Usage Example
 
 ```csharp
-// In your middleware or controller
-var errorResponse = new ErrorResponse
-{
-    Error = "invalid_request",
-    ErrorDescription = "Invalid request parameters",
-    ErrorUri = "/docs/errors/invalid-request"
-};
+// Get access token lifetime
+var accessTokenLifetime = AuthServerOptionsExtensions.GetAccessTokenLifetime(options);
+Console.WriteLine($"Access token lifetime: {accessTokenLifetime.TotalSeconds} seconds");
 
-// Use extension methods
-var json = ErrorHandlingMiddlewareExtensions.SerializeErrorToJson(errorResponse);
-Console.WriteLine(json);
+// Check if PKCE is required
+var isPkceRequired = AuthServerOptionsExtensions.IsPkceRequired(options);
+Console.WriteLine($"PKCE is required: {isPkceRequired}");
 
-// Check if error exists
-if (ErrorHandlingMiddlewareExtensions.HasError(errorResponse))
-{
-    Console.WriteLine("Error exists");
-}
-
-// Clear error
-ErrorHandlingMiddlewareExtensions.ClearError(errorResponse);
-Console.WriteLine(errorResponse.Error); // null
-
-// Set error from exception
-try
-{
-    // Code that might throw
-}
-catch (Exception ex)
-{
-    ErrorHandlingMiddlewareExtensions.SetErrorFromException(errorResponse, ex);
-}
+// Get failed login attempt threshold
+var failedLoginAttemptThreshold = AuthServerOptionsExtensions.GetFailedLoginAttemptThreshold(options);
+Console.WriteLine($"Failed login attempt threshold: {failedLoginAttemptThreshold}");
 ```
 
 ## UserSessionServiceExtensions
