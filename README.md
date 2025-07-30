@@ -58,3 +58,31 @@ Console.WriteLine($"Sessions for client {clientId}: {sessionsByClientId.Count()}
 var revokedSessionsCount = await UserSessionServiceExtensions.RevokeAllSessionsForUsersAsync();
 Console.WriteLine($"Revoked sessions count: {revokedSessionsCount}");
 ```
+
+## UserServiceExtensions
+The `UserServiceExtensions` class provides extension methods for user management operations including role-based user creation, bulk user creation, role validation, attribute assignment, and authentication attempts.
+
+### Usage Example
+```csharp
+// Create user with role
+var user = await UserServiceExtensions.CreateUserWithRoleAsync("john_doe", "user", "StandardUser");
+
+// Add attributes to user
+user = await UserServiceExtensions.WithAttributesAsync(user, new { Email = "john@example.com", Age = 30 });
+
+// Check if user has role
+if (UserServiceExtensions.HasRole(user, "StandardUser"))
+{
+    Console.WriteLine("User has StandardUser role");
+}
+
+// Get all users with StandardUser role
+var standardUsers = await UserServiceExtensions.GetUsersByRoleAsync("StandardUser");
+
+// Attempt authentication
+var (authenticatedUser, success) = await UserServiceExtensions.TryAuthenticateAsync("john_doe", "password123");
+if (success)
+{
+    Console.WriteLine($"Authentication successful for {authenticatedUser.Username}");
+}
+```
