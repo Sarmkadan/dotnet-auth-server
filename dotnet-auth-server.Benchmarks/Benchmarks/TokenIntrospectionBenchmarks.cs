@@ -7,6 +7,9 @@ using DotnetAuthServer.Domain.Models;
 
 namespace DotnetAuthServer.Benchmarks;
 
+/// <summary>
+/// Benchmark class for token introspection operations.
+/// </summary>
 [MemoryDiagnoser]
 [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
@@ -18,6 +21,9 @@ public class TokenIntrospectionBenchmarks
     private string _invalidToken;
     private string _expiredToken;
 
+    /// <summary>
+    /// Initializes the benchmark setup.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -82,18 +88,30 @@ public class TokenIntrospectionBenchmarks
         _expiredToken = expiredTokenResponse.AccessToken;
     }
 
+    /// <summary>
+    /// Benchmarks the introspection of a valid token.
+    /// </summary>
+    /// <returns>True if the token is active, false otherwise.</returns>
     [Benchmark]
     public bool IntrospectValidToken()
     {
         return _tokenIntrospectionHandler.IntrospectToken(_validToken).Active;
     }
 
+    /// <summary>
+    /// Benchmarks the introspection of an invalid token.
+    /// </summary>
+    /// <returns>True if the token is active, false otherwise.</returns>
     [Benchmark]
     public bool IntrospectInvalidToken()
     {
         return _tokenIntrospectionHandler.IntrospectToken(_invalidToken).Active;
     }
 
+    /// <summary>
+    /// Benchmarks the introspection of an expired token.
+    /// </summary>
+    /// <returns>True if the token is active, false otherwise.</returns>
     [Benchmark]
     public bool IntrospectExpiredToken()
     {
