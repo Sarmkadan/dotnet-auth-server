@@ -7,6 +7,9 @@ using DotnetAuthServer.Domain.Models;
 
 namespace DotnetAuthServer.Benchmarks;
 
+/// <summary>
+/// Benchmark class for scope validation.
+/// </summary>
 [MemoryDiagnoser]
 [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
@@ -16,6 +19,9 @@ public class ScopeValidationBenchmarks
     private ScopeValidationService _scopeValidationService;
     private Client _client;
 
+    /// <summary>
+    /// Initializes the benchmark setup.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -35,6 +41,10 @@ public class ScopeValidationBenchmarks
         };
     }
 
+    /// <summary>
+    /// Validates scopes for a valid request.
+    /// </summary>
+    /// <returns>True if the scopes are valid, false otherwise.</returns>
     [Benchmark]
     public bool ValidateScopes_Valid()
     {
@@ -47,6 +57,10 @@ public class ScopeValidationBenchmarks
         return _scopeValidationService.ValidateScopes(request, _client);
     }
 
+    /// <summary>
+    /// Validates scopes for a request with an invalid scope.
+    /// </summary>
+    /// <returns>True if the scopes are valid, false otherwise.</returns>
     [Benchmark]
     public bool ValidateScopes_InvalidScope()
     {
@@ -59,6 +73,10 @@ public class ScopeValidationBenchmarks
         return _scopeValidationService.ValidateScopes(request, _client);
     }
 
+    /// <summary>
+    /// Validates scopes for a request with an empty scope.
+    /// </summary>
+    /// <returns>True if the scopes are valid, false otherwise.</returns>
     [Benchmark]
     public bool ValidateScopes_EmptyScope()
     {
@@ -71,6 +89,10 @@ public class ScopeValidationBenchmarks
         return _scopeValidationService.ValidateScopes(request, _client);
     }
 
+    /// <summary>
+    /// Validates scopes for a request with a single scope.
+    /// </summary>
+    /// <returns>True if the scopes are valid, false otherwise.</returns>
     [Benchmark]
     public bool ValidateScopes_SingleScope()
     {
@@ -83,6 +105,10 @@ public class ScopeValidationBenchmarks
         return _scopeValidationService.ValidateScopes(request, _client);
     }
 
+    /// <summary>
+    /// Validates scopes for a request with multiple scopes.
+    /// </summary>
+    /// <returns>True if the scopes are valid, false otherwise.</returns>
     [Benchmark]
     public bool ValidateScopes_MultipleScopes()
     {
