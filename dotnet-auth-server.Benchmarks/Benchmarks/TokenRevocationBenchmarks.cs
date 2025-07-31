@@ -8,6 +8,9 @@ using Moq;
 
 namespace DotnetAuthServer.Benchmarks;
 
+/// <summary>
+/// Benchmark class for token revocation operations.
+/// </summary>
 [MemoryDiagnoser]
 [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
@@ -20,6 +23,9 @@ public class TokenRevocationBenchmarks
     private Mock<IRefreshTokenRepository> _refreshTokenRepositoryMock;
     private Mock<IAuthorizationGrantRepository> _grantRepositoryMock;
 
+    /// <summary>
+    /// Sets up the benchmark environment.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -82,6 +88,10 @@ public class TokenRevocationBenchmarks
             .Returns(Task.CompletedTask);
     }
 
+    /// <summary>
+    /// Revokes an access token.
+    /// </summary>
+    /// <returns>True if the token was successfully revoked, false otherwise.</returns>
     [Benchmark]
     public async Task<bool> RevokeAccessToken()
     {
@@ -89,6 +99,10 @@ public class TokenRevocationBenchmarks
         return result.Success;
     }
 
+    /// <summary>
+    /// Revokes a refresh token.
+    /// </summary>
+    /// <returns>True if the token was successfully revoked, false otherwise.</returns>
     [Benchmark]
     public async Task<bool> RevokeRefreshToken()
     {
@@ -96,6 +110,10 @@ public class TokenRevocationBenchmarks
         return result.Success;
     }
 
+    /// <summary>
+    /// Attempts to revoke an invalid token.
+    /// </summary>
+    /// <returns>True if the token was successfully revoked, false otherwise.</returns>
     [Benchmark]
     public async Task<bool> RevokeInvalidToken()
     {
