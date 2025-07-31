@@ -35,4 +35,38 @@ cacheOptions = CacheOptionsExtensions.Disable(options);
 cacheOptions = CacheOptionsExtensions.Enable(options);
 ```
 
+## ClientCredentialsFlowExampleValidation
+
+The `ClientCredentialsFlowExampleValidation` class validates client credentials in an authentication flow. It provides methods to check validity, collect validation errors, and enforce validation rules.
+
+### Usage Example
+
+```csharp
+var clientId = "my-client-id";
+var clientSecret = "my-client-secret";
+
+// Get validation errors
+var errors = ClientCredentialsFlowExampleValidation.Validate(clientId, clientSecret);
+
+// Check if valid
+if (ClientCredentialsFlowExampleValidation.IsValid(clientId, clientSecret))
+{
+    Console.WriteLine("Client credentials are valid.");
+}
+else
+{
+    Console.WriteLine("Client credentials are invalid.");
+}
+
+// Enforce validity (throws on invalid)
+try
+{
+    ClientCredentialsFlowExampleValidation.EnsureValid(clientId, clientSecret);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+```
+
 // ... rest of content ...
