@@ -1,72 +1,42 @@
 // existing content ...
 
-## CacheOptionsExtensions
+## AuthServerException
 
-The `CacheOptionsExtensions` class provides a set of extension methods for configuring cache settings. It allows you to use Redis or memory caching, set default expiration, maximum entries, and expiration scan interval, as well as get expiration seconds and set expiration.
-
-### Usage Example
-
-```csharp
-// Use Redis caching
-var cacheOptions = CacheOptionsExtensions.UseRedis(options);
-
-// Use memory caching
-cacheOptions = CacheOptionsExtensions.UseMemory(options);
-
-// Set default expiration
-cacheOptions = CacheOptionsExtensions.SetDefaultExpiration(options, TimeSpan.FromHours(1));
-
-// Set maximum entries
-cacheOptions = CacheOptionsExtensions.SetMaxEntries(options, 1000);
-
-// Set expiration scan interval
-cacheOptions = CacheOptionsExtensions.SetExpirationScanInterval(options, TimeSpan.FromMinutes(5));
-
-// Get expiration seconds
-var expirationSeconds = CacheOptionsExtensions.GetExpirationSeconds(options);
-
-// Set expiration
-cacheOptions = CacheOptionsExtensions.SetExpiration(options, TimeSpan.FromHours(2));
-
-// Disable caching
-cacheOptions = CacheOptionsExtensions.Disable(options);
-
-// Enable caching
-cacheOptions = CacheOptionsExtensions.Enable(options);
-```
-
-## ClientCredentialsFlowExampleValidation
-
-The `ClientCredentialsFlowExampleValidation` class validates client credentials in an authentication flow. It provides methods to check validity, collect validation errors, and enforce validation rules.
+The `AuthServerException` class represents a base exception for authorization server errors. It provides properties for error code, HTTP status code, error description, error URI, and additional details. This exception is useful for handling and propagating error information in authentication and authorization flows.
 
 ### Usage Example
 
 ```csharp
-var clientId = "my-client-id";
-var clientSecret = "my-client-secret";
-
-// Get validation errors
-var errors = ClientCredentialsFlowExampleValidation.Validate(clientId, clientSecret);
-
-// Check if valid
-if (ClientCredentialsFlowExampleValidation.IsValid(clientId, clientSecret))
-{
-    Console.WriteLine("Client credentials are valid.");
-}
-else
-{
-    Console.WriteLine("Client credentials are invalid.");
-}
-
-// Enforce validity (throws on invalid)
 try
 {
-    ClientCredentialsFlowExampleValidation.EnsureValid(clientId, clientSecret);
+    // Simulate an authentication error
+    throw new AuthServerException(
+        errorCode: "invalid_client",
+        message: "Client credentials are invalid.",
+        statusCode: 401,
+        errorDescription: "Invalid client ID or client secret.",
+        errorUri: "https://example.com/docs/errors/invalid_client");
 }
-catch (Exception ex)
+catch (AuthServerException ex)
 {
-    Console.WriteLine($"Validation failed: {ex.Message}");
+    var errorResponse = ex.ToErrorResponse();
+    Console.WriteLine($"Error Code: {ex.ErrorCode}");
+    Console.WriteLine($"HTTP Status Code: {ex.StatusCode}");
+    Console.WriteLine($"Error Description: {ex.ErrorDescription}");
+    Console.WriteLine($"Error URI: {ex.ErrorUri}");
+
+    // Add custom details
+    ex.Details["custom_detail"] = "Custom error detail";
+    var errorResponseWithDetails = ex.ToErrorResponse();
+
+    // Process the error response
 }
+
+// Output:
+// Error Code: invalid_client
+// HTTP Status Code: 401
+// Error Description: Invalid client ID or client secret.
+// Error URI: https://example.com/docs/errors/invalid_client
 ```
 
 // ... rest of content ...
