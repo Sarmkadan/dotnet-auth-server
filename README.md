@@ -1,42 +1,46 @@
 // existing content ...
 
-## AuthServerException
+## TokenIssuedEvent
 
-The `AuthServerException` class represents a base exception for authorization server errors. It provides properties for error code, HTTP status code, error description, error URI, and additional details. This exception is useful for handling and propagating error information in authentication and authorization flows.
+The `TokenIssuedEvent` class represents an event published when an access token is successfully issued. It provides details about the token issuance, including the user, client, grant type, scopes, and token lifetime.
 
 ### Usage Example
 
 ```csharp
 try
 {
-    // Simulate an authentication error
-    throw new AuthServerException(
-        errorCode: "invalid_client",
-        message: "Client credentials are invalid.",
-        statusCode: 401,
-        errorDescription: "Invalid client ID or client secret.",
-        errorUri: "https://example.com/docs/errors/invalid_client");
+    // Simulate a successful token issuance
+    var tokenIssuedEvent = new TokenIssuedEvent
+    {
+        UserId = "user123",
+        ClientId = "client123",
+        GrantType = "authorization_code",
+        Scopes = new[] { "openid", "profile" },
+        ExpiresInSeconds = 3600,
+        ClientIpAddress = "192.168.1.100"
+    };
+
+    // Publish the event
+    var eventPublisher = new EventPublisher();
+    await eventPublisher.PublishAsync(tokenIssuedEvent);
+
+    // Process the event
 }
-catch (AuthServerException ex)
+catch (Exception ex)
 {
-    var errorResponse = ex.ToErrorResponse();
-    Console.WriteLine($"Error Code: {ex.ErrorCode}");
-    Console.WriteLine($"HTTP Status Code: {ex.StatusCode}");
-    Console.WriteLine($"Error Description: {ex.ErrorDescription}");
-    Console.WriteLine($"Error URI: {ex.ErrorUri}");
-
-    // Add custom details
-    ex.Details["custom_detail"] = "Custom error detail";
-    var errorResponseWithDetails = ex.ToErrorResponse();
-
-    // Process the error response
+    // Handle any exceptions
 }
 
 // Output:
-// Error Code: invalid_client
-// HTTP Status Code: 401
-// Error Description: Invalid client ID or client secret.
-// Error URI: https://example.com/docs/errors/invalid_client
+// EventId: a unique identifier for the event
+// OccurredAt: the timestamp when the event occurred
+// RequestId: the request ID associated with the event (optional)
+// UserId: the user for whom the token was issued
+// ClientId: the client application requesting the token
+// GrantType: the grant type used (e.g. authorization_code, refresh_token)
+// Scopes: the scopes granted in the token
+// ExpiresInSeconds: the token lifetime in seconds
+// ClientIpAddress: the client IP address for audit/security purposes (optional)
 ```
 
 // ... rest of content ...
