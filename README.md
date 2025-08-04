@@ -1,28 +1,27 @@
 // existing content ...
 
-## UserAuthenticatedEvent
+## ConsentGrantedEvent
 
-The `UserAuthenticatedEvent` class represents an event published when a user successfully authenticates during authorization flow. It provides details about the authentication, including the user, client, and authentication method.
+The `ConsentGrantedEvent` class represents an event published when a user grants consent for a client application to access their data. It provides details about the consent, including the user, client, scopes, and whether the consent is permanent. This event is essential for compliance logging (GDPR, CCPA) and understanding user permissions.
 
 ### Usage Example
 
 ```csharp
 try
 {
-    // Simulate a successful user authentication
-    var userAuthenticatedEvent = new UserAuthenticatedEvent
+    // Simulate a user granting consent
+    var consentGrantedEvent = new ConsentGrantedEvent
     {
         UserId = "user123",
-        Username = "johnDoe",
         ClientId = "client123",
-        ClientIpAddress = "192.168.1.100",
-        AuthenticationMethod = "password",
-        Email = "john.doe@example.com"
+        GrantedScopes = new[] { "openid", "profile", "email" },
+        IsPermanent = true,
+        ClientIpAddress = "192.168.1.100"
     };
 
     // Publish the event
     var eventPublisher = new EventPublisher();
-    await eventPublisher.PublishAsync(userAuthenticatedEvent);
+    await eventPublisher.PublishAsync(consentGrantedEvent);
 
     // Process the event
 }
@@ -35,12 +34,11 @@ catch (Exception ex)
 // EventId: a unique identifier for the event
 // OccurredAt: the timestamp when the event occurred
 // RequestId: the request ID associated with the event (optional)
-// UserId: the user who was authenticated
-// Username: the username used for authentication
-// ClientId: the client application for which authentication occurred
+// UserId: the user who granted consent
+// ClientId: the client application for which consent was granted
+// GrantedScopes: the scopes to which the user consented
+// IsPermanent: whether the consent is permanent or session-scoped
 // ClientIpAddress: the client IP address for audit/security purposes (optional)
-// AuthenticationMethod: the authentication method used (e.g. password, SAML, OIDC)
-// Email: the user's email address (if available)
 ```
 
 // ... rest of content ...
