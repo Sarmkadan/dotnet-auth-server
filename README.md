@@ -40,3 +40,56 @@ else
 
 This example demonstrates how to use the `DeviceFlowHandler` to initiate, approve, and poll a device flow authorization.
 
+## TokenIntrospectionHandler
+
+The `TokenIntrospectionHandler` class is responsible for token introspection, allowing authenticated clients to query information about tokens without needing to parse JWTs themselves. It provides a method for introspecting a token and returning its active status and claims.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Handlers;
+using DotnetAuthServer.Domain.Models;
+using Microsoft.Extensions.Logging;
+
+// Setup dependencies
+var logger = new Logger<TokenIntrospectionHandler>();
+var tokenIntrospectionHandler = new TokenIntrospectionHandler(logger);
+
+// Introspect a token
+var token = "your_token_here";
+var introspectionResponse = tokenIntrospectionHandler.IntrospectToken(token);
+
+// Check the token's active status
+if (introspectionResponse.Active)
+{
+    Console.WriteLine("Token is active.");
+}
+else
+{
+    Console.WriteLine("Token is inactive.");
+}
+
+// Get the token's scope
+Console.WriteLine($"Token scope: {introspectionResponse.Scope}");
+
+// Get the token's client ID
+Console.WriteLine($"Token client ID: {introspectionResponse.ClientId}");
+
+// Get the token's username
+Console.WriteLine($"Token username: {introspectionResponse.Username}");
+
+// Get the token's type
+Console.WriteLine($"Token type: {introspectionResponse.TokenType}");
+
+// Get the token's expiration time
+Console.WriteLine($"Token expiration time: {introspectionResponse.Exp}");
+
+// Get the token's issuance time
+Console.WriteLine($"Token issuance time: {introspectionResponse.Iat}");
+
+// Get the token's subject
+Console.WriteLine($"Token subject: {introspectionResponse.Sub}");
+```
+
+This example demonstrates how to use the `TokenIntrospectionHandler` to introspect a token and retrieve its active status and claims.
+```
