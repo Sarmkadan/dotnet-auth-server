@@ -1,6 +1,6 @@
-## RequestValidationHandler
+## DeviceFlowHandler
 
-The `RequestValidationHandler` class provides comprehensive validation for OAuth2 requests, ensuring authorization, token, and consent requests meet structural and security requirements. It validates required parameters, checks for size limits to prevent DOS attacks, and verifies compliance with OAuth2 specifications for response types, grant types, and scopes.
+The `DeviceFlowHandler` class is responsible for managing device flow authorizations, enabling devices with limited input capabilities to obtain access tokens. It provides methods for initiating, approving, denying, and polling device flow sessions.
 
 ### Usage Example
 
@@ -10,40 +10,33 @@ using DotnetAuthServer.Domain.Models;
 using Microsoft.Extensions.Logging;
 
 // Setup dependencies
-var logger = new Logger<RequestValidationHandler>();
-var validationHandler = new RequestValidationHandler(logger);
+var logger = new Logger<DeviceFlowHandler>();
+var deviceFlowHandler = new DeviceFlowHandler(logger);
 
-// Example authorization request
-var request = new AuthorizationRequest
+// Initiate a device flow
+var initiation = deviceFlowHandler.InitiateFlow(
+    "client123",
+    "openid profile");
+
+// Display the device code and user code to the user
+Console.WriteLine($"Device code: {initiation.DeviceCode}");
+Console.WriteLine($"User code: {initiation.UserCode}");
+Console.WriteLine($"Verification URI: {initiation.VerificationUri}");
+
+// Approve the device flow after user verification
+deviceFlowHandler.ApproveDeviceFlow(initiation.UserCode, "user123");
+
+// Poll the status of the device flow
+var pollResult = deviceFlowHandler.PollDeviceFlow(initiation.DeviceCode);
+if (pollResult.Status == DeviceFlowStatus.Approved)
 {
-    ClientId = "client123",
-    ResponseType = "code",
-    RedirectUri = "https://client-app.com/callback",
-    Scope = "openid profile",
-    State = "abc123"
-};
-
-try
-{
-    // Validate the request
-    validationHandler.ValidateAuthorizationRequest(request);
-
-    // Additional checks for response type validity
-    if (!validationHandler.IsValidResponseType(request.ResponseType))
-    {
-        throw new AuthServerException("invalid_request", "Invalid response type", 400);
-    }
-
-    Console.WriteLine("Authorization request is valid.");
+    Console.WriteLine("Device flow approved.");
 }
-catch (AuthServerException ex)
+else
 {
-    Console.WriteLine($"Validation failed: {ex.Message}");
-}
-catch (InvalidClientException ex)
-{
-    Console.WriteLine($"Client error: {ex.Message}");
+    Console.WriteLine("Device flow denied or expired.");
 }
 ```
 
-This example demonstrates validating an OAuth2 authorization request, including error handling for invalid inputs and response type validation. The handler ensures all required parameters are present, enforces size limits, and confirms compliance with OAuth2 standards.
+This example demonstrates how to use the `DeviceFlowHandler` to initiate, approve, and poll a device flow authorization.
+
