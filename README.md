@@ -110,3 +110,79 @@ catch (Exception ex)
 - `RevocationResult.Success`: Indicates whether the operation completed without errors
 - `RevocationResult.Revoked`: Indicates whether the token was actually found and revoked
 - `RevocationResult.Error`: Contains error message if operation failed
+
+## ScopeMetadataHandler
+
+The `ScopeMetadataHandler` class provides metadata about OAuth2 scopes including descriptions and consent requirements. It enables clients to display informative consent screens and servers to validate scope requests. The handler manages both standard OIDC scopes and custom application-specific scopes.
+
+### Usage Example
+
+```csharp
+try
+{
+    // Setup dependencies
+    var cacheService = new MemoryCacheService();
+    var logger = new Logger<ScopeMetadataHandler>();
+    
+    var handler = new ScopeMetadataHandler(cacheService, logger);
+    
+    // Get metadata for a specific scope
+    var openIdMetadata = await handler.GetScopeMetadataAsync("openid");
+    Console.WriteLine($"Scope: {openIdMetadata?.DisplayName}");
+    Console.WriteLine($"Description: {openIdMetadata?.Description}");
+    Console.WriteLine($"Requires consent: {openIdMetadata?.RequiresConsent}");
+    
+    // Get metadata for multiple scopes
+    var scopes = new[] { "profile", "email", "phone" };
+    var multipleMetadata = await handler.GetScopesMetadataAsync(scopes);
+    
+    foreach (var metadata in multipleMetadata)
+    {
+        Console.WriteLine($"- {metadata.DisplayName}: {metadata.Description}");
+    }
+    
+    // Get all available scopes
+    var allScopes = await handler.GetAllScopesAsync();
+    Console.WriteLine($"Total scopes available: {allScopes.Count()}");
+    
+    // Check which scopes require consent
+    var consentScopes = handler.GetScopesRequiringConsent(scopes);
+    Console.WriteLine($"Scopes requiring consent: {string.Join(", ", consentScopes.Select(s => s.DisplayName))}");
+    
+    // Register a custom scope
+    var customScope = new ScopeMetadataHandler.ScopeMetadata
+    {
+        Name = "custom_api",
+        DisplayName = "Custom API Access",
+        Description = "Access to custom API endpoints",
+        RequiresConsent = true,
+        Icon = "🔧",
+        RelatedScopes = new List<string> { "profile", "email" }
+    };
+    
+    handler.RegisterCustomScope(customScope);
+    
+    // Verify custom scope was registered
+    var customMetadata = await handler.GetScopeMetadataAsync("custom_api");
+    Console.WriteLine($"Custom scope registered: {customMetadata?.DisplayName}");
+}
+catch (Exception ex)
+{
+    // Handle exceptions
+    Console.WriteLine($"Error: {ex.Message}");
+}
+```
+
+### Key Members
+
+- `GetScopeMetadataAsync(string scopeName, CancellationToken cancellationToken)`: Gets metadata for a specific scope
+- `GetScopesMetadataAsync(IEnumerable<string> scopeNames, CancellationToken cancellationToken)`: Gets metadata for multiple scopes
+- `GetAllScopesAsync(CancellationToken cancellationToken)`: Gets all available scopes
+- `GetScopesRequiringConsent(IEnumerable<string> scopeNames)`: Gets scopes that require user consent
+- `RegisterCustomScope(ScopeMetadata metadata)`: Registers a custom scope metadata
+- `ScopeMetadata.Name`: The scope identifier
+- `ScopeMetadata.DisplayName`: Human-readable name for UI display
+- `ScopeMetadata.Description`: Description of what the scope grants access to
+- `ScopeMetadata.RequiresConsent`: Whether user consent is required
+- `ScopeMetadata.Icon`: Optional icon for UI display
+- `ScopeMetadata.RelatedScopes`: List of related scope names
