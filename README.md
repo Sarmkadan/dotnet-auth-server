@@ -92,4 +92,27 @@ Console.WriteLine($"Token subject: {introspectionResponse.Sub}");
 ```
 
 This example demonstrates how to use the `TokenIntrospectionHandler` to introspect a token and retrieve its active status and claims.
+
+## JwksHandler
+
+The `JwksHandler` class is responsible for managing JSON Web Key Sets (JWKS) and provides methods for retrieving the current JWKS and validating key IDs. It can be used to obtain the public keys used to validate JWTs issued by this authorization server.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Handlers;
+using Microsoft.Extensions.Logging;
+
+// Setup dependencies
+var logger = new Logger<JwksHandler>();
+var jwksHandler = new JwksHandler(new AuthServerOptions(), new CacheService(), logger);
+
+// Get the current JWKS
+var jwksResponse = await jwksHandler.GetJwksAsync();
+
+// Validate a key ID
+var isValidKeyId = await jwksHandler.IsValidKeyIdAsync("key-id");
+Console.WriteLine($"Is key ID valid: {isValidKeyId}");
 ```
+
+This example demonstrates how to use the `JwksHandler` to retrieve the current JWKS and validate a key ID.
