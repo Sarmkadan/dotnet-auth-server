@@ -189,3 +189,43 @@ Console.WriteLine($"Is key ID valid: {isValidKeyId}");
 ```
 
 This example demonstrates how to use the `JwksHandler` to retrieve the current JWKS and validate a key ID.
+
+## OpaClient
+
+The `OpaClient` class is an HTTP client wrapper for the Open Policy Agent (OPA) REST API. It sends policy queries to OPA and returns allow/deny decisions.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Integration;
+using Microsoft.Extensions.Logging;
+
+// Setup dependencies
+var logger = new Logger<OpaClient>();
+var httpClient = new HttpClient();
+var opaOptions = new OpaOptions { BaseUrl = "https://example.com/opa", PolicyPath = "policy" };
+var opaClient = new OpaClient(httpClient, opaOptions, logger);
+
+// Create a claims principal with required claims
+var claims = new List<Claim>
+{
+    new Claim("sub", "user123"),
+    new Claim(ClaimTypes.Role, "admin"),
+    new Claim("scope", "openid profile")
+};
+var identity = new ClaimsIdentity(claims, "Bearer");
+var principal = new ClaimsPrincipal(identity);
+
+// Evaluate a policy
+var policyName = "example-policy";
+var result = await opaClient.EvaluatePolicyAsync(policyName, principal);
+
+if (result.HasValue)
+{
+    Console.WriteLine($"Policy {policyName} evaluation result: {result}");
+}
+else
+{
+    Console.WriteLine($"Unable to evaluate policy {policyName}");
+}
+```
