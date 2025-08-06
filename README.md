@@ -93,6 +93,79 @@ Console.WriteLine($"Token subject: {introspectionResponse.Sub}");
 
 This example demonstrates how to use the `TokenIntrospectionHandler` to introspect a token and retrieve its active status and claims.
 
+## UserinfoHandler
+
+The `UserinfoHandler` class is responsible for handling OpenID Connect userinfo requests. It retrieves user information based on claims from an access token and returns only the claims that are allowed by the token's scope. The handler supports standard OpenID Connect claims including profile information, email, address, and phone number.
+
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Handlers;
+using DotnetAuthServer.Data.Repositories;
+using Microsoft.Extensions.Logging;
+using System.Security.Claims;
+
+// Setup dependencies
+var logger = new Logger<UserinfoHandler>();
+var userRepository = new UserRepository(); // Use your actual repository implementation
+var userinfoHandler = new UserinfoHandler(userRepository, logger);
+
+// Create a claims principal with required claims (typically from access token)
+var claims = new List<Claim>
+{
+    new Claim("sub", "user123"),
+    new Claim("scope", "openid profile email")
+};
+var identity = new ClaimsIdentity(claims, "Bearer");
+var principal = new ClaimsPrincipal(identity);
+
+// Get user information
+var userinfo = await userinfoHandler.GetUserinfoAsync(principal);
+
+if (userinfo != null)
+{
+    Console.WriteLine($"Subject: {userinfo.Sub}");
+    
+    if (!string.IsNullOrEmpty(userinfo.Name))
+        Console.WriteLine($"Name: {userinfo.Name}");
+    
+    if (!string.IsNullOrEmpty(userinfo.GivenName))
+        Console.WriteLine($"Given Name: {userinfo.GivenName}");
+    
+    if (!string.IsNullOrEmpty(userinfo.FamilyName))
+        Console.WriteLine($"Family Name: {userinfo.FamilyName}");
+    
+    if (userinfo.UpdatedAt.HasValue)
+        Console.WriteLine($"Updated At: {userinfo.UpdatedAt}");
+    
+    if (!string.IsNullOrEmpty(userinfo.Email))
+    {
+        Console.WriteLine($"Email: {userinfo.Email}");
+        if (userinfo.EmailVerified.HasValue)
+            Console.WriteLine($"Email Verified: {userinfo.EmailVerified}");
+    }
+    
+    if (userinfo.Address != null)
+    {
+        Console.WriteLine($"Address:");
+        if (!string.IsNullOrEmpty(userinfo.Address.StreetAddress))
+            Console.WriteLine($"  Street: {userinfo.Address.StreetAddress}");
+        if (!string.IsNullOrEmpty(userinfo.Address.Locality))
+            Console.WriteLine($"  City: {userinfo.Address.Locality}");
+        if (!string.IsNullOrEmpty(userinfo.Address.Region))
+            Console.WriteLine($"  Region: {userinfo.Address.Region}");
+        if (!string.IsNullOrEmpty(userinfo.Address.PostalCode))
+            Console.WriteLine($"  Postal Code: {userinfo.Address.PostalCode}");
+        if (!string.IsNullOrEmpty(userinfo.Address.Country))
+            Console.WriteLine($"  Country: {userinfo.Address.Country}");
+    }
+}
+```
+
+This example demonstrates how to use the `UserinfoHandler` to retrieve user information based on an access token's claims and scopes.
+
+
 ## JwksHandler
 
 The `JwksHandler` class is responsible for managing JSON Web Key Sets (JWKS) and provides methods for retrieving the current JWKS and validating key IDs. It can be used to obtain the public keys used to validate JWTs issued by this authorization server.
