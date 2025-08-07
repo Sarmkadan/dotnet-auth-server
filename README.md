@@ -229,3 +229,73 @@ else
     Console.WriteLine($"Unable to evaluate policy {policyName}");
 }
 ```
+
+## WebhookClient
+
+The `WebhookClient` class provides functionality for sending webhook events to external services. It supports configurable retry logic, timeout handling, and provides detailed result information including success status, error details, and event metadata.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Integration;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+
+// Setup dependencies
+var logger = new Logger<WebhookClient>();
+var httpClient = new HttpClient();
+var webhookClient = new WebhookClient(
+    httpClient,
+    new WebhookOptions
+    {
+        Url = "https://api.example.com/webhooks/events",
+        Enabled = true,
+        MaxRetries = 3,
+        InitialRetryDelayMs = 1000,
+        MaxRetryDelayMs = 10000,
+        Timeout = TimeSpan.FromSeconds(30)
+    },
+    logger
+);
+
+// Create event data
+var eventData = new
+{
+    OrderId = "order-12345",
+    CustomerId = "customer-67890",
+    TotalAmount = 99.99,
+    Items = new[]
+    {
+        new { ProductId = "prod-1", Quantity = 2, Price = 29.99 },
+        new { ProductId = "prod-2", Quantity = 1, Price = 40.01 }
+    }
+};
+
+// Send webhook event
+var result = await webhookClient.SendEventWebhookAsync(
+    "order.created",
+    eventData,
+    requestId: "req-98765"
+);
+
+// Handle the result
+if (result.Success)
+{
+    Console.WriteLine($"Webhook sent successfully!");
+    Console.WriteLine($"Event ID: {result.EventId}");
+    Console.WriteLine($"Event Type: {result.EventType}");
+    Console.WriteLine($"Occurred At: {result.OccurredAt}");
+    Console.WriteLine($"Request ID: {result.RequestId}");
+    
+    // Access the response data
+    var jsonData = result.Data;
+    if (jsonData.TryGetProperty("status", out var status))
+    {
+        Console.WriteLine($"Remote service status: {status}");
+    }
+}
+else
+{
+    Console.WriteLine($"Failed to send webhook: {result.Error}");
+}
+```
