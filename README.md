@@ -236,6 +236,55 @@ The `WebhookClient` class provides functionality for sending webhook events to e
 
 ### Usage Example
 
+## HttpRequestExtensions
+
+The `HttpRequestExtensions` class provides extension methods for extracting OAuth2/OIDC parameters from HTTP requests. It handles both query string and form body parameters (valid in OAuth2), supports client credential extraction from Basic Auth headers or form parameters, retrieves client IP addresses (accounting for proxies), checks for secure transport, and extracts bearer tokens from Authorization headers.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Extensions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
+
+// Example 1: Extract OAuth parameter from query string or form body
+var request = new DefaultHttpContext().Request;
+request.Query = new QueryCollection(new Dictionary<string, StringValues> { ["client_id"] = "my-client-id" });
+var clientId = request.GetOAuthParameter("client_id"); // Returns "my-client-id"
+
+// Example 2: Extract client credentials from Basic Auth header
+request = new DefaultHttpContext().Request;
+request.Headers.Authorization = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("client123:secret456"));
+var (extractedClientId, extractedClientSecret) = request.ExtractClientCredentials();
+// extractedClientId = "client123", extractedClientSecret = "secret456"
+
+// Example 3: Extract client credentials from form parameters
+request = new DefaultHttpContext().Request;
+request.Form = new FormCollection(new Dictionary<string, StringValues> 
+{
+    ["client_id"] = "form-client-id",
+    ["client_secret"] = "form-client-secret"
+});
+var (formClientId, formClientSecret) = request.ExtractClientCredentials();
+// formClientId = "form-client-id", formClientSecret = "form-client-secret"
+
+// Example 4: Get client IP address (handles X-Forwarded-For)
+request = new DefaultHttpContext().Request;
+request.Headers["X-Forwarded-For"] = "192.168.1.100, 10.0.0.1";
+var clientIp = request.GetClientIpAddress(); // Returns "192.168.1.100"
+
+// Example 5: Check if request uses HTTPS
+request = new DefaultHttpContext().Request;
+request.IsHttps = true;
+var isSecure = request.IsSecureTransport(); // Returns true
+
+// Example 6: Extract bearer token from Authorization header
+request = new DefaultHttpContext().Request;
+request.Headers.Authorization = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+var bearerToken = request.GetBearerToken();
+// bearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
 ```csharp
 using DotnetAuthServer.Integration;
 using System.Text.Json;
