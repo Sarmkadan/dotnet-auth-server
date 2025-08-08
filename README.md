@@ -285,6 +285,50 @@ var bearerToken = request.GetBearerToken();
 // bearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
+## StringExtensions
+
+The `StringExtensions` class provides a set of utility extension methods for string manipulation, focusing on OAuth2/OIDC requirements such as scope parsing, URI validation, URL safety checks, and sensitive data masking. These methods help maintain code consistency and security when handling string-based identifiers and configuration values.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Extensions;
+
+// Example 1: Parse a space-delimited scope string
+string scopes = "openid profile email email";
+var parsedScopes = scopes.ParseScopes(); 
+// Returns ["openid", "profile", "email"] (distinct and non-empty)
+
+// Example 2: Join scopes into a space-delimited string
+var scopeList = new List<string> { "openid", "profile" };
+var joinedScopes = scopeList.JoinScopes();
+// Returns "openid profile"
+
+// Example 3: Validate an absolute URI
+string uri = "https://example.com/callback";
+bool isValid = uri.IsValidAbsoluteUri(); // Returns true
+
+// Example 4: Compare two URIs safely
+string uri1 = "https://example.com/";
+string uri2 = "https://example.com";
+bool isEqual = uri1.UriEquals(uri2); // Returns true (normalized comparison)
+
+// Example 5: Check if a string is URL safe
+string safeValue = "client-id_123";
+bool isSafe = safeValue.IsUrlSafe(); // Returns true
+
+// Example 6: Safely truncate a string
+string longString = "some_very_long_identifier_value";
+string truncated = longString.SafeTruncate(10);
+// Returns "some_very_"
+
+// Example 7: Mask sensitive data
+string sensitiveData = "supersecretpassword123";
+string masked = sensitiveData.MaskSensitive();
+// Returns "sup***123"
+```
+
+
 ```csharp
 using DotnetAuthServer.Integration;
 using System.Text.Json;
