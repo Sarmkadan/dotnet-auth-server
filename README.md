@@ -230,6 +230,38 @@ else
 }
 ```
 
+## DateTimeExtensions
+
+The `DateTimeExtensions` class provides essential extension methods for handling `DateTime` objects, particularly within the context of JWT and OAuth2 token management. It simplifies Unix timestamp conversions, expiration checks, and RFC 3339 string formatting, ensuring consistent and correct temporal operations across the authorization server.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Extensions;
+
+// Get current time
+var now = DateTime.UtcNow;
+
+// Convert to Unix timestamp
+long timestamp = now.ToUnixTimestamp();
+
+// Convert from Unix timestamp
+DateTime dateTime = DateTimeExtensions.FromUnixTimestamp(timestamp);
+
+// Add a lifetime (e.g., 3600 seconds)
+DateTime expiresAt = now.AddLifetime(3600);
+
+// Check expiration
+bool isExpired = expiresAt.IsExpired();
+bool isValid = expiresAt.IsValid();
+
+// Get remaining time
+long remaining = expiresAt.RemainingSeconds();
+
+// Format as RFC 3339 string for OIDC/OAuth responses
+string rfc3339String = now.ToRfc3339String();
+```
+
 ## WebhookClient
 
 The `WebhookClient` class provides functionality for sending webhook events to external services. It supports configurable retry logic, timeout handling, and provides detailed result information including success status, error details, and event metadata.
