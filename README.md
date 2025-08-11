@@ -360,6 +360,67 @@ string masked = sensitiveData.MaskSensitive();
 // Returns "sup***123"
 ```
 
+## ClaimsPrincipalExtensions
+
+The `ClaimsPrincipalExtensions` class provides extension methods for extracting and validating standard OAuth2/OIDC claims from a `ClaimsPrincipal`. These methods safely handle missing or malformed claims and provide type-safe access to common claims like subject, email, roles, scopes, and token metadata (issuance time, expiration, audience, etc.).
+
+
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Extensions;
+using System.Security.Claims;
+
+// Create a claims principal with typical OAuth2/OIDC claims
+var claims = new List<Claim>
+{
+    new Claim("sub", "user12345"),
+    new Claim("email", "user@example.com"),
+    new Claim("email_verified", "true"),
+    new Claim("scope", "openid profile email api:read api:write"),
+    new Claim("aud", "client-app-123"),
+    new Claim("roles", "admin"),
+    new Claim("roles", "user"),
+    new Claim("iat", "1715683200"),
+    new Claim("exp", "1715769600")
+};
+var identity = new ClaimsIdentity(claims, "Bearer");
+var principal = new ClaimsPrincipal(identity);
+
+// Extract claims safely
+string? subject = principal.GetSubject();
+// Returns "user12345"
+
+string? email = principal.GetEmail();
+// Returns "user@example.com"
+
+bool isEmailVerified = principal.IsEmailVerified();
+// Returns true
+
+IEnumerable<string> roles = principal.GetRoles();
+// Returns ["admin", "user"]
+
+bool hasAdminRole = principal.HasRole("admin");
+// Returns true
+
+bool hasScope = principal.HasScope("api:read");
+// Returns true
+
+string? audience = principal.GetAudience();
+// Returns "client-app-123"
+
+IEnumerable<string> scopes = principal.GetScopes();
+// Returns ["openid", "profile", "email", "api:read", "api:write"]
+
+long? issuedAt = principal.GetIssuedAt();
+// Returns 1715683200
+
+long? expiration = principal.GetExpiration();
+// Returns 1715769600
+```
+
+
 
 ```csharp
 using DotnetAuthServer.Integration;
