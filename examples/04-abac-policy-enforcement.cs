@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -23,7 +24,7 @@ public interface IPolicyEngine
 /// <summary>
 /// Access context containing user, resource, and environment information
 /// </summary>
-public class AccessContext
+public class AccessContext sealed
 {
     public UserAttributes User { get; set; } = new();
     public ResourceAttributes Resource { get; set; } = new();
@@ -33,7 +34,7 @@ public class AccessContext
 /// <summary>
 /// User-related attributes for ABAC decisions
 /// </summary>
-public class UserAttributes
+public class UserAttributes sealed
 {
     public string UserId { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = new();
@@ -47,7 +48,7 @@ public class UserAttributes
 /// <summary>
 /// Resource-related attributes for ABAC decisions
 /// </summary>
-public class ResourceAttributes
+public class ResourceAttributes sealed
 {
     public string ResourceId { get; set; } = string.Empty;
     public string ResourceType { get; set; } = string.Empty; // file, database, api, etc.
@@ -60,7 +61,7 @@ public class ResourceAttributes
 /// <summary>
 /// Environment attributes for context-aware policies
 /// </summary>
-public class EnvironmentAttributes
+public class EnvironmentAttributes sealed
 {
     public DateTime RequestTime { get; set; }
     public string SourceIp { get; set; } = string.Empty;
@@ -72,7 +73,7 @@ public class EnvironmentAttributes
 /// <summary>
 /// Attribute-Based Policy Engine Implementation
 /// </summary>
-public class AbacPolicyEngine : IPolicyEngine
+public class AbacPolicyEngine : IPolicyEngine sealed
 {
     /// <summary>
     /// Evaluate access based on attributes
@@ -291,7 +292,7 @@ public class AbacPolicyEngine : IPolicyEngine
 /// <summary>
 /// Example usage of ABAC policy engine
 /// </summary>
-public class AbacPolicyExample
+public class AbacPolicyExample sealed
 {
     private readonly IPolicyEngine _policyEngine;
 

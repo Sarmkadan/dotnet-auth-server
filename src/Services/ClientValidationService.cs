@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ using DotnetAuthServer.Extensions;
 /// Caches client information to improve performance and reduce database queries.
 /// Validates client credentials, redirect URIs, allowed scopes, and other requirements.
 /// </summary>
-public class ClientValidationService
+public class ClientValidationService sealed
 {
     private readonly IClientRepository _clientRepository;
     private readonly ICacheService _cacheService;
@@ -48,7 +49,7 @@ public class ClientValidationService
         }
 
         var client = await GetClientAsync(clientId, cancellationToken);
-        if (client == null || !client.IsActive)
+        if (client is null || !client.IsActive)
         {
             _logger.LogWarning("Client {ClientId} not found or inactive", clientId);
             throw new InvalidClientException("Client not found or inactive");
@@ -90,7 +91,7 @@ public class ClientValidationService
             throw new InvalidClientException("redirect_uri is not a valid absolute URI");
 
         var client = await GetClientAsync(clientId, cancellationToken);
-        if (client == null)
+        if (client is null)
             throw new InvalidClientException("Client not found");
 
         if (!client.AllowedRedirectUris.Any(uri => uri.Equals(redirectUri, StringComparison.Ordinal)))
@@ -113,7 +114,7 @@ public class ClientValidationService
         CancellationToken cancellationToken = default)
     {
         var client = await GetClientAsync(clientId, cancellationToken);
-        if (client == null)
+        if (client is null)
             throw new InvalidClientException("Client not found");
 
         var allowedScopes = new HashSet<string>(client.AllowedScopes);
@@ -141,7 +142,7 @@ public class ClientValidationService
         CancellationToken cancellationToken = default)
     {
         var client = await GetClientAsync(clientId, cancellationToken);
-        if (client == null)
+        if (client is null)
             throw new InvalidClientException("Client not found");
 
         if (!client.AllowedGrantTypes.Contains(grantType))
@@ -165,11 +166,11 @@ public class ClientValidationService
 
         var cacheKey = $"client:{clientId}";
         var cachedClient = await _cacheService.GetAsync<Client>(cacheKey, cancellationToken);
-        if (cachedClient != null)
+        if (cachedClient is not null)
             return cachedClient;
 
         var client = await _clientRepository.GetByIdAsync(clientId, cancellationToken);
-        if (client != null)
+        if (client is not null)
         {
             // Cache for 1 hour
             await _cacheService.SetAsync(cacheKey, client, TimeSpan.FromHours(1), cancellationToken);

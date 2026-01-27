@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using System.Collections.Concurrent;
 /// Enables authorization for devices with limited input capabilities (smart TVs, printers, etc.)
 /// or devices that lack a suitable browser.
 /// </summary>
-public class DeviceFlowHandler
+public class DeviceFlowHandler sealed
 {
     private readonly ConcurrentDictionary<string, DeviceFlowSession> _sessions = new();
     private readonly ILogger<DeviceFlowHandler> _logger;
@@ -71,7 +72,7 @@ public class DeviceFlowHandler
     public bool ApproveDeviceFlow(string userCode, string userId)
     {
         var session = _sessions.Values.FirstOrDefault(s => s.UserCode == userCode);
-        if (session == null)
+        if (session is null)
         {
             _logger.LogWarning("Device flow approval failed: user code not found");
             return false;
@@ -101,7 +102,7 @@ public class DeviceFlowHandler
     public bool DenyDeviceFlow(string userCode)
     {
         var session = _sessions.Values.FirstOrDefault(s => s.UserCode == userCode);
-        if (session == null)
+        if (session is null)
             return false;
 
         session.Status = DeviceFlowStatus.Denied;
@@ -165,7 +166,7 @@ public class DeviceFlowHandler
 /// <summary>
 /// Device flow initiation response.
 /// </summary>
-public class DeviceFlowInitiation
+public class DeviceFlowInitiation sealed
 {
     public string DeviceCode { get; set; } = string.Empty;
     public string UserCode { get; set; } = string.Empty;
@@ -177,7 +178,7 @@ public class DeviceFlowInitiation
 /// <summary>
 /// Result of polling a device flow.
 /// </summary>
-public class DeviceFlowPollResult
+public class DeviceFlowPollResult sealed
 {
     public DeviceFlowStatus Status { get; set; }
     public string? UserId { get; set; }
@@ -188,7 +189,7 @@ public class DeviceFlowPollResult
 /// <summary>
 /// Device flow authorization session.
 /// </summary>
-public class DeviceFlowSession
+public class DeviceFlowSession sealed
 {
     public string DeviceCode { get; set; } = string.Empty;
     public string UserCode { get; set; } = string.Empty;

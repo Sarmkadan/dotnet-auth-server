@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -10,7 +11,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Represents an OAuth2 token response
 /// </summary>
-public class TokenResponse
+public class TokenResponse sealed
 {
     /// <summary>
     /// The access token

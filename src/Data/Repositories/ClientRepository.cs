@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -31,7 +32,7 @@ public interface IClientRepository : IRepository<Client, string>
 /// <summary>
 /// In-memory implementation of client repository
 /// </summary>
-public class ClientRepository : IClientRepository
+public class ClientRepository : IClientRepository sealed
 {
     private readonly Dictionary<string, Client> _clients = new(StringComparer.OrdinalIgnoreCase);
 

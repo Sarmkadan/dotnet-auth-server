@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -10,7 +11,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// enabling passwordless and phishing-resistant authentication via platform authenticators
 /// (e.g., Touch ID, Windows Hello) or roaming hardware security keys (e.g., YubiKey).
 /// </summary>
-public class WebAuthnCredential
+public class WebAuthnCredential sealed
 {
     /// <summary>Gets or sets the internal unique identifier for this credential record.</summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();

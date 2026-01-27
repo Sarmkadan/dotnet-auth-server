@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Exceptions;
 /// <summary>
 /// Service for handling OAuth2/OIDC authorization requests and code generation
 /// </summary>
-public class AuthorizationService
+public class AuthorizationService sealed
 {
     private readonly AuthServerOptions _options;
     private readonly IClientRepository _clientRepository;
@@ -45,7 +46,7 @@ public class AuthorizationService
 
         // Validate client
         var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
-        if (client == null)
+        if (client is null)
             throw new InvalidClientException("Client not found or inactive");
 
         // Validate response type
@@ -130,7 +131,7 @@ public class AuthorizationService
         CancellationToken cancellationToken = default)
     {
         var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
-        if (client == null)
+        if (client is null)
             throw new InvalidClientException("Client not found");
 
         var requestedScopes = request.GetRequestedScopes().ToList();
@@ -224,7 +225,7 @@ public class AuthorizationService
 /// <summary>
 /// Response model for consent prompt display
 /// </summary>
-public class ConsentResponse
+public class ConsentResponse sealed
 {
     public string ClientId { get; set; } = null!;
     public string ClientName { get; set; } = null!;

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ using DotnetAuthServer.Domain.Entities;
 using FluentAssertions;
 using Xunit;
 
-public class DomainEntityTests
+public class DomainEntityTests sealed
 {
     // -------------------------------------------------------------------------
     // User
