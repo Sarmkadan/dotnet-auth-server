@@ -17,7 +17,7 @@ using DotnetAuthServer.Extensions;
 /// Caches client information to improve performance and reduce database queries.
 /// Validates client credentials, redirect URIs, allowed scopes, and other requirements.
 /// </summary>
-public class ClientValidationService sealed
+public sealed class ClientValidationService sealed
 {
     private readonly IClientRepository _clientRepository;
     private readonly ICacheService _cacheService;

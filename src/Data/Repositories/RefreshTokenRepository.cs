@@ -47,7 +47,7 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken, string>
 /// <summary>
 /// In-memory implementation of refresh token repository
 /// </summary>
-public class RefreshTokenRepository : IRefreshTokenRepository sealed
+public sealed class RefreshTokenRepository : IRefreshTokenRepository sealed
 {
     private readonly Dictionary<string, RefreshToken> _tokens = new(StringComparer.OrdinalIgnoreCase);
 

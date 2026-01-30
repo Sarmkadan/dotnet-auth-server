@@ -16,7 +16,7 @@ using DotnetAuthServer.Exceptions;
 /// This ensures consistent error formatting across the entire API and prevents
 /// sensitive internal error details from leaking to clients.
 /// </summary>
-public class ErrorHandlingMiddleware sealed
+public sealed class ErrorHandlingMiddleware sealed
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;

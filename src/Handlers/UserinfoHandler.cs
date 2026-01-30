@@ -15,7 +15,7 @@ using DotnetAuthServer.Data.Repositories;
 /// Returns claims about the authenticated user based on their access token.
 /// Scope claims control what information is returned (openid, profile, email, etc.)
 /// </summary>
-public class UserinfoHandler sealed
+public sealed class UserinfoHandler sealed
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<UserinfoHandler> _logger;
@@ -108,7 +108,7 @@ public class UserinfoHandler sealed
 /// OpenID Connect UserInfo response model.
 /// Only populated fields that are allowed by token scopes.
 /// </summary>
-public class UserinfoResponse sealed
+public sealed class UserinfoResponse sealed
 {
     public string Sub { get; set; } = string.Empty;
 
@@ -133,7 +133,7 @@ public class UserinfoResponse sealed
 /// <summary>
 /// OpenID Connect address information.
 /// </summary>
-public class AddressInfo sealed
+public sealed class AddressInfo sealed
 {
     public string? StreetAddress { get; set; }
     public string? Locality { get; set; }

@@ -10,7 +10,7 @@ namespace DotnetAuthServer.Events;
 /// Event published when an access token is successfully issued.
 /// Subscribers can use this for audit logging, analytics, or webhook notifications.
 /// </summary>
-public class TokenIssuedEvent : IDomainEvent sealed
+public sealed class TokenIssuedEvent : IDomainEvent sealed
 {
     public string EventId { get; set; } = Guid.NewGuid().ToString("N");
     public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
