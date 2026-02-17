@@ -131,8 +131,11 @@ public sealed class TokenService sealed
 
     /// <summary>
     /// Handles refresh token grant with proper token rotation.
-    /// When rotation is enabled, the old token is revoked only after the new token
-    /// is successfully created, preventing token family corruption on partial failures.
+    /// The old token is revoked *before* the new token is created so that
+    /// a concurrent replay of the same token is rejected rather than silently
+    /// succeeding.  Clock-skew tolerance is applied when evaluating expiry so
+    /// that clients whose clocks lag the server by up to
+    /// <see cref="AuthServerOptions.ClockSkewToleranceSeconds"/> are still served.
     /// </summary>
     private async Task<TokenResponse> HandleRefreshTokenGrantAsync(
         TokenRequest request,
@@ -144,10 +147,20 @@ public sealed class TokenService sealed
         var tokenHash = HashToken(request.RefreshToken!);
         var token = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
 
-        if (token is null || !token.IsValid())
+        if (token is null || token.IsRevoked)
             throw new InvalidGrantException("Refresh token is invalid or expired");
 
-        token.RecordUsage();
+        // Apply clock-skew tolerance: accept tokens that expired within the
+        // tolerance window so clients with slightly-behind clocks are not
+        // rejected.  Tokens that expired well beyond the window are refused.
+        var tolerance = TimeSpan.FromSeconds(_options.ClockSkewToleranceSeconds);
+        if (DateTime.UtcNow > token.ExpiresAt.Add(tolerance))
+            throw new InvalidGrantException("Refresh token is invalid or expired");
+
+        // Revoke the old token *before* issuing a new one.  This is the
+        // rotation lock: any concurrent request presenting the same token will
+        // find it already revoked and be rejected as a replay.
+        token.Revoke("Refresh token rotation");
         await _refreshTokenRepository.UpdateAsync(token, cancellationToken);
 
         var user = await _userRepository.GetByIdAsync(token.UserId, cancellationToken);
@@ -161,10 +174,6 @@ public sealed class TokenService sealed
         var accessToken = GenerateAccessToken(user, token.ClientId, scopes);
         var newRefreshToken = request.RefreshToken;
 
-        // Rotate refresh token if enabled:
-        // 1. Create the new token first
-        // 2. Revoke the old token only after successful creation
-        // This prevents leaving the user without a valid refresh token on partial failure
         if (_options.AutoRefreshTokenRotation)
         {
             newRefreshToken = GenerateTokenValue();
@@ -181,10 +190,6 @@ public sealed class TokenService sealed
                 ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds)
             };
             await _refreshTokenRepository.CreateAsync(newToken, cancellationToken);
-
-            // Revoke old token after new one is safely persisted
-            token.Revoke("Refresh token rotation");
-            await _refreshTokenRepository.UpdateAsync(token, cancellationToken);
         }
 
         return new TokenResponse
