@@ -133,7 +133,9 @@ public sealed class AuthorizationGrant sealed
     }
 
     /// <summary>
-    /// Validates PKCE code verifier against the challenge
+    /// Validates PKCE code verifier against the challenge.
+    /// Returns false (never throws) for any malformed or disallowed input,
+    /// which lets the caller surface a proper OAuth2 error response.
     /// </summary>
     public bool ValidatePkceCodeVerifier(string? codeVerifier)
     {
@@ -143,21 +145,42 @@ public sealed class AuthorizationGrant sealed
         if (string.IsNullOrWhiteSpace(codeVerifier))
             return false; // PKCE was required but not provided
 
-        // Validate based on challenge method
-        if (CodeChallengeMethod == "plain")
+        // RFC 7636 §4.1: code_verifier = 43*128unreserved
+        // unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
+        // Reject anything outside this set (e.g. '+', '=', '/') with false,
+        // not an exception, so the caller can return invalid_grant.
+        if (codeVerifier.Length < 43 || codeVerifier.Length > 128)
+            return false;
+
+        foreach (var c in codeVerifier)
         {
-            return codeVerifier == CodeChallenge;
+            if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                  (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~'))
+                return false;
         }
-        else if (CodeChallengeMethod == "S256")
+
+        try
         {
-            // S256: code_challenge = BASE64URL(SHA256(codeVerifier))
-            var sha256 = System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(codeVerifier));
-            var challenge = Convert.ToBase64String(sha256)
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
-            return challenge == CodeChallenge;
+            if (CodeChallengeMethod == "plain")
+                return codeVerifier == CodeChallenge;
+
+            if (CodeChallengeMethod == "S256")
+            {
+                // S256: code_challenge = BASE64URL(SHA256(ASCII(code_verifier)))
+                var sha256 = System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.ASCII.GetBytes(codeVerifier));
+                var challenge = Convert.ToBase64String(sha256)
+                    .TrimEnd('=')
+                    .Replace('+', '-')
+                    .Replace('/', '_');
+                return string.Equals(challenge, CodeChallenge, StringComparison.Ordinal);
+            }
+        }
+        catch
+        {
+            // Guard against any unexpected encoding or format exceptions;
+            // always return false so the caller surfaces invalid_grant.
+            return false;
         }
 
         return false;
