@@ -7,20 +7,39 @@
 namespace DotnetAuthServer.Services;
 
 using System.Security.Claims;
+using DotnetAuthServer.Configuration;
+using DotnetAuthServer.Integration;
 
 /// <summary>
 /// Service for enforcing RBAC (Role-Based Access Control) and ABAC (Attribute-Based Access Control).
 /// Evaluates policies to determine if a user is allowed to perform an action or access a resource.
-/// Essential for fine-grained authorization beyond simple token validation.
+/// When OPA integration is enabled (<see cref="OpaOptions.Enabled"/> = true) policy decisions are
+/// delegated to the Open Policy Agent REST API; otherwise the built-in evaluator is used.
 /// </summary>
 public sealed class PolicyEnforcementService sealed
 {
     private readonly ILogger<PolicyEnforcementService> _logger;
+    private readonly OpaClient? _opaClient;
+    private readonly OpaOptions? _opaOptions;
     private readonly Dictionary<string, Policy> _policies = new();
 
     public PolicyEnforcementService(ILogger<PolicyEnforcementService> logger)
     {
         _logger = logger;
+        InitializeDefaultPolicies();
+    }
+
+    /// <summary>
+    /// Constructor used when OPA integration is enabled.
+    /// </summary>
+    public PolicyEnforcementService(
+        ILogger<PolicyEnforcementService> logger,
+        OpaClient opaClient,
+        OpaOptions opaOptions)
+    {
+        _logger = logger;
+        _opaClient = opaClient;
+        _opaOptions = opaOptions;
         InitializeDefaultPolicies();
     }
 
@@ -35,9 +54,46 @@ public sealed class PolicyEnforcementService sealed
 
     /// <summary>
     /// Evaluates whether a principal satisfies a named policy.
+    /// When OPA is enabled, the decision is delegated to OPA first.
+    /// If OPA is unreachable and <see cref="OpaOptions.FailClosedOnError"/> is false,
+    /// the built-in evaluator is used as a fallback.
     /// </summary>
     public bool EvaluatePolicy(string policyName, ClaimsPrincipal principal)
     {
+        if (_opaClient is not null && _opaOptions?.Enabled == true)
+        {
+            // Run synchronously; callers that need async should use EvaluatePolicyAsync.
+            var opaResult = _opaClient.EvaluatePolicyAsync(policyName, principal)
+                .GetAwaiter().GetResult();
+
+            if (opaResult.HasValue)
+                return opaResult.Value;
+
+            // opaResult is null → OPA unreachable + FailClosedOnError == false → fall through
+        }
+
+        if (!_policies.TryGetValue(policyName, out var policy))
+        {
+            _logger.LogWarning("Policy not found: {PolicyName}", policyName);
+            return false;
+        }
+
+        return EvaluatePolicy(policy, principal);
+    }
+
+    /// <summary>
+    /// Async version that avoids blocking the thread when OPA is used.
+    /// </summary>
+    public async Task<bool> EvaluatePolicyAsync(string policyName, ClaimsPrincipal principal,
+        CancellationToken cancellationToken = default)
+    {
+        if (_opaClient is not null && _opaOptions?.Enabled == true)
+        {
+            var opaResult = await _opaClient.EvaluatePolicyAsync(policyName, principal, cancellationToken);
+            if (opaResult.HasValue)
+                return opaResult.Value;
+        }
+
         if (!_policies.TryGetValue(policyName, out var policy))
         {
             _logger.LogWarning("Policy not found: {PolicyName}", policyName);
