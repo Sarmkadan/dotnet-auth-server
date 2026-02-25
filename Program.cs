@@ -76,6 +76,7 @@ builder.Services.AddScoped<AuditLoggingService>();
 builder.Services.AddScoped<PolicyEnforcementService>();
 builder.Services.AddScoped<PkceValidationService>();
 builder.Services.AddScoped<SessionStateService>();
+builder.Services.AddScoped<DynamicClientRegistrationService>();
 
 // Event system
 builder.Services.AddSingleton<IEventPublisher>(sp => new EventPublisher(sp.GetRequiredService<ILogger<EventPublisher>>()));
@@ -171,6 +172,7 @@ app.MapGet("/.well-known/oauth-authorization-server", () =>
         revocation_endpoint = $"{authServerOptions.IssuerUrl}/oauth/revoke",
         introspection_endpoint = $"{authServerOptions.IssuerUrl}/oauth/introspect",
         userinfo_endpoint = $"{authServerOptions.IssuerUrl}/oauth/userinfo",
+        registration_endpoint = $"{authServerOptions.IssuerUrl}/register",
         scopes_supported = authServerOptions.SupportedScopes,
         grant_types_supported = authServerOptions.SupportedGrantTypes,
         token_endpoint_auth_methods_supported = new[] { "client_secret_basic", "client_secret_post", "none" },
@@ -191,6 +193,7 @@ app.MapGet("/.well-known/openid-configuration", () =>
         token_endpoint = $"{authServerOptions.IssuerUrl}/oauth/token",
         userinfo_endpoint = $"{authServerOptions.IssuerUrl}/oauth/userinfo",
         jwks_uri = $"{authServerOptions.IssuerUrl}/.well-known/jwks.json",
+        registration_endpoint = $"{authServerOptions.IssuerUrl}/register",
         scopes_supported = authServerOptions.SupportedScopes,
         response_types_supported = new[] { "code", "token", "id_token", "code id_token", "code token", "id_token token", "code id_token token" },
         subject_types_supported = new[] { "public" },
