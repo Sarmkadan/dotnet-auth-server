@@ -60,7 +60,8 @@ public sealed class TokenController : ControllerBase sealed
                 Username = username,
                 Password = password,
                 Scope = scope,
-                CodeVerifier = code_verifier
+                CodeVerifier = code_verifier,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
             };
 
             var response = await _tokenService.HandleTokenRequestAsync(tokenRequest, cancellationToken);
