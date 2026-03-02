@@ -12,6 +12,7 @@ using DotnetAuthServer.Formatters;
 using DotnetAuthServer.Handlers;
 using DotnetAuthServer.Integration;
 using DotnetAuthServer.Middleware;
+using DotnetAuthServer.Security;
 using DotnetAuthServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -71,6 +72,10 @@ builder.Services.AddSingleton<IConsentRepository, ConsentRepository>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<ConsentService>();
+
+// Security
+builder.Services.AddSingleton<RevokedTokenStore>();
+builder.Services.AddSingleton<LoginRateLimiter>();
 
 // Phase 2 Services
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
