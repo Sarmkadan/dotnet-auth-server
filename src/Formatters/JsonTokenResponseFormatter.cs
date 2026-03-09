@@ -15,11 +15,11 @@ using DotnetAuthServer.Domain.Models;
 /// Ensures consistent JSON formatting with proper snake_case field names
 /// and compact output suitable for client parsing.
 /// </summary>
-public sealed class JsonTokenResponseFormatter sealed
+public sealed class JsonTokenResponseFormatter
 {
     private static readonly JsonSerializerOptions DefaultOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseNamingPolicy,
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = false
     };
@@ -58,7 +58,7 @@ public sealed class JsonTokenResponseFormatter sealed
             {
                 AccessToken = dto.AccessToken,
                 TokenType = dto.TokenType,
-                ExpiresIn = dto.ExpiresIn,
+                ExpiresIn = dto.ExpiresIn.GetValueOrDefault(),
                 RefreshToken = dto.RefreshToken,
                 Scope = dto.Scope
             };

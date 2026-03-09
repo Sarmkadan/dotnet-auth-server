@@ -14,7 +14,7 @@ using System.Text;
 /// Provides cryptographically secure methods to prevent common vulnerabilities
 /// like timing attacks or weak random generation.
 /// </summary>
-public sealed class SecretsService sealed
+public sealed class SecretsService
 {
     private readonly ILogger<SecretsService> _logger;
 
@@ -160,7 +160,7 @@ public sealed class SecretsService sealed
 /// <summary>
 /// Hashed secret with metadata for storage.
 /// </summary>
-public sealed class SecretHash sealed
+public sealed class SecretHash
 {
     public string Hash { get; set; } = string.Empty;
     public string Salt { get; set; } = string.Empty;

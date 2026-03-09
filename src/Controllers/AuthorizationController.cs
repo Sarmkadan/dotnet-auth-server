@@ -17,7 +17,7 @@ using DotnetAuthServer.Services;
 /// </summary>
 [ApiController]
 [Route("oauth/authorize")]
-public sealed class AuthorizationController : ControllerBase sealed
+public sealed class AuthorizationController : ControllerBase
 {
     private readonly AuthorizationService _authorizationService;
     private readonly ILogger<AuthorizationController> _logger;
@@ -140,7 +140,7 @@ public sealed class AuthorizationController : ControllerBase sealed
             {
                 clientId = client_id,
                 userId = user_id,
-                requestedScopes = scope?.Split(' ') ?? []>string>()
+                requestedScopes = scope?.Split(' ') ?? Array.Empty<string>()
             };
 
             return Ok(consentResponse);

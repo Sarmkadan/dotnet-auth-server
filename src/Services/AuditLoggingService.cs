@@ -14,7 +14,7 @@ using DotnetAuthServer.Middleware;
 /// Records authentication attempts, authorization decisions, token issuance, etc.
 /// Critical for compliance (GDPR, SOC 2, etc.) and security incident investigation.
 /// </summary>
-public sealed class AuditLoggingService sealed
+public sealed class AuditLoggingService
 {
     private readonly ILogger<AuditLoggingService> _logger;
     private readonly ConcurrentQueue<AuditLogEntry> _auditLog = new();
@@ -196,7 +196,7 @@ public sealed class AuditLoggingService sealed
 /// <summary>
 /// Single audit log entry with timestamp and event details.
 /// </summary>
-public sealed class AuditLogEntry sealed
+public sealed class AuditLogEntry
 {
     public string EventType { get; set; } = string.Empty;
     public string? UserId { get; set; }

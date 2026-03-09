@@ -24,7 +24,7 @@ public interface IPolicyEngine
 /// <summary>
 /// Access context containing user, resource, and environment information
 /// </summary>
-public sealed class AccessContext sealed
+public sealed class AccessContext
 {
     public UserAttributes User { get; set; } = new();
     public ResourceAttributes Resource { get; set; } = new();
@@ -34,7 +34,7 @@ public sealed class AccessContext sealed
 /// <summary>
 /// User-related attributes for ABAC decisions
 /// </summary>
-public sealed class UserAttributes sealed
+public sealed class UserAttributes
 {
     public string UserId { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = new();
@@ -48,7 +48,7 @@ public sealed class UserAttributes sealed
 /// <summary>
 /// Resource-related attributes for ABAC decisions
 /// </summary>
-public sealed class ResourceAttributes sealed
+public sealed class ResourceAttributes
 {
     public string ResourceId { get; set; } = string.Empty;
     public string ResourceType { get; set; } = string.Empty; // file, database, api, etc.
@@ -61,7 +61,7 @@ public sealed class ResourceAttributes sealed
 /// <summary>
 /// Environment attributes for context-aware policies
 /// </summary>
-public sealed class EnvironmentAttributes sealed
+public sealed class EnvironmentAttributes
 {
     public DateTime RequestTime { get; set; }
     public string SourceIp { get; set; } = string.Empty;
@@ -73,7 +73,7 @@ public sealed class EnvironmentAttributes sealed
 /// <summary>
 /// Attribute-Based Policy Engine Implementation
 /// </summary>
-public sealed class AbacPolicyEngine : IPolicyEngine sealed
+public sealed class AbacPolicyEngine : IPolicyEngine
 {
     /// <summary>
     /// Evaluate access based on attributes
@@ -292,7 +292,7 @@ public sealed class AbacPolicyEngine : IPolicyEngine sealed
 /// <summary>
 /// Example usage of ABAC policy engine
 /// </summary>
-public sealed class AbacPolicyExample sealed
+public sealed class AbacPolicyExample
 {
     private readonly IPolicyEngine _policyEngine;
 

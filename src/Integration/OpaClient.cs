@@ -16,7 +16,7 @@ using DotnetAuthServer.Configuration;
 /// HTTP client wrapper for the Open Policy Agent (OPA) REST API.
 /// Sends policy queries to OPA and returns allow/deny decisions.
 /// </summary>
-public sealed class OpaClient sealed
+public sealed class OpaClient
 {
     private readonly HttpClient _http;
     private readonly OpaOptions _options;

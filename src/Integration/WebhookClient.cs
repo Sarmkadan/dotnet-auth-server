@@ -15,7 +15,7 @@ using DotnetAuthServer.Events;
 /// user authentication, consent changes, etc.
 /// Implements retry logic and exponential backoff for resilience.
 /// </summary>
-public sealed class WebhookClient sealed
+public sealed class WebhookClient
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<WebhookClient> _logger;
@@ -117,7 +117,7 @@ public sealed class WebhookClient sealed
 /// <summary>
 /// Result of a webhook delivery attempt.
 /// </summary>
-public sealed class WebhookResult sealed
+public sealed class WebhookResult
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -126,7 +126,7 @@ public sealed class WebhookResult sealed
 /// <summary>
 /// Webhook payload envelope containing event metadata and data.
 /// </summary>
-public sealed class WebhookPayload sealed
+public sealed class WebhookPayload
 {
     public string EventId { get; set; } = string.Empty;
     public string EventType { get; set; } = string.Empty;
@@ -138,7 +138,7 @@ public sealed class WebhookPayload sealed
 /// <summary>
 /// Configuration for webhook delivery behavior.
 /// </summary>
-public sealed class WebhookOptions sealed
+public sealed class WebhookOptions
 {
     public bool Enabled { get; set; } = true;
     public int MaxRetries { get; set; } = 3;

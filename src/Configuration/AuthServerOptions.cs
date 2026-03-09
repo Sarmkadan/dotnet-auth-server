@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Configuration;
 /// <summary>
 /// Configuration options for the authorization server
 /// </summary>
-public sealed class AuthServerOptions sealed
+public sealed class AuthServerOptions
 {
     /// <summary>
     /// The issuer URL (will be used in JWT tokens)

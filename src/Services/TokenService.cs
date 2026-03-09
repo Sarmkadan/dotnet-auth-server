@@ -20,7 +20,7 @@ using DotnetAuthServer.Security;
 /// <summary>
 /// Service for issuing and managing OAuth2/OIDC tokens
 /// </summary>
-public sealed class TokenService sealed
+public sealed class TokenService
 {
     private readonly AuthServerOptions _options;
     private readonly IUserRepository _userRepository;

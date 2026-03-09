@@ -14,7 +14,7 @@ using DotnetAuthServer.Security;
 /// Prevents unlimited growth of the database with stale token records.
 /// Typically runs once per hour but can be configured via dependency injection.
 /// </summary>
-public sealed class TokenCleanupWorker : BackgroundService sealed
+public sealed class TokenCleanupWorker : BackgroundService
 {
     private readonly ILogger<TokenCleanupWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
