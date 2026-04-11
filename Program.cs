@@ -3,8 +3,14 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotnetAuthServer.Caching;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Events;
+using DotnetAuthServer.Formatters;
+using DotnetAuthServer.Handlers;
+using DotnetAuthServer.Integration;
+using DotnetAuthServer.Middleware;
 using DotnetAuthServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,17 +39,68 @@ if (!authServerOptions.IsValid())
     throw new InvalidOperationException("AuthServer configuration is invalid. Check appsettings.json");
 }
 
+// Load Phase 2 configuration options
+var loggingOptions = new LoggingOptions();
+builder.Configuration.GetSection("Logging").Bind(loggingOptions);
+
+var cacheOptions = new CacheOptions();
+builder.Configuration.GetSection("Cache").Bind(cacheOptions);
+
+var webhookOptions = new WebhookOptions();
+builder.Configuration.GetSection("Webhooks").Bind(webhookOptions);
+
 // Add services to the container
 builder.Services.AddSingleton(authServerOptions);
+builder.Services.AddSingleton(loggingOptions);
+builder.Services.AddSingleton(cacheOptions);
+builder.Services.AddSingleton(webhookOptions);
+
+// Repositories
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IClientRepository, ClientRepository>();
 builder.Services.AddSingleton<IAuthorizationGrantRepository, AuthorizationGrantRepository>();
 builder.Services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddSingleton<IConsentRepository, ConsentRepository>();
 
+// Phase 1 Services
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<ConsentService>();
+
+// Phase 2 Services
+builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
+builder.Services.AddScoped<ClientValidationService>();
+builder.Services.AddScoped<ScopeValidationService>();
+builder.Services.AddScoped<AuditLoggingService>();
+builder.Services.AddScoped<PolicyEnforcementService>();
+builder.Services.AddScoped<PkceValidationService>();
+builder.Services.AddScoped<SessionStateService>();
+
+// Event system
+builder.Services.AddSingleton<IEventPublisher>(sp => new EventPublisher(sp.GetRequiredService<ILogger<EventPublisher>>()));
+
+// Handlers
+builder.Services.AddScoped<TokenIntrospectionHandler>();
+builder.Services.AddScoped<TokenRevocationHandler>();
+builder.Services.AddScoped<UserinfoHandler>();
+builder.Services.AddScoped<ScopeMetadataHandler>();
+builder.Services.AddScoped<DeviceFlowHandler>();
+builder.Services.AddScoped<JwksHandler>();
+builder.Services.AddScoped<RequestValidationHandler>();
+
+// Formatters
+builder.Services.AddScoped<JwtTokenFormatter>();
+
+// Additional Services
+builder.Services.AddScoped<SecretsService>();
+builder.Services.AddScoped<ClaimsEnrichmentService>();
+
+// Background workers
+builder.Services.AddHostedService<TokenCleanupWorker>();
+
+// HTTP Clients
+builder.Services.AddHttpClient<WebhookClient>()
+    .ConfigureHttpClient(client => client.Timeout = webhookOptions.Timeout);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -79,6 +136,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Configure middleware pipeline
+// Order is important: error handling should be early, CORS before routing, logging everywhere
+app.UseMiddleware<RequestContextMiddleware>();
+app.UseMiddleware<LoggingMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
