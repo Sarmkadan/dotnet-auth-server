@@ -1,0 +1,151 @@
+# =============================================================================
+# Author: Vladyslav Zaiets | https://sarmkadan.com
+# CTO & Software Architect
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # Main Authorization Server
+  auth-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dotnet-auth-server
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      AuthServer__IssuerUrl: https://localhost:5001
+      AuthServer__JwtSigningKey: "${JWT_SIGNING_KEY:-your-256-bit-secret-key-minimum-length-required-for-production}"
+      AuthServer__AccessTokenLifetimeSeconds: 3600
+      AuthServer__RefreshTokenLifetimeSeconds: 2592000
+      AuthServer__RequirePkceForAllClients: "true"
+      AuthServer__EnableAuditLogging: "true"
+      AuthServer__EnableRateLimiting: "true"
+      Database__ConnectionString: "Server=postgres;Database=authdb;User=auth_user;Password=${DB_PASSWORD:-postgres};"
+      Cache__Type: Distributed
+      Cache__ConnectionString: "redis:6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - auth-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: dotnet-auth-db
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-postgres}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - auth-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d authdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: dotnet-auth-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - auth-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database Admin UI (optional)
+  adminer:
+    image: adminer:latest
+    container_name: dotnet-auth-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+  # pgAdmin for Database Management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: dotnet-auth-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_PASSWORD:-admin}"
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+  # Prometheus for Metrics (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: dotnet-auth-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+  # Grafana for Visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: dotnet-auth-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-admin}"
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_USER:-admin}"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  auth-network:
+    driver: bridge
