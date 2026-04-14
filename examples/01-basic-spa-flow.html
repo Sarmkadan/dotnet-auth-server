@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth2 SPA Example - dotnet-auth-server</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { color: #333; }
+        .section { margin: 20px 0; }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .button:hover { background: #764ba2; }
+        .button.danger { background: #e74c3c; }
+        .button.danger:hover { background: #c0392b; }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .token-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        .claims {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .claims pre {
+            margin: 0;
+            overflow-x: auto;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 OAuth2 Authorization Code Flow Example</h1>
+        <p>This example demonstrates OAuth2 Authorization Code Flow with PKCE against dotnet-auth-server.</p>
+
+        <!-- Configuration Section -->
+        <div class="section">
+            <h2>Configuration</h2>
+            <label>
+                Authorization Server URL:
+                <input type="text" id="authServerUrl" value="https://localhost:7001" style="width: 300px;">
+            </label>
+            <br><br>
+            <label>
+                Client ID:
+                <input type="text" id="clientId" value="my-spa" style="width: 300px;">
+            </label>
+            <br><br>
+            <label>
+                Redirect URI:
+                <input type="text" id="redirectUri" value="http://localhost:8080/" style="width: 300px;">
+            </label>
+        </div>
+
+        <!-- PKCE Section -->
+        <div class="section">
+            <h2>PKCE Parameters</h2>
+            <button class="button" onclick="generatePKCE()">Generate PKCE Parameters</button>
+            <div id="pkceStatus" class="status"></div>
+            <div class="token-display" id="pkceDisplay" style="display: none;">
+                <strong>Code Verifier:</strong> <span id="verifierDisplay"></span>
+                <br><strong>Code Challenge:</strong> <span id="challengeDisplay"></span>
+            </div>
+        </div>
+
+        <!-- Authorization Flow Section -->
+        <div class="section">
+            <h2>1. Authorization</h2>
+            <p>Click below to initiate authorization flow. You'll be redirected to login on the auth server.</p>
+            <button class="button" onclick="initiateAuthFlow()">Start Authorization Flow</button>
+            <div id="authStatus" class="status"></div>
+        </div>
+
+        <!-- Token Exchange Section -->
+        <div class="section">
+            <h2>2. Exchange Authorization Code for Tokens</h2>
+            <p>After returning from the auth server, your authorization code will be in the URL.</p>
+            <label>
+                Authorization Code (or paste from URL):
+                <input type="text" id="authCode" placeholder="auth_code_xxx" style="width: 400px;">
+            </label>
+            <br><br>
+            <button class="button" onclick="exchangeCodeForTokens()">Exchange Code for Tokens</button>
+            <div id="tokenStatus" class="status"></div>
+        </div>
+
+        <!-- Token Display Section -->
+        <div class="section">
+            <h2>3. Access Token</h2>
+            <div id="accessTokenDisplay" class="token-display" style="display: none;">
+                <strong>Access Token (JWT):</strong>
+                <div id="accessTokenValue"></div>
+            </div>
+            <button class="button" onclick="decodeAccessToken()" id="decodeBtn" style="display: none;">Decode Access Token</button>
+            <div id="accessTokenClaims" class="claims" style="display: none;"></div>
+        </div>
+
+        <!-- Refresh Token Section -->
+        <div class="section">
+            <h2>4. Refresh Token</h2>
+            <p>Use refresh token to get a new access token when it expires.</p>
+            <button class="button" onclick="refreshAccessToken()" id="refreshBtn" style="display: none;">Refresh Access Token</button>
+            <div id="refreshStatus" class="status"></div>
+        </div>
+
+        <!-- Token Introspection Section -->
+        <div class="section">
+            <h2>5. Token Introspection</h2>
+            <p>Validate token with the authorization server.</p>
+            <button class="button" onclick="introspectToken()" id="introspectBtn" style="display: none;">Introspect Token</button>
+            <div id="introspectStatus" class="status"></div>
+            <div id="introspectResult" class="claims" style="display: none;"></div>
+        </div>
+
+        <!-- Logout Section -->
+        <div class="section">
+            <h2>6. Logout</h2>
+            <button class="button danger" onclick="logout()">Logout & Clear Tokens</button>
+        </div>
+
+        <!-- User Info Section -->
+        <div class="section">
+            <h2>User Info</h2>
+            <div id="userInfo" class="claims" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Store tokens in sessionStorage (NOT recommended for production)
+        let state = {
+            codeVerifier: null,
+            accessToken: null,
+            refreshToken: null,
+            idToken: null
+        };
+
+        // Check for authorization code in URL
+        window.addEventListener('load', function() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const state = params.get('state');
+
+            if (code) {
+                document.getElementById('authCode').value = code;
+                document.getElementById('authStatus').innerHTML =
+                    '✓ Authorization successful! Code received. Click "Exchange Code for Tokens" to continue.';
+                document.getElementById('authStatus').classList.add('success');
+
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
+        // Generate PKCE parameters
+        async function generatePKCE() {
+            try {
+                // Generate random 32 bytes for code verifier
+                const array = new Uint8Array(32);
+                crypto.getRandomValues(array);
+
+                // Encode as base64url
+                const verifier = btoa(String.fromCharCode(...array))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=/g, '');
+
+                // Create code challenge
+                const encoder = new TextEncoder();
+                const data = encoder.encode(verifier);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const challenge = btoa(String.fromCharCode(...hashArray))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=/g, '');
+
+                state.codeVerifier = verifier;
+
+                document.getElementById('verifierDisplay').textContent = verifier;
+                document.getElementById('challengeDisplay').textContent = challenge;
+                document.getElementById('pkceDisplay').style.display = 'block';
+                document.getElementById('pkceStatus').innerHTML = '✓ PKCE parameters generated successfully!';
+                document.getElementById('pkceStatus').classList.add('success');
+                document.getElementById('pkceStatus').classList.remove('error');
+
+                return challenge;
+            } catch (error) {
+                console.error('PKCE generation error:', error);
+                showError('pkceStatus', error.message);
+            }
+        }
+
+        // Initiate authorization flow
+        async function initiateAuthFlow() {
+            try {
+                const challenge = await generatePKCE();
+                const authServerUrl = document.getElementById('authServerUrl').value;
+                const clientId = document.getElementById('clientId').value;
+                const redirectUri = document.getElementById('redirectUri').value;
+                const scope = 'openid profile email';
+                const stateparam = 'random_' + Math.random().toString(36).substr(2, 9);
+
+                const authUrl = `${authServerUrl}/oauth/authorize?` +
+                    `client_id=${encodeURIComponent(clientId)}&` +
+                    `response_type=code&` +
+                    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                    `scope=${encodeURIComponent(scope)}&` +
+                    `code_challenge=${challenge}&` +
+                    `code_challenge_method=S256&` +
+                    `state=${stateparam}`;
+
+                window.location.href = authUrl;
+            } catch (error) {
+                showError('authStatus', error.message);
+            }
+        }
+
+        // Exchange authorization code for tokens
+        async function exchangeCodeForTokens() {
+            try {
+                const authCode = document.getElementById('authCode').value;
+                const authServerUrl = document.getElementById('authServerUrl').value;
+                const clientId = document.getElementById('clientId').value;
+                const redirectUri = document.getElementById('redirectUri').value;
+
+                if (!authCode || !state.codeVerifier) {
+                    throw new Error('Missing authorization code or code verifier');
+                }
+
+                const response = await fetch(`${authServerUrl}/oauth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        client_id: clientId,
+                        redirect_uri: redirectUri,
+                        code: authCode,
+                        code_verifier: state.codeVerifier
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(`${error.error}: ${error.error_description}`);
+                }
+
+                const data = await response.json();
+                state.accessToken = data.access_token;
+                state.refreshToken = data.refresh_token;
+                state.idToken = data.id_token;
+
+                showSuccess('tokenStatus', 'Tokens received successfully!');
+                document.getElementById('accessTokenDisplay').style.display = 'block';
+                document.getElementById('accessTokenValue').textContent = data.access_token;
+                document.getElementById('decodeBtn').style.display = 'inline-block';
+                document.getElementById('refreshBtn').style.display = 'inline-block';
+                document.getElementById('introspectBtn').style.display = 'inline-block';
+
+                // Display user info from ID token
+                if (data.id_token) {
+                    const claims = decodeJWT(data.id_token);
+                    displayUserInfo(claims);
+                }
+            } catch (error) {
+                showError('tokenStatus', error.message);
+            }
+        }
+
+        // Decode access token
+        function decodeAccessToken() {
+            if (state.accessToken) {
+                const claims = decodeJWT(state.accessToken);
+                const claimsHtml = '<strong>Access Token Claims:</strong><pre>' +
+                    JSON.stringify(claims, null, 2) + '</pre>';
+                document.getElementById('accessTokenClaims').innerHTML = claimsHtml;
+                document.getElementById('accessTokenClaims').style.display = 'block';
+            }
+        }
+
+        // Refresh access token
+        async function refreshAccessToken() {
+            try {
+                if (!state.refreshToken) {
+                    throw new Error('No refresh token available');
+                }
+
+                const authServerUrl = document.getElementById('authServerUrl').value;
+                const clientId = document.getElementById('clientId').value;
+
+                const response = await fetch(`${authServerUrl}/oauth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'refresh_token',
+                        client_id: clientId,
+                        refresh_token: state.refreshToken
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(`${error.error}: ${error.error_description}`);
+                }
+
+                const data = await response.json();
+                state.accessToken = data.access_token;
+                state.refreshToken = data.refresh_token; // New refresh token
+
+                document.getElementById('accessTokenValue').textContent = data.access_token;
+                showSuccess('refreshStatus',
+                    'Access token refreshed! Old refresh token invalidated (rotation).');
+            } catch (error) {
+                showError('refreshStatus', error.message);
+            }
+        }
+
+        // Introspect token
+        async function introspectToken() {
+            try {
+                if (!state.accessToken) {
+                    throw new Error('No access token to introspect');
+                }
+
+                const authServerUrl = document.getElementById('authServerUrl').value;
+
+                const response = await fetch(`${authServerUrl}/oauth/token/introspect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        token: state.accessToken
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Token introspection failed');
+                }
+
+                const data = await response.json();
+                const html = '<strong>Token Introspection Result:</strong><pre>' +
+                    JSON.stringify(data, null, 2) + '</pre>';
+                document.getElementById('introspectResult').innerHTML = html;
+                document.getElementById('introspectResult').style.display = 'block';
+                showSuccess('introspectStatus', 'Token is valid!');
+            } catch (error) {
+                showError('introspectStatus', error.message);
+            }
+        }
+
+        // Display user info
+        function displayUserInfo(claims) {
+            const userInfo = {
+                'User ID': claims.sub,
+                'Name': claims.name,
+                'Email': claims.email,
+                'Email Verified': claims.email_verified,
+                'Roles': claims.roles?.join(', '),
+                'Scopes': claims.scope
+            };
+
+            const html = '<strong>User Information (from ID Token):</strong><pre>' +
+                JSON.stringify(userInfo, null, 2) + '</pre>';
+            document.getElementById('userInfo').innerHTML = html;
+            document.getElementById('userInfo').style.display = 'block';
+        }
+
+        // Decode JWT (simple - no signature verification)
+        function decodeJWT(token) {
+            try {
+                const parts = token.split('.');
+                const payload = parts[1];
+                const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+                return JSON.parse(decoded);
+            } catch (error) {
+                console.error('JWT decode error:', error);
+                return null;
+            }
+        }
+
+        // Logout
+        function logout() {
+            state = {
+                codeVerifier: null,
+                accessToken: null,
+                refreshToken: null,
+                idToken: null
+            };
+
+            document.getElementById('authCode').value = '';
+            document.getElementById('accessTokenDisplay').style.display = 'none';
+            document.getElementById('accessTokenClaims').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('introspectResult').style.display = 'none';
+            document.getElementById('decodeBtn').style.display = 'none';
+            document.getElementById('refreshBtn').style.display = 'none';
+            document.getElementById('introspectBtn').style.display = 'none';
+
+            showSuccess('tokenStatus', 'Logged out successfully!');
+        }
+
+        // Helper functions
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = '✗ ' + message;
+            el.classList.remove('success');
+            el.classList.add('error');
+            el.style.display = 'block';
+        }
+
+        function showSuccess(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = '✓ ' + message;
+            el.classList.remove('error');
+            el.classList.add('success');
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
