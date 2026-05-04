@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>DotnetAuthServer</RootNamespace>
+    <AssemblyName>DotnetAuthServer</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>1.0.0</Version>
+    <Authors>Vladyslav Zaiets</Authors>
+    <Description>Minimal OAuth2/OIDC authorization server for .NET</Description>
+    <RepositoryUrl>https://github.com/sarmkadan/dotnet-auth-server</RepositoryUrl>
+    <License>MIT</License>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.6" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.0" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="System.Security.Cryptography" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>
