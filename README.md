@@ -485,3 +485,48 @@ else
     Console.WriteLine($"Failed to send webhook: {result.Error}");
 }
 ```
+
+## WebAuthnServiceExtensions
+
+The `WebAuthnServiceExtensions` class provides extension methods for `IServiceCollection` to register WebAuthn/FIDO2 services in the dependency injection container. By default, it configures an in-process, thread-safe credential store suitable for development, which can be replaced with a database-backed implementation for production environments.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Extensions;
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Register WebAuthn services
+var services = new ServiceCollection();
+services.AddWebAuthn();
+var serviceProvider = services.BuildServiceProvider();
+
+// Retrieve the credential store (the underlying service configured by AddWebAuthn)
+var credentialStore = serviceProvider.GetRequiredService<IWebAuthnCredentialStore>();
+
+// Create and add a new credential
+var newCredential = new WebAuthnCredential 
+{ 
+    CredentialId = "cred-1", 
+    UserId = "user-1", 
+    IsActive = true, 
+    CreatedAt = DateTime.UtcNow 
+};
+await credentialStore.AddAsync(newCredential);
+
+// Find a credential by ID
+var credential = await credentialStore.FindByCredentialIdAsync("cred-1");
+
+// Get all active credentials for a user
+var userCredentials = await credentialStore.GetByUserIdAsync("user-1");
+
+// Update an existing credential
+if (credential != null)
+{
+    credential.IsActive = false;
+    await credentialStore.UpdateAsync(credential);
+}
+```
+
