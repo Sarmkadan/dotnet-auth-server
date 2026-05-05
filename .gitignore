@@ -49,5 +49,12 @@ Thumbs.db
 *~
 
 # Package files
-.nupkg
-.snupkg
+*.nupkg
+*.snupkg
+packages/
+
+# Rider IDE / JetBrains
+*.DotSettings.user
+
+# Application settings
+appsettings.Development.json
