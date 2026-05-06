@@ -1,10 +1,10 @@
+[![Build](https://github.com/sarmkadan/dotnet-auth-server/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/dotnet-auth-server/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+
 # dotnet-auth-server
 
 **A production-ready OAuth2/OpenID Connect authorization server for .NET 10** with full support for PKCE, refresh token rotation, granular consent management, and advanced access control (RBAC/ABAC).
-
-[![CI/CD](https://github.com/Sarmkadan/dotnet-auth-server/actions/workflows/build.yml/badge.svg)](https://github.com/Sarmkadan/dotnet-auth-server/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![.NET 10](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ---
 
