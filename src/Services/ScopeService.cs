@@ -34,7 +34,7 @@ public interface IScopeRepository : IRepository<Scope, string>
 /// <summary>
 /// In-memory implementation of scope repository
 /// </summary>
-public class ScopeRepository : IScopeRepository sealed
+public sealed class ScopeRepository : IScopeRepository sealed
 {
     private readonly Dictionary<string, Scope> _scopes = new(StringComparer.OrdinalIgnoreCase);
 
@@ -110,7 +110,7 @@ public class ScopeRepository : IScopeRepository sealed
 /// <summary>
 /// Service for managing OAuth2 scopes
 /// </summary>
-public class ScopeService sealed
+public sealed class ScopeService sealed
 {
     private readonly IScopeRepository _scopeRepository;
 
@@ -254,7 +254,7 @@ public class ScopeService sealed
 /// <summary>
 /// Summary view of a scope
 /// </summary>
-public class ScopeSummary sealed
+public sealed class ScopeSummary sealed
 {
     public string ScopeId { get; set; } = null!;
     public string DisplayName { get; set; } = null!;

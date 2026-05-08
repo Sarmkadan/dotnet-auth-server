@@ -15,7 +15,7 @@ using System.Net;
 /// This is critical for preventing brute force attacks on token endpoints and
 /// ensuring fair resource allocation among clients.
 /// </summary>
-public class RateLimitingMiddleware sealed
+public sealed class RateLimitingMiddleware sealed
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RateLimitingMiddleware> _logger;

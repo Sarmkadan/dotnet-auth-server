@@ -15,7 +15,7 @@ using DotnetAuthServer.Data.Repositories;
 /// Removes tokens from server-side storage to prevent their use.
 /// Important for logout flows and compromised token recovery.
 /// </summary>
-public class TokenRevocationHandler sealed
+public sealed class TokenRevocationHandler sealed
 {
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IAuthorizationGrantRepository _grantRepository;
@@ -112,7 +112,7 @@ public class TokenRevocationHandler sealed
 /// <summary>
 /// Result of a token revocation operation.
 /// </summary>
-public class RevocationResult sealed
+public sealed class RevocationResult sealed
 {
     /// <summary>
     /// Whether the operation completed without errors.

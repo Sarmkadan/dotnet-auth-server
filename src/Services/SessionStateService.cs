@@ -14,7 +14,7 @@ using DotnetAuthServer.Extensions;
 /// Stores temporary state needed for multi-step flows like authorization code flow.
 /// Uses in-memory storage for single-server deployments; consider distributed cache for scaled deployments.
 /// </summary>
-public class SessionStateService sealed
+public sealed class SessionStateService sealed
 {
     private readonly ConcurrentDictionary<string, SessionState> _sessions = new();
     private readonly ILogger<SessionStateService> _logger;
@@ -156,7 +156,7 @@ public class SessionStateService sealed
 /// <summary>
 /// Represents a session state during an OAuth2 authorization flow.
 /// </summary>
-public class SessionState sealed
+public sealed class SessionState sealed
 {
     public string StateId { get; set; } = string.Empty;
     public string ClientId { get; set; } = string.Empty;

@@ -14,7 +14,7 @@ using DotnetAuthServer.Exceptions;
 /// <summary>
 /// Service for OAuth2 client registration and management
 /// </summary>
-public class ClientService sealed
+public sealed class ClientService sealed
 {
     private readonly IClientRepository _clientRepository;
 

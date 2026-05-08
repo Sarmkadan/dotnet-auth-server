@@ -15,7 +15,7 @@ using DotnetAuthServer.Exceptions;
 /// <summary>
 /// Service for user authentication and management
 /// </summary>
-public class UserService sealed
+public sealed class UserService sealed
 {
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;

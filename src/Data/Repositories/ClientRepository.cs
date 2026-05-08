@@ -32,7 +32,7 @@ public interface IClientRepository : IRepository<Client, string>
 /// <summary>
 /// In-memory implementation of client repository
 /// </summary>
-public class ClientRepository : IClientRepository sealed
+public sealed class ClientRepository : IClientRepository sealed
 {
     private readonly Dictionary<string, Client> _clients = new(StringComparer.OrdinalIgnoreCase);
 

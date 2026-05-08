@@ -10,7 +10,7 @@ namespace DotnetAuthServer.Configuration;
 /// Configuration options for the logging system.
 /// Controls verbosity, formatting, and what information is logged.
 /// </summary>
-public class LoggingOptions sealed
+public sealed class LoggingOptions sealed
 {
     /// <summary>
     /// Minimum log level to output.
