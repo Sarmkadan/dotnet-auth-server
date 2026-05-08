@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotnetAuthServer.Configuration;
 /// Configuration options for the logging system.
 /// Controls verbosity, formatting, and what information is logged.
 /// </summary>
-public class LoggingOptions
+public class LoggingOptions sealed
 {
     /// <summary>
     /// Minimum log level to output.

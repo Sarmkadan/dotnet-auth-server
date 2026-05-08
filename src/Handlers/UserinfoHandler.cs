@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Data.Repositories;
 /// Returns claims about the authenticated user based on their access token.
 /// Scope claims control what information is returned (openid, profile, email, etc.)
 /// </summary>
-public class UserinfoHandler
+public class UserinfoHandler sealed
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<UserinfoHandler> _logger;
@@ -41,7 +42,7 @@ public class UserinfoHandler
         }
 
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user == null)
+        if (user is null)
         {
             _logger.LogWarning("Userinfo requested for unknown user {UserId}", userId);
             return null;
@@ -107,7 +108,7 @@ public class UserinfoHandler
 /// OpenID Connect UserInfo response model.
 /// Only populated fields that are allowed by token scopes.
 /// </summary>
-public class UserinfoResponse
+public class UserinfoResponse sealed
 {
     public string Sub { get; set; } = string.Empty;
 
@@ -132,7 +133,7 @@ public class UserinfoResponse
 /// <summary>
 /// OpenID Connect address information.
 /// </summary>
-public class AddressInfo
+public class AddressInfo sealed
 {
     public string? StreetAddress { get; set; }
     public string? Locality { get; set; }

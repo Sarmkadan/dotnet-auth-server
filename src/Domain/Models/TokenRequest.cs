@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Models;
 /// <summary>
 /// Represents an OAuth2 token request
 /// </summary>
-public class TokenRequest
+public class TokenRequest sealed
 {
     /// <summary>
     /// Grant type (authorization_code, refresh_token, client_credentials, etc.)

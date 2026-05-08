@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -39,7 +40,7 @@ public interface IConsentRepository : IRepository<Consent, string>
 /// <summary>
 /// In-memory implementation of consent repository
 /// </summary>
-public class ConsentRepository : IConsentRepository
+public class ConsentRepository : IConsentRepository sealed
 {
     private readonly Dictionary<string, Consent> _consents = new(StringComparer.OrdinalIgnoreCase);
 
@@ -130,7 +131,7 @@ public class ConsentRepository : IConsentRepository
 /// <summary>
 /// Service for managing user consent decisions
 /// </summary>
-public class ConsentService
+public class ConsentService sealed
 {
     private readonly IConsentRepository _consentRepository;
 
@@ -150,7 +151,7 @@ public class ConsentService
     {
         var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
 
-        if (consent == null || !consent.IsValidAndApproved())
+        if (consent is null || !consent.IsValidAndApproved())
             return false;
 
         // Check if all requested scopes are in granted scopes
@@ -239,7 +240,7 @@ public class ConsentService
         CancellationToken cancellationToken = default)
     {
         var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
-        if (consent != null)
+        if (consent is not null)
         {
             consent.Revoke("User revoked consent");
             await _consentRepository.UpdateAsync(consent, cancellationToken);

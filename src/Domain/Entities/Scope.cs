@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents an OAuth2 scope definition
 /// </summary>
-public class Scope
+public class Scope sealed
 {
     /// <summary>
     /// Scope identifier (e.g., "openid", "profile", "api:read")

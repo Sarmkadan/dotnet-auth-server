@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Models;
 /// <summary>
 /// Represents a user consent request decision
 /// </summary>
-public class ConsentRequest
+public class ConsentRequest sealed
 {
     /// <summary>
     /// User ID providing consent

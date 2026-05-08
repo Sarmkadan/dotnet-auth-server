@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -17,7 +18,7 @@ using DotnetAuthServer.Configuration;
 /// Returns the public keys used to validate JWTs issued by this authorization server.
 /// Essential for clients that need to validate tokens independently.
 /// </summary>
-public class JwksHandler
+public class JwksHandler sealed
 {
     private readonly AuthServerOptions _options;
     private readonly ICacheService _cacheService;
@@ -42,7 +43,7 @@ public class JwksHandler
     public async Task<JwksResponse> GetJwksAsync(CancellationToken cancellationToken = default)
     {
         var cached = await _cacheService.GetAsync<JwksResponse>(JwksKey, cancellationToken);
-        if (cached != null)
+        if (cached is not null)
         {
             _logger.LogDebug("Returning cached JWKS");
             return cached;
@@ -66,7 +67,7 @@ public class JwksHandler
 
         // Generate JWK for current signing key
         var jwk = GenerateJwkFromSigningKey();
-        if (jwk != null)
+        if (jwk is not null)
         {
             keys.Add(jwk);
         }
@@ -137,7 +138,7 @@ public class JwksHandler
 /// <summary>
 /// JSON Web Key Set response per RFC 7517.
 /// </summary>
-public class JwksResponse
+public class JwksResponse sealed
 {
     [JsonPropertyName("keys")]
     public List<JwkKey> Keys { get; set; } = new();
@@ -146,7 +147,7 @@ public class JwksResponse
 /// <summary>
 /// Single JSON Web Key (JWK) per RFC 7517.
 /// </summary>
-public class JwkKey
+public class JwkKey sealed
 {
     [JsonPropertyName("kty")]
     public string? Kty { get; set; } // Key type (RSA, oct, EC, etc.)

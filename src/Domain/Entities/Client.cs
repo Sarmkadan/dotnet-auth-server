@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents an OAuth2/OIDC client application
 /// </summary>
-public class Client
+public class Client sealed
 {
     /// <summary>
     /// Unique client identifier

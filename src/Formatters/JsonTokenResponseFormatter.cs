@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Domain.Models;
 /// Ensures consistent JSON formatting with proper snake_case field names
 /// and compact output suitable for client parsing.
 /// </summary>
-public class JsonTokenResponseFormatter
+public class JsonTokenResponseFormatter sealed
 {
     private static readonly JsonSerializerOptions DefaultOptions = new()
     {
@@ -50,7 +51,7 @@ public class JsonTokenResponseFormatter
         try
         {
             var dto = JsonSerializer.Deserialize<TokenResponseDto>(json, DefaultOptions);
-            if (dto == null)
+            if (dto is null)
                 return null;
 
             return new TokenResponse

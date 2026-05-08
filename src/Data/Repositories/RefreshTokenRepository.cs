@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -46,7 +47,7 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken, string>
 /// <summary>
 /// In-memory implementation of refresh token repository
 /// </summary>
-public class RefreshTokenRepository : IRefreshTokenRepository
+public class RefreshTokenRepository : IRefreshTokenRepository sealed
 {
     private readonly Dictionary<string, RefreshToken> _tokens = new(StringComparer.OrdinalIgnoreCase);
 

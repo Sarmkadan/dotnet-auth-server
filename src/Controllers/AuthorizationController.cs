@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ using DotnetAuthServer.Services;
 /// </summary>
 [ApiController]
 [Route("oauth/authorize")]
-public class AuthorizationController : ControllerBase
+public class AuthorizationController : ControllerBase sealed
 {
     private readonly AuthorizationService _authorizationService;
     private readonly ILogger<AuthorizationController> _logger;
@@ -139,7 +140,7 @@ public class AuthorizationController : ControllerBase
             {
                 clientId = client_id,
                 userId = user_id,
-                requestedScopes = scope?.Split(' ') ?? Array.Empty<string>()
+                requestedScopes = scope?.Split(' ') ?? []>string>()
             };
 
             return Ok(consentResponse);
