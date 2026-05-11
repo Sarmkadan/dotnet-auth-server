@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -10,7 +11,7 @@ using DotnetAuthServer.Domain.Enums;
 /// <summary>
 /// Represents user consent for a client's scope access
 /// </summary>
-public class Consent
+public class Consent sealed
 {
     /// <summary>
     /// Unique consent identifier
@@ -78,7 +79,7 @@ public class Consent
     public bool IsValidAndApproved()
     {
         if (Status != ConsentStatus.Approved) return false;
-        if (ExpiresAt != null && DateTime.UtcNow >= ExpiresAt) return false;
+        if (ExpiresAt is not null && DateTime.UtcNow >= ExpiresAt) return false;
         return true;
     }
 
@@ -87,7 +88,7 @@ public class Consent
     /// </summary>
     public bool IsExpired()
     {
-        return ExpiresAt != null && DateTime.UtcNow >= ExpiresAt;
+        return ExpiresAt is not null && DateTime.UtcNow >= ExpiresAt;
     }
 
     /// <summary>

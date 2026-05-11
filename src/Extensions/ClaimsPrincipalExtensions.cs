@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -39,7 +40,7 @@ public static class ClaimsPrincipalExtensions
     public static bool IsEmailVerified(this ClaimsPrincipal principal)
     {
         var claim = principal.FindFirst(Constants.Claims.EmailVerified);
-        return claim != null && bool.TryParse(claim.Value, out var verified) && verified;
+        return claim is not null && bool.TryParse(claim.Value, out var verified) && verified;
     }
 
     /// <summary>

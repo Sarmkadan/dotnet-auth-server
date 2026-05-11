@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using System.Text;
 /// Provides cryptographically secure methods to prevent common vulnerabilities
 /// like timing attacks or weak random generation.
 /// </summary>
-public class SecretsService
+public class SecretsService sealed
 {
     private readonly ILogger<SecretsService> _logger;
 
@@ -90,7 +91,7 @@ public class SecretsService
     /// </summary>
     public bool VerifySecret(string secret, SecretHash hash)
     {
-        if (string.IsNullOrWhiteSpace(secret) || hash == null)
+        if (string.IsNullOrWhiteSpace(secret) || hash is null)
             return false;
 
         try
@@ -159,7 +160,7 @@ public class SecretsService
 /// <summary>
 /// Hashed secret with metadata for storage.
 /// </summary>
-public class SecretHash
+public class SecretHash sealed
 {
     public string Hash { get; set; } = string.Empty;
     public string Salt { get; set; } = string.Empty;

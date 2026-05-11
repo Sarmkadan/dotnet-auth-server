@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using DotnetAuthServer.Caching;
 /// Provides information about available scopes including descriptions and required consent.
 /// Used by clients to display scope consent screens and by servers for validation.
 /// </summary>
-public class ScopeMetadataHandler
+public class ScopeMetadataHandler sealed
 {
     private readonly ICacheService _cacheService;
     private readonly ILogger<ScopeMetadataHandler> _logger;
@@ -95,7 +96,7 @@ public class ScopeMetadataHandler
 
         var cacheKey = $"scope_metadata:{scopeName}";
         var cached = await _cacheService.GetAsync<ScopeMetadata>(cacheKey, cancellationToken);
-        if (cached != null)
+        if (cached is not null)
             return cached;
 
         ScopeMetadata? metadata = null;
@@ -104,7 +105,7 @@ public class ScopeMetadataHandler
             metadata = standardScope;
         }
 
-        if (metadata != null)
+        if (metadata is not null)
         {
             // Cache for 24 hours
             await _cacheService.SetAsync(cacheKey, metadata, TimeSpan.FromHours(24), cancellationToken);
@@ -125,7 +126,7 @@ public class ScopeMetadataHandler
         foreach (var scopeName in scopeNames)
         {
             var metadata = await GetScopeMetadataAsync(scopeName, cancellationToken);
-            if (metadata != null)
+            if (metadata is not null)
             {
                 results.Add(metadata);
             }
@@ -144,7 +145,7 @@ public class ScopeMetadataHandler
         foreach (var scopeName in StandardScopes.Keys)
         {
             var metadata = await GetScopeMetadataAsync(scopeName, cancellationToken);
-            if (metadata != null)
+            if (metadata is not null)
             {
                 scopes.Add(metadata);
             }
@@ -170,7 +171,7 @@ public class ScopeMetadataHandler
     /// </summary>
     public void RegisterCustomScope(ScopeMetadata metadata)
     {
-        if (metadata == null || string.IsNullOrWhiteSpace(metadata.Name))
+        if (metadata is null || string.IsNullOrWhiteSpace(metadata.Name))
         {
             _logger.LogWarning("Cannot register scope with missing name");
             return;
@@ -184,7 +185,7 @@ public class ScopeMetadataHandler
 /// <summary>
 /// Metadata about an OAuth2 scope.
 /// </summary>
-public class ScopeMetadata
+public class ScopeMetadata sealed
 {
     public string Name { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Domain.Entities;
 /// Transforms user entities into claims that can be embedded in tokens.
 /// Supports both standard OIDC claims and custom application claims.
 /// </summary>
-public class ClaimsEnrichmentService
+public class ClaimsEnrichmentService sealed
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<ClaimsEnrichmentService> _logger;
@@ -34,7 +35,7 @@ public class ClaimsEnrichmentService
         IEnumerable<string> grantedScopes,
         CancellationToken cancellationToken = default)
     {
-        if (user == null)
+        if (user is null)
             throw new ArgumentNullException(nameof(user));
 
         var claims = new List<Claim>();

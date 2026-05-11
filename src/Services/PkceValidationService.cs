@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Configuration;
 /// Implements RFC 7636 to protect against authorization code interception attacks.
 /// Particularly important for mobile and single-page applications that cannot securely store secrets.
 /// </summary>
-public class PkceValidationService
+public class PkceValidationService sealed
 {
     private readonly AuthServerOptions _options;
     private readonly ILogger<PkceValidationService> _logger;

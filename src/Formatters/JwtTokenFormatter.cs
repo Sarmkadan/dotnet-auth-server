@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using System.Security.Claims;
 /// Useful for debugging and logging token structure.
 /// WARNING: Does NOT validate signatures - never trust token claims without validation!
 /// </summary>
-public class JwtTokenFormatter
+public class JwtTokenFormatter sealed
 {
     private readonly ILogger<JwtTokenFormatter> _logger;
 
@@ -81,7 +82,7 @@ public class JwtTokenFormatter
     /// </summary>
     public string FormatForLogging(TokenInspection inspection)
     {
-        if (inspection == null)
+        if (inspection is null)
             return "(null token inspection)";
 
         return $"JWT{{ " +
@@ -96,7 +97,7 @@ public class JwtTokenFormatter
 /// <summary>
 /// Inspected JWT token structure (without cryptographic validation).
 /// </summary>
-public class TokenInspection
+public class TokenInspection sealed
 {
     public TokenHeader Header { get; set; } = new();
     public TokenPayload Payload { get; set; } = new();
@@ -106,7 +107,7 @@ public class TokenInspection
 /// <summary>
 /// JWT header information.
 /// </summary>
-public class TokenHeader
+public class TokenHeader sealed
 {
     public string? Alg { get; set; }
     public string? Typ { get; set; }
@@ -116,7 +117,7 @@ public class TokenHeader
 /// <summary>
 /// JWT payload (claims).
 /// </summary>
-public class TokenPayload
+public class TokenPayload sealed
 {
     public string? Subject { get; set; }
     public string? Issuer { get; set; }

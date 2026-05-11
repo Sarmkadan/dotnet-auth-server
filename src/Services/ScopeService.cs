@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -33,7 +34,7 @@ public interface IScopeRepository : IRepository<Scope, string>
 /// <summary>
 /// In-memory implementation of scope repository
 /// </summary>
-public class ScopeRepository : IScopeRepository
+public class ScopeRepository : IScopeRepository sealed
 {
     private readonly Dictionary<string, Scope> _scopes = new(StringComparer.OrdinalIgnoreCase);
 
@@ -109,7 +110,7 @@ public class ScopeRepository : IScopeRepository
 /// <summary>
 /// Service for managing OAuth2 scopes
 /// </summary>
-public class ScopeService
+public class ScopeService sealed
 {
     private readonly IScopeRepository _scopeRepository;
 
@@ -138,7 +139,7 @@ public class ScopeService
                 400);
 
         var existingScope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
-        if (existingScope != null)
+        if (existingScope is not null)
             throw new AuthServerException(
                 "invalid_request",
                 $"Scope '{scopeId}' already exists",
@@ -167,7 +168,7 @@ public class ScopeService
         CancellationToken cancellationToken = default)
     {
         var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
-        if (scope == null)
+        if (scope is null)
             throw new AuthServerException(
                 "invalid_request",
                 $"Scope '{scopeId}' not found",
@@ -196,7 +197,7 @@ public class ScopeService
         CancellationToken cancellationToken = default)
     {
         var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
-        if (scope == null)
+        if (scope is null)
             throw new AuthServerException(
                 "invalid_request",
                 $"Scope '{scopeId}' not found",
@@ -240,7 +241,7 @@ public class ScopeService
         foreach (var scopeId in requestedScopes)
         {
             var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
-            if (scope != null && scope.IsActive && scope.CanUserAccessScope(userRoles))
+            if (scope is not null && scope.IsActive && scope.CanUserAccessScope(userRoles))
             {
                 validScopes.Add(scopeId);
             }
@@ -253,7 +254,7 @@ public class ScopeService
 /// <summary>
 /// Summary view of a scope
 /// </summary>
-public class ScopeSummary
+public class ScopeSummary sealed
 {
     public string ScopeId { get; set; } = null!;
     public string DisplayName { get; set; } = null!;

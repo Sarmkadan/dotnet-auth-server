@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using DotnetAuthServer.Data.Repositories;
 /// Removes tokens from server-side storage to prevent their use.
 /// Important for logout flows and compromised token recovery.
 /// </summary>
-public class TokenRevocationHandler
+public class TokenRevocationHandler sealed
 {
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IAuthorizationGrantRepository _grantRepository;
@@ -53,7 +54,7 @@ public class TokenRevocationHandler
 
             // Try to revoke as refresh token
             var refreshToken = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
-            if (refreshToken != null)
+            if (refreshToken is not null)
             {
                 await _refreshTokenRepository.DeleteAsync(refreshToken.TokenId, cancellationToken);
                 _logger.LogInformation("Refresh token revoked successfully");
@@ -111,7 +112,7 @@ public class TokenRevocationHandler
 /// <summary>
 /// Result of a token revocation operation.
 /// </summary>
-public class RevocationResult
+public class RevocationResult sealed
 {
     /// <summary>
     /// Whether the operation completed without errors.

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotnetAuthServer.Configuration;
 /// <summary>
 /// Configuration options for the authorization server
 /// </summary>
-public class AuthServerOptions
+public class AuthServerOptions sealed
 {
     /// <summary>
     /// The issuer URL (will be used in JWT tokens)
