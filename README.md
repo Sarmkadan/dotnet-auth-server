@@ -12,17 +12,18 @@
 
 1. [Overview](#overview)
 2. [Features](#features)
-3. [Installation](#installation)
-4. [Usage Examples](#usage-examples)
-5. [API Reference](#api-reference)
-6. [Configuration](#configuration)
-7. [Architecture](#architecture)
-8. [Security](#security)
-9. [Performance](#performance)
-10. [Testing](#testing)
-11. [Related Projects](#related-projects)
-12. [Contributing](#contributing)
-13. [Troubleshooting](#troubleshooting)
+3. [Quick Start](#quick-start)
+4. [Installation](#installation)
+5. [Usage Examples](#usage-examples)
+6. [API Reference](#api-reference)
+7. [Configuration](#configuration)
+8. [Architecture](#architecture)
+9. [Security](#security)
+10. [Performance](#performance)
+11. [Testing](#testing)
+12. [Related Projects](#related-projects)
+13. [Contributing](#contributing)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -198,6 +199,40 @@ Database Layer (In-Memory or SQL - configurable):
   - Grant type restrictions per client
   - Scope restrictions per client
   - Client-specific claim mappings
+
+---
+
+## Quick Start
+
+Get a server running and issue your first token in under a minute.
+
+```bash
+git clone https://github.com/sarmkadan/dotnet-auth-server.git
+cd dotnet-auth-server
+dotnet run
+```
+
+The server starts at `https://localhost:7001`. Open `https://localhost:7001/swagger` to explore all endpoints interactively.
+
+**Issue a machine-to-machine token (client credentials):**
+
+```bash
+curl -X POST https://localhost:7001/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "grant_type=client_credentials" \
+  --data-urlencode "client_id=demo-service" \
+  --data-urlencode "client_secret=demo-secret" \
+  --data-urlencode "scope=api:read"
+```
+
+**Introspect the returned token:**
+
+```bash
+curl -X POST https://localhost:7001/oauth/token/introspect \
+  --data-urlencode "token=<access_token>"
+```
+
+For browser-based flows (SPA / PKCE) see [Usage Examples](#usage-examples). For Docker and production setup see [Installation](#installation).
 
 ---
 
