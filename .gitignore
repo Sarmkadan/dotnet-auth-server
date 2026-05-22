@@ -1,8 +1,6 @@
-# Build results
+## Build results
 [Dd]ebug/
-[Dd]ebugPublic/
 [Rr]elease/
-[Rr]eleases/
 x64/
 x86/
 [Ww][Ii][Nn]32/
@@ -11,50 +9,57 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
+[Oo]ut/
 [Ll]og/
 [Ll]ogs/
+msbuild.log
+msbuild.err
+msbuild.wrn
 
-# Visual Studio cache/options
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+
+## Visual Studio
 .vs/
-.vscode/
-
-# User-specific files
-*.rsuser
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+*.userprefs
+*.rsuser
+[Tt]est[Rr]esult*/
+[Dd]ebugPublic/
+[Rr]eleases/
+BenchmarkDotNet.Artifacts/
+artifacts/
 
-# Rider IDE
+## Rider
 .idea/
 *.sln.iml
 
-# Local database files
-*.db
-*.db-shm
-*.db-wal
+## VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
 
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
-*.swp
-*.swo
-*~
-
-# Package files
-*.nupkg
-*.snupkg
-packages/
-
-# Rider IDE / JetBrains
+## User-specific
 *.DotSettings.user
 
-# Application settings
-appsettings.Development.json
+## OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## dotnet tool
+.dotnet/
