@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ====================================================================
 
 namespace DotnetAuthServer.Integration;
 
@@ -11,6 +11,8 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DotnetAuthServer.Configuration;
+using DotnetAuthServer.Exceptions;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// HTTP client wrapper for the Open Policy Agent (OPA) REST API.
@@ -24,9 +26,9 @@ public sealed class OpaClient
 
     public OpaClient(HttpClient http, OpaOptions options, ILogger<OpaClient> logger)
     {
-        _http = http;
-        _options = options;
-        _logger = logger;
+        _http = http ?? throw new ArgumentNullException(nameof(http));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -39,26 +41,32 @@ public sealed class OpaClient
         ClaimsPrincipal principal,
         CancellationToken cancellationToken = default)
     {
-        // Build the input document from the principal's claims
-        var input = new OpaInput
-        {
-            Input = new OpaInputDocument
-            {
-                Subject = principal.FindFirst("sub")?.Value ?? "",
-                Roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList(),
-                Scopes = (principal.FindFirst("scope")?.Value ?? "")
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                    .ToList(),
-                Claims = principal.Claims
-                    .GroupBy(c => c.Type)
-                    .ToDictionary(g => g.Key, g => g.First().Value)
-            }
-        };
+        if (string.IsNullOrWhiteSpace(policyName))
+            throw new ArgumentException("Policy name cannot be null or whitespace", nameof(policyName));
 
-        var url = $"{_options.BaseUrl.TrimEnd('/')}/v1/data/{_options.PolicyPath}/{policyName}";
+        if (principal is null)
+            throw new ArgumentNullException(nameof(principal));
 
         try
         {
+            // Build the input document from the principal's claims
+            var input = new OpaInput
+            {
+                Input = new OpaInputDocument
+                {
+                    Subject = principal.FindFirst("sub")?.Value ?? "",
+                    Roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList(),
+                    Scopes = (principal.FindFirst("scope")?.Value ?? "")
+                        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                        .ToList(),
+                    Claims = principal.Claims
+                        .GroupBy(c => c.Type)
+                        .ToDictionary(g => g.Key, g => g.First().Value)
+                }
+            };
+
+            var url = $"{_options.BaseUrl.TrimEnd('/')}/v1/data/{_options.PolicyPath}/{policyName}";
+
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
 
@@ -68,7 +76,8 @@ public sealed class OpaClient
             {
                 _logger.LogWarning(
                     "OPA returned {StatusCode} for policy {Policy}",
-                    (int)response.StatusCode, policyName);
+                    (int)response.StatusCode,
+                    policyName);
                 return _options.FailClosedOnError ? false : null;
             }
 
@@ -80,6 +89,11 @@ public sealed class OpaClient
         catch (OperationCanceledException)
         {
             _logger.LogWarning("OPA request timed out for policy {Policy}", policyName);
+            return _options.FailClosedOnError ? false : null;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "OPA HTTP request failed for policy {Policy}", policyName);
             return _options.FailClosedOnError ? false : null;
         }
         catch (Exception ex)
