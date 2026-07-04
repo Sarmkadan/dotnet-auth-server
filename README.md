@@ -362,82 +362,31 @@ docker-compose logs -f auth-server
 
 ## Configuration
 
-### appsettings.json
+The application uses the `IOptions` pattern for configuration, with all settings encapsulated under the `DotnetAuthServer` section in `appsettings.json`.
 
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft": "Warning"
-    }
-  },
-  "AuthServer": {
-    "IssuerUrl": "https://auth.example.com",
-    "JwtSigningKey": "your-256-bit-secret-key-minimum-length-required",
-    "JwtSigningAlgorithm": "HS256",
-    "AccessTokenLifetimeSeconds": 3600,
-    "RefreshTokenLifetimeSeconds": 2592000,
-    "AuthorizationCodeLifetimeSeconds": 300,
-    "RequirePkceForAllClients": true,
-    "MaxFailedLoginAttempts": 5,
-    "AccountLockoutDurationMinutes": 15,
-    "EnableAuditLogging": true,
-    "EnableRateLimiting": true,
-    "RateLimitPerMinute": 60
-  },
-  "Cache": {
-    "Type": "Memory",
-    "AbsoluteExpirationMinutes": 60
-  },
-  "Cors": {
-    "AllowedOrigins": ["https://localhost:3000", "https://myapp.com"],
-    "AllowCredentials": true
-  }
-}
-```
+For a complete example of all configurable settings and their default values, see [appsettings.example.json](./appsettings.example.json).
+
+### Configuration Options
+
+The `DotnetAuthServer` section consists of four sub-sections:
+
+- **AuthServer**: Core authorization server settings (Issuer, JWT signing, lifetimes, etc.).
+- **Cache**: Caching layer settings (Backend, TTLs, connection strings).
+- **Logging**: Logging behavior (Minimum level, sensitive data logging, excluded paths).
+- **Opa**: Optional Open Policy Agent integration settings.
+
+### Validation
+
+All configuration values are automatically validated on application startup using DataAnnotations. If a required setting is missing or an invalid value is provided (e.g., a JWT signing key shorter than 32 characters), the application will fail to start and log the validation errors.
 
 ### Environment Variables
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `AuthServer__IssuerUrl` | - | OIDC issuer URL (required) |
-| `AuthServer__JwtSigningKey` | - | JWT signing key (256+ bits, required) |
-| `AuthServer__AccessTokenLifetimeSeconds` | 3600 | Access token TTL (1 hour) |
-| `AuthServer__RefreshTokenLifetimeSeconds` | 2592000 | Refresh token TTL (30 days) |
-| `AuthServer__RequirePkceForAllClients` | true | Enforce PKCE for all clients |
-| `AuthServer__EnableAuditLogging` | true | Enable audit trail |
-| `ASPNETCORE_ENVIRONMENT` | Production | Execution environment |
-| `ASPNETCORE_URLS` | https://0.0.0.0:8080 | Binding URL |
+You can override any `appsettings.json` setting using environment variables with a double-underscore (`__`) separator:
 
-### Scope Configuration
-
-Define scopes in `appsettings.json`:
-
-```json
-{
-  "Scopes": [
-    {
-      "Name": "openid",
-      "Description": "OpenID Connect scope",
-      "IsRequired": true,
-      "RequiresConsent": false,
-      "Claims": ["sub", "iss", "aud"]
-    },
-    {
-      "Name": "profile",
-      "Description": "User profile information",
-      "RequiresConsent": true,
-      "Claims": ["name", "given_name", "family_name", "picture"]
-    },
-    {
-      "Name": "api:write",
-      "Description": "Write access to API",
-      "RequiresConsent": true,
-      "RequiredRoles": ["editor", "admin"]
-    }
-  ]
-}
+```bash
+# Example override
+export DotnetAuthServer__AuthServer__IssuerUrl="https://auth.production.com"
+export DotnetAuthServer__AuthServer__JwtSigningKey="A_VERY_LONG_AND_SECURE_SIGNING_KEY_32_CHARS"
 ```
 
 ---
