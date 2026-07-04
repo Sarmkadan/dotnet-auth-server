@@ -15,52 +15,27 @@ using DotnetAuthServer.Integration;
 using DotnetAuthServer.Middleware;
 using DotnetAuthServer.Security;
 using DotnetAuthServer.Services;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load configuration
-var authServerOptions = new AuthServerOptions
-{
-    IssuerUrl = builder.Configuration["AuthServer:IssuerUrl"] ?? "https://localhost:7001",
-    JwtSigningKey = builder.Configuration["AuthServer:JwtSigningKey"] ?? GenerateDefaultSigningKey(),
-    JwtAlgorithm = builder.Configuration["AuthServer:JwtAlgorithm"] ?? "HS256",
-    AccessTokenLifetimeSeconds = int.TryParse(
-        builder.Configuration["AuthServer:AccessTokenLifetimeSeconds"], out var atl) ? atl : 3600,
-    RefreshTokenLifetimeSeconds = int.TryParse(
-        builder.Configuration["AuthServer:RefreshTokenLifetimeSeconds"], out var rtl) ? rtl : 2592000,
-    AuthorizationCodeLifetimeSeconds = int.TryParse(
-        builder.Configuration["AuthServer:AuthorizationCodeLifetimeSeconds"], out var acl) ? acl : 300,
-    RequirePkceForAllClients = bool.TryParse(
-        builder.Configuration["AuthServer:RequirePkceForAllClients"], out var pkce) && pkce,
-    DatabaseConnectionString = builder.Configuration["ConnectionStrings:DefaultConnection"] ?? "",
-    UseInMemoryDatabase = bool.TryParse(
-        builder.Configuration["AuthServer:UseInMemoryDatabase"], out var inmem) && inmem,
-};
+// Configure options
+builder.Services.AddOptions<DotnetAuthServerOptions>()
+    .Bind(builder.Configuration.GetSection("DotnetAuthServer"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
-if (!authServerOptions.IsValid())
-{
-    throw new InvalidOperationException("AuthServer configuration is invalid. Check appsettings.json");
-}
+builder.Services.AddOptions<WebhookOptions>()
+    .Bind(builder.Configuration.GetSection("Webhooks"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
-// Load Phase 2 configuration options
-var loggingOptions = new LoggingOptions();
-builder.Configuration.GetSection("Logging").Bind(loggingOptions);
-
-var cacheOptions = new CacheOptions();
-builder.Configuration.GetSection("Cache").Bind(cacheOptions);
-
-var webhookOptions = new WebhookOptions();
-builder.Configuration.GetSection("Webhooks").Bind(webhookOptions);
-
-var opaOptions = new OpaOptions();
-builder.Configuration.GetSection("Opa").Bind(opaOptions);
-
-// Add services to the container
-builder.Services.AddSingleton(authServerOptions);
-builder.Services.AddSingleton(loggingOptions);
-builder.Services.AddSingleton(cacheOptions);
-builder.Services.AddSingleton(webhookOptions);
-builder.Services.AddSingleton(opaOptions);
+// Backward compatibility registration for services
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.AuthServer);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.Cache);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.Logging);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.Opa);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<WebhookOptions>>().Value);
 
 // Repositories
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
@@ -120,10 +95,14 @@ builder.Services.AddHostedService<TokenCleanupWorker>();
 
 // HTTP Clients
 builder.Services.AddHttpClient<WebhookClient>()
-    .ConfigureHttpClient(client => client.Timeout = webhookOptions.Timeout);
+    .ConfigureHttpClient((sp, client) => {
+        var options = sp.GetRequiredService<WebhookOptions>();
+        client.Timeout = options.Timeout;
+    });
 
 // Optional OPA client — registered only when integration is enabled so the
 // HttpClient factory doesn't create unnecessary connections.
+var opaOptions = builder.Configuration.GetSection("DotnetAuthServer:Opa").Get<OpaOptions>() ?? new OpaOptions();
 if (opaOptions.Enabled)
 {
     builder.Services.AddHttpClient<OpaClient>()
@@ -150,6 +129,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+var authServerOptions = app.Services.GetRequiredService<AuthServerOptions>();
+var opaOptions = app.Services.GetRequiredService<OpaOptions>();
+var webhookOptions = app.Services.GetRequiredService<WebhookOptions>();
 
 // Configure middleware pipeline
 // Order is important: error handling should be early, CORS before routing, logging everywhere

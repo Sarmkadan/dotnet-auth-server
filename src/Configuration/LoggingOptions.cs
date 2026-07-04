@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.ComponentModel.DataAnnotations;
+
 namespace DotnetAuthServer.Configuration;
 
 /// <summary>
@@ -15,6 +17,7 @@ public sealed class LoggingOptions
     /// <summary>
     /// Minimum log level to output.
     /// </summary>
+    [Required]
     public LogLevel MinimumLevel { get; set; } = LogLevel.Information;
 
     /// <summary>
@@ -39,11 +42,13 @@ public sealed class LoggingOptions
     /// Maximum length of request/response bodies to log.
     /// Longer bodies are truncated.
     /// </summary>
+    [Range(0, int.MaxValue)]
     public int MaxBodyLogLength { get; set; } = 1000;
 
     /// <summary>
     /// Paths that should not be logged (to reduce noise).
     /// </summary>
+    [Required]
     public List<string> ExcludedPaths { get; set; } = new()
     {
         "/health",
