@@ -815,6 +815,119 @@ public class TokenController
 }
 ```
 
+## UserManagementService
+
+The `UserManagementService` provides administrative CRUD operations over user accounts. It is designed for privileged, server-side callers such as admin APIs and background jobs, while end-user self-service operations are handled by the `UserService`. This service includes methods for creating, reading, updating, and deleting user accounts, as well as managing user roles, locking/unlocking accounts, and searching users.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+using DotnetAuthServer.Services;
+
+// Setup in Program.cs
+builder.Services.AddScoped<UserManagementService>();
+
+// Example usage in an admin controller or background service
+public class UserAdminController
+{
+    private readonly UserManagementService _userManagement;
+
+    public UserAdminController(UserManagementService userManagement)
+    {
+        _userManagement = userManagement;
+    }
+
+    public async Task<IActionResult> CreateAdminUser()
+    {
+        // Create a new admin user
+        var createRequest = new CreateUserRequest
+        {
+            Username = "admin",
+            Email = "admin@example.com",
+            Password = "SecureAdmin123!",
+            FullName = "Administrator",
+            Roles = new List<string> { "admin", "user" }
+        };
+
+        var createdUser = await _userManagement.CreateUserAsync(createRequest);
+        return CreatedAtAction(nameof(GetUser), new { id = createdUser.UserId }, createdUser);
+    }
+
+    public async Task<IActionResult> GetAllUsers()
+    {
+        // Get all registered users
+        var allUsers = await _userManagement.GetAllUsersAsync();
+        return Ok(allUsers);
+    }
+
+    public async Task<IActionResult> GetUserDetails(string userId)
+    {
+        // Get a specific user by ID
+        var user = await _userManagement.GetUserByIdAsync(userId);
+        return Ok(user);
+    }
+
+    public async Task<IActionResult> SearchUsers(string query)
+    {
+        // Search users by username, email, or full name
+        var results = await _userManagement.SearchUsersAsync(query);
+        return Ok(results);
+    }
+
+    public async Task<IActionResult> UpdateUserProfile(string userId)
+    {
+        // Update user profile fields
+        var updateRequest = new UpdateUserRequest
+        {
+            FullName = "Updated Name",
+            IsActive = true,
+            Attributes = new Dictionary<string, object>
+            {
+                { "department", "engineering" },
+                { "max_sessions", 5 }
+            }
+        };
+
+        var updatedUser = await _userManagement.UpdateUserAsync(userId, updateRequest);
+        return Ok(updatedUser);
+    }
+
+    public async Task<IActionResult> AssignRoleToUser(string userId, string role)
+    {
+        // Assign a role to a user
+        await _userManagement.AssignRoleAsync(userId, role);
+        return Ok();
+    }
+
+    public async Task<IActionResult> RemoveRoleFromUser(string userId, string role)
+    {
+        // Remove a role from a user
+        await _userManagement.RemoveRoleAsync(userId, role);
+        return Ok();
+    }
+
+    public async Task<IActionResult> LockUserAccount(string userId, int hours = 24)
+    {
+        // Lock a user account for security reasons
+        await _userManagement.LockUserAsync(userId, TimeSpan.FromHours(hours));
+        return Ok();
+    }
+
+    public async Task<IActionResult> UnlockUserAccount(string userId)
+    {
+        // Unlock a user account
+        await _userManagement.UnlockUserAsync(userId);
+        return Ok();
+    }
+
+    public async Task<IActionResult> DeleteUser(string userId)
+    {
+        // Permanently delete a user account and revoke all tokens
+        await _userManagement.DeleteUserAsync(userId);
+        return NoContent();
+    }
+}
+```
+
 ## UserSessionService
 
 The `UserSessionService` manages the lifecycle of authenticated user sessions in the authorization server. Sessions are created automatically after successful token issuance and can be revoked individually or in bulk (e.g., on password change or account deletion). The service provides methods for session management, statistics, and cleanup of expired sessions.
