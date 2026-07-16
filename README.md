@@ -1065,6 +1065,130 @@ public class UserAdminController
 }
 ```
 
+## UserService
+
+The `UserService` handles user authentication and self-service management operations. It provides methods for authenticating users, creating new accounts, updating profiles, changing passwords, and managing user roles. This service is designed for end-user operations and integrates with the authorization server's authentication flows.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<UserService>();
+
+// Example usage in a controller or service
+public class UserController
+{
+    private readonly UserService _userService;
+
+    public UserController(UserService userService)
+    {
+        _userService = userService;
+    }
+
+    public async Task<IActionResult> RegisterUser()
+    {
+        // Register a new user account
+        var newUser = await _userService.CreateUserAsync(
+            username: "johndoe",
+            email: "john@example.com",
+            password: "SecurePassword123!",
+            fullName: "John Doe"
+        );
+
+        return CreatedAtAction(nameof(GetUser), new { id = newUser.UserId }, newUser);
+    }
+
+    public async Task<IActionResult> AuthenticateUser()
+    {
+        // Authenticate an existing user
+        var user = await _userService.AuthenticateAsync(
+            username: "johndoe",
+            password: "SecurePassword123!"
+        );
+
+        return Ok(new { user.UserId, user.Username, user.Email });
+    }
+
+    public async Task<IActionResult> UpdateProfile(string userId)
+    {
+        // Get the user entity
+        var user = await _userRepository.GetByIdAsync(userId);
+        
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        // Update user profile
+        var updatedUser = await _userService.UpdateUserAsync(
+            user: user,
+            fullName: "John Doe Updated",
+            attributes: new Dictionary<string, object>
+            {
+                { "department", "engineering" },
+                { "max_sessions", 5 }
+            }
+        );
+
+        return Ok(updatedUser);
+    }
+
+    public async Task<IActionResult> ChangePassword(string userId)
+    {
+        // Get the user entity
+        var user = await _userRepository.GetByIdAsync(userId);
+        
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        // Change user password
+        await _userService.ChangePasswordAsync(
+            user: user,
+            currentPassword: "SecurePassword123!",
+            newPassword: "NewSecurePassword456!"
+        );
+
+        return Ok(new { message = "Password changed successfully" });
+    }
+
+    public async Task<IActionResult> AssignRole(string userId)
+    {
+        // Get the user entity
+        var user = await _userRepository.GetByIdAsync(userId);
+        
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        // Assign a role to the user
+        await _userService.AssignRoleAsync(user, "premium");
+
+        return Ok(new { message = "Role assigned successfully" });
+    }
+
+    public async Task<IActionResult> RemoveRole(string userId)
+    {
+        // Get the user entity
+        var user = await _userRepository.GetByIdAsync(userId);
+        
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        // Remove a role from the user
+        await _userService.RemoveRoleAsync(user, "premium");
+
+        return Ok(new { message = "Role removed successfully" });
+    }
+}
+```
+
 ## UserSessionService
 
 The `UserSessionService` manages the lifecycle of authenticated user sessions in the authorization server. Sessions are created automatically after successful token issuance and can be revoked individually or in bulk (e.g., on password change or account deletion). The service provides methods for session management, statistics, and cleanup of expired sessions.
