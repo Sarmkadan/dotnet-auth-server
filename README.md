@@ -161,6 +161,63 @@ foreach (var claim in allClaims)
 }
 ```
 
+## AuthorizationRequest
+
+The `AuthorizationRequest` class represents an OAuth 2.0 / OpenID Connect authorization request containing all parameters sent by a client during the authorization flow. It encapsulates standard OAuth parameters like `client_id`, `response_type`, `redirect_uri`, `scope`, and OpenID Connect extensions such as `nonce`, `code_challenge`, and `prompt`. The class provides helper methods to validate requests, parse scopes, and check for PKCE or OpenID Connect compliance.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Create a new authorization request for the authorization code flow with PKCE
+var authRequest = new AuthorizationRequest
+{
+    ClientId = "web-client",
+    ResponseType = "code",
+    RedirectUri = "https://client.example.com/callback",
+    Scope = "openid profile email api:read",
+    State = Guid.NewGuid().ToString(),
+    Nonce = Guid.NewGuid().ToString(),
+    CodeChallenge = "E9Melhoa2OwvFrEMTJks93UTHBbYu3_KJDijOhbwNY",
+    CodeChallengeMethod = "S256",
+    Display = "page",
+    Prompt = "consent",
+    MaxAge = 3600,
+    UiLocales = "en-US",
+    AcrValues = "urn:mace:incommon:iap:silver",
+    LoginHint = "user@example.com",
+    CustomParameters = new Dictionary<string, string>
+    {
+        { "custom_param", "value" },
+        { "another_param", "123" }
+    }
+};
+
+// Validate the request
+if (authRequest.IsValid())
+{
+    Console.WriteLine("Authorization request is valid");
+}
+
+// Check if PKCE is required
+if (authRequest.HasPkce())
+{
+    Console.WriteLine("PKCE is required for this request");
+}
+
+// Check if this is an OpenID Connect request
+if (authRequest.IsOpenIdRequest())
+{
+    Console.WriteLine("This is an OpenID Connect request");
+}
+
+// Get requested scopes as a list
+var requestedScopes = authRequest.GetRequestedScopes();
+foreach (var scope in requestedScopes)
+{
+    Console.WriteLine($"Requested scope: {scope}");
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
