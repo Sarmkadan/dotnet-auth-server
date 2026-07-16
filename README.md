@@ -2384,6 +2384,46 @@ public class TokenController
 
 The `PolicyEnforcementService` provides role-based and attribute-based access control for the authorization server. It evaluates policies to determine if a user is allowed to perform actions or access resources. When Open Policy Agent (OPA) integration is enabled, policy decisions can be delegated to an external OPA REST API; otherwise, the service uses built-in policy evaluation.
 
+## OpaOptions
+
+The `OpaOptions` class configures the Open Policy Agent (OPA) integration for external policy evaluation. When enabled, policy decisions are delegated to an OPA REST API instead of using the built-in evaluator. This allows teams to manage and version policies externally using Rego.
+
+```csharp
+using DotnetAuthServer.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.Configure<OpaOptions>(builder.Configuration.GetSection("Opa"));
+
+// Example configuration in appsettings.json
+{
+  "Opa": {
+    "Enabled": true,
+    "BaseUrl": "http://opa:8181",
+    "PolicyPath": "authz",
+    "TimeoutSeconds": 5,
+    "FailClosedOnError": false
+  }
+}
+
+// Usage in services
+public class PolicyService
+{
+    private readonly OpaOptions _opaOptions;
+
+    public PolicyService(IOptions<OpaOptions> opaOptions)
+    {
+        _opaOptions = opaOptions.Value;
+    }
+
+    public bool IsOpaEnabled => _opaOptions.Enabled;
+    public string BaseUrl => _opaOptions.BaseUrl;
+    public string PolicyPath => _opaOptions.PolicyPath;
+    public int TimeoutSeconds => _opaOptions.TimeoutSeconds;
+    public bool FailClosedOnError => _opaOptions.FailClosedOnError;
+}
+```
+
 ```csharp
 using DotnetAuthServer.Services;
 using System.Security.Claims;
