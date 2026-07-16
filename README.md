@@ -1031,6 +1031,90 @@ public class TokenController
 }
 ```
 
+## PolicyEnforcementService
+
+The `PolicyEnforcementService` provides role-based and attribute-based access control for the authorization server. It evaluates policies to determine if a user is allowed to perform actions or access resources. When Open Policy Agent (OPA) integration is enabled, policy decisions can be delegated to an external OPA REST API; otherwise, the service uses built-in policy evaluation.
+
+```csharp
+using DotnetAuthServer.Services;
+using System.Security.Claims;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<PolicyEnforcementService>();
+
+// Example usage in a controller or service
+public class ResourceController
+{
+    private readonly PolicyEnforcementService _policyService;
+
+    public ResourceController(PolicyEnforcementService policyService)
+    {
+        _policyService = policyService;
+    }
+
+    public IActionResult AccessAdminResource(ClaimsPrincipal user)
+    {
+        // Check if user satisfies the "AdminOnly" policy
+        bool isAdmin = _policyService.EvaluatePolicy("AdminOnly", user);
+
+        if (!isAdmin)
+        {
+            return Forbid();
+        }
+
+        return Ok("Access granted to admin resource");
+    }
+
+    public async Task<IActionResult> AccessSensitiveResourceAsync(ClaimsPrincipal user)
+    {
+        // Async evaluation for better performance
+        bool hasAccess = await _policyService.EvaluatePolicyAsync("SensitiveDataAccess", user);
+
+        if (!hasAccess)
+        {
+            return Forbid("Insufficient privileges");
+        }
+
+        return Ok("Access granted to sensitive resource");
+    }
+
+    public IActionResult AccessDepartmentResource(ClaimsPrincipal user)
+    {
+        // Create a custom policy dynamically
+        var departmentPolicy = new Policy
+        {
+            Rules = new List<PolicyRule>
+            {
+                new PolicyRule
+                {
+                    Type = PolicyRuleType.Attribute,
+                    Attribute = "department",
+                    Values = new List<string> { "engineering", "finance" },
+                    Match = PolicyMatchMode.Any
+                },
+                new PolicyRule
+                {
+                    Type = PolicyRuleType.Role,
+                    Values = new List<string> { "manager", "director" },
+                    Match = PolicyMatchMode.Any
+                }
+            },
+            CombineWith = PolicyCombineMode.All
+        };
+
+        bool hasAccess = _policyService.EvaluatePolicy(departmentPolicy, user);
+
+        if (hasAccess)
+        {
+            return Ok("Access granted to department resource");
+        }
+
+        return Forbid("User does not have required department or role");
+    }
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
