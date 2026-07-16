@@ -1,4 +1,43 @@
+## UserSession
+
+The `UserSession` entity represents an active authentication session for a user, associated with a specific OAuth2 grant. It tracks vital session metadata including the originating client, user, granted scopes, and session lifecycle events like expiration, last activity, and revocation status.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+
+// Create a new user session
+var session = new UserSession
+{
+    UserId = "user-123",
+    ClientId = "web-client-abc",
+    GrantedScopes = "openid profile email",
+    ExpiresAt = DateTime.UtcNow.AddHours(1),
+    IpAddress = "192.168.1.100",
+    UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+};
+
+// Record user activity
+session.Touch(); // Updates LastActivityAt
+
+// Check session validity
+if (session.IsActive())
+{
+    Console.WriteLine($"Session {session.SessionId} is active for user {session.UserId}.");
+}
+
+// Revoke the session if necessary
+session.Revoke("User logged out explicitly");
+
+if (session.IsRevoked)
+{
+    Console.WriteLine($"Session revoked: {session.RevocationReason}");
+}
+```
+
 ## DeviceFlowHandler
+
 
 The `DeviceFlowHandler` class is responsible for managing device flow authorizations, enabling devices with limited input capabilities to obtain access tokens. It provides methods for initiating, approving, denying, and polling device flow sessions.
 
