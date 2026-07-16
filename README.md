@@ -1139,6 +1139,83 @@ public class AuthorizationController
 
 The `UserManagementService` provides administrative CRUD operations over user accounts. It is designed for privileged, server-side callers such as admin APIs and background jobs, while end-user self-service operations are handled by the `UserService`. This service includes methods for creating, reading, updating, and deleting user accounts, as well as managing user roles, locking/unlocking accounts, and searching users.
 
+## IRefreshTokenRepository
+
+The `IRefreshTokenRepository` interface provides data access operations for managing OAuth 2.0 refresh tokens in the authorization server. It extends the base `IRepository<RefreshToken, string>` interface and adds refresh token-specific operations for retrieving tokens by hash, user ID, client ID, managing valid tokens, revoking all tokens for a user, and cleaning up expired tokens. This repository serves as the data access layer for refresh token management operations.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a token service or controller
+public class TokenManagementService
+{
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+
+    public TokenManagementService(IRefreshTokenRepository refreshTokenRepository)
+    {
+        _refreshTokenRepository = refreshTokenRepository;
+    }
+
+    public async Task ManageRefreshTokensExample()
+    {
+        // Create a new refresh token
+        var newToken = new RefreshToken
+        {
+            TokenId = Guid.NewGuid().ToString(),
+            TokenHash = "hashed-token-value",
+            UserId = "user-123",
+            ClientId = "web-client",
+            ExpiresAt = DateTime.UtcNow.AddDays(30),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Scope = "openid profile email api:read"
+        };
+        await _refreshTokenRepository.CreateAsync(newToken);
+
+        // Get a refresh token by ID
+        var existingToken = await _refreshTokenRepository.GetByIdAsync(newToken.TokenId);
+
+        // Get all refresh tokens
+        var allTokens = await _refreshTokenRepository.GetAllAsync();
+
+        // Get refresh token by token hash
+        var tokenByHash = await _refreshTokenRepository.GetByTokenHashAsync("hashed-token-value");
+
+        // Get all tokens for a specific user
+        var userTokens = await _refreshTokenRepository.GetByUserIdAsync("user-123");
+
+        // Get all tokens for a specific client
+        var clientTokens = await _refreshTokenRepository.GetByClientIdAsync("web-client");
+
+        // Get all valid tokens for a user
+        var validUserTokens = await _refreshTokenRepository.GetValidTokensByUserAsync("user-123");
+
+        // Check if token exists
+        var exists = await _refreshTokenRepository.ExistsAsync(newToken.TokenId);
+
+        // Update a refresh token
+        if (existingToken != null)
+        {
+            existingToken.UpdatedAt = DateTime.UtcNow;
+            await _refreshTokenRepository.UpdateAsync(existingToken);
+        }
+
+        // Revoke all tokens for a user (e.g., after password change)
+        await _refreshTokenRepository.RevokeAllUserTokensAsync("user-123", "Password changed - all sessions invalidated");
+
+        // Delete a refresh token
+        await _refreshTokenRepository.DeleteAsync(existingToken!);
+
+        // Delete by ID
+        await _refreshTokenRepository.DeleteByIdAsync(newToken.TokenId);
+
+        // Cleanup expired tokens
+        await _refreshTokenRepository.DeleteExpiredAsync();
+    }
+}
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Services;
