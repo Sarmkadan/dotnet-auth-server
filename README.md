@@ -213,6 +213,58 @@ public class CacheConfigurationService
 }
 ```
 
+## LoggingOptions
+
+The `LoggingOptions` class provides configuration for the authorization server's logging system. It controls log verbosity, formatting, and what information is included in logs, making it essential for debugging, security auditing, and performance monitoring while protecting sensitive data.
+
+```csharp
+using DotnetAuthServer.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.Configure<LoggingOptions>(builder.Configuration.GetSection("Logging"));
+
+// Example usage in a service
+public class LoggingConfigurationService
+{
+private readonly LoggingOptions _loggingOptions;
+
+public LoggingConfigurationService(IOptions<LoggingOptions> loggingOptions)
+{
+_loggingOptions = loggingOptions.Value;
+}
+
+public void ConfigureLoggingSettings()
+{
+// Configure basic logging settings
+var loggingOptions = new LoggingOptions
+{
+MinimumLevel = LogLevel.Debug, // Capture all logs for development
+LogSensitiveData = false, // Never log sensitive data in production
+LogRequestBodies = true, // Log request/response bodies for debugging
+LogRequestTiming = true, // Include timing information
+MaxBodyLogLength = 2000, // Increase body log limit for large payloads
+ExcludedPaths = new List<string> { "/health", "/swagger", "/.well-known" },
+IncludeCorrelationId = true, // Add correlation IDs to all logs
+StructuredLogging = false // Use plain text format for development
+};
+
+// Configure production logging settings
+var productionLogging = new LoggingOptions
+{
+MinimumLevel = LogLevel.Information, // Only important logs in production
+LogSensitiveData = false, // Always false in production
+LogRequestBodies = false, // Disable body logging for performance
+LogRequestTiming = true, // Keep timing for performance monitoring
+MaxBodyLogLength = 1000, // Reasonable limit for error cases
+ExcludedPaths = new List<string> { "/health", "/swagger", "/.well-known", "/oauth/token" },
+IncludeCorrelationId = true, // Correlation IDs help with debugging
+StructuredLogging = true // JSON format for log aggregation
+};
+}
+}
+```
+
 ## Scope
 
 The `Scope` entity defines OAuth 2.0 and OpenID Connect scopes that control access to protected resources and user data. Scopes determine which claims are included in ID tokens and access tokens, which roles can request them, and whether user consent is required. This type is used throughout the authorization flow to manage scope validation, token generation, and access control.
