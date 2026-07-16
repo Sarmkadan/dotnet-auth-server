@@ -91,10 +91,13 @@ public sealed class JwksHandler
             // Create thumbprint of the key
             var thumbprint = GenerateSha256Thumbprint(keyBytes);
 
+            // NOTE: for symmetric (oct) keys the key material MUST NOT be published -
+            // JWKS is a public document. Only the key id / alg / use are exposed so
+            // resource servers can match the kid; validation of HS256 tokens requires
+            // the shared secret to be distributed out of band anyway.
             return new JwkKey
             {
                 Kty = "oct",
-                K = _options.JwtSigningKey,
                 Kid = thumbprint.Substring(0, 16), // Use first 16 chars as key ID
                 Use = "sig",
                 Alg = _options.JwtAlgorithm ?? "HS256"

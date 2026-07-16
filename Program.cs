@@ -199,6 +199,17 @@ app.MapGet("/.well-known/openid-configuration", () =>
 .WithName("GetOpenIdConfiguration")
 .WithDescription("Returns OpenID Connect configuration");
 
+// JWKS endpoint - advertised in the metadata documents above, so it has to exist.
+// Key material for symmetric keys is never included (see JwksHandler).
+app.MapGet("/.well-known/jwks.json", async (JwksHandler jwksHandler, CancellationToken cancellationToken) =>
+{
+    var jwks = await jwksHandler.GetJwksAsync(cancellationToken);
+    return Results.Json(jwks);
+})
+.WithOpenApi()
+.WithName("GetJwks")
+.WithDescription("Returns the JSON Web Key Set used to validate tokens issued by this server");
+
 // Health check endpoint
 app.MapGet("/health", () =>
 {
@@ -210,16 +221,3 @@ app.MapGet("/health", () =>
 
 Console.WriteLine($"Authorization Server starting at {authServerOptions.IssuerUrl}");
 app.Run();
-
-/// <summary>
-/// Generates a default 256-bit signing key (should be configured in production)
-/// </summary>
-static string GenerateDefaultSigningKey()
-{
-    var bytes = new byte[32];
-    using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
-    {
-        rng.GetBytes(bytes);
-    }
-    return Convert.ToBase64String(bytes);
-}
