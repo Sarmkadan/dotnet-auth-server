@@ -882,6 +882,71 @@ public class SessionManagementController
 }
 ```
 
+## ClientValidationService
+
+The `ClientValidationService` provides comprehensive validation for OAuth 2.0 clients during authorization flows. It validates client credentials, redirect URIs, allowed scopes, and grant types while leveraging caching to reduce database queries and improve performance. The service handles both confidential and public clients, ensuring proper security checks are applied based on client type.
+
+```csharp
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<ClientValidationService>();
+
+// Example usage in a controller or service
+public class TokenController
+{
+    private readonly ClientValidationService _clientValidation;
+    private readonly ITokenService _tokenService;
+
+    public TokenController(ClientValidationService clientValidation, ITokenService tokenService)
+    {
+        _clientValidation = clientValidation;
+        _tokenService = tokenService;
+    }
+
+    public async Task<IActionResult> IssueToken(TokenRequest request)
+    {
+        // Validate client credentials
+        var client = await _clientValidation.ValidateClientCredentialsAsync(
+            request.ClientId, 
+            request.ClientSecret,
+            cancellationToken: HttpContext.RequestAborted
+        );
+
+        // Validate redirect URI
+        await _clientValidation.ValidateRedirectUriAsync(
+            request.ClientId,
+            request.RedirectUri,
+            HttpContext.RequestAborted
+        );
+
+        // Validate grant type
+        await _clientValidation.ValidateGrantTypeAsync(
+            request.ClientId,
+            request.GrantType,
+            HttpContext.RequestAborted
+        );
+
+        // Validate requested scopes
+        await _clientValidation.ValidateScopesAsync(
+            request.ClientId,
+            request.GetScopes(),
+            HttpContext.RequestAborted
+        );
+
+        // Generate tokens for valid request
+        var tokenResponse = await _tokenService.GenerateTokensAsync(
+            request.ClientId,
+            request.GetSubject(),
+            request.GetScopes()
+        );
+
+        return Ok(tokenResponse);
+    }
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
