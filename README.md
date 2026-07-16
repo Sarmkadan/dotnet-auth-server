@@ -1861,6 +1861,68 @@ public class SessionManagementService
 }
 ```
 
+## SessionManagementController
+
+The `SessionManagementController` provides a REST API for managing user sessions in the authorization server. It exposes endpoints for listing active sessions, viewing session statistics, retrieving user-specific sessions, and revoking sessions either individually or for all sessions belonging to a user. This controller is essential for administrative operations, security monitoring, and user session management.
+
+```csharp
+using DotnetAuthServer.Controllers;
+using Microsoft.AspNetCore.Mvc;
+
+// Example usage in an admin controller or background service
+public class SessionAdminController
+{
+private readonly SessionManagementController _sessionController;
+
+public SessionAdminController(SessionManagementController sessionController)
+{
+_sessionController = sessionController;
+}
+
+public async Task<IActionResult> ListAllActiveSessions()
+{
+// Returns all currently active sessions across all users
+var result = await _sessionController.GetAllActiveSessionsAsync(CancellationToken.None);
+return Ok(result);
+}
+
+public async Task<IActionResult> GetSessionStatistics()
+{
+// Returns aggregate session statistics
+var result = await _sessionController.GetStatsAsync(CancellationToken.None);
+return Ok(result);
+}
+
+public async Task<IActionResult> GetUserSessionHistory(string userId)
+{
+// Returns all active sessions for a specific user
+var result = await _sessionController.GetUserSessionsAsync(userId, CancellationToken.None);
+return Ok(result);
+}
+
+public async Task<IActionResult> RevokeSingleSession(string sessionId, string? reason = null)
+{
+// Revokes a single session by its ID
+var result = await _sessionController.RevokeSessionAsync(sessionId, reason, CancellationToken.None);
+return Ok(result);
+}
+
+public async Task<IActionResult> RevokeAllUserSessions(string userId, string? reason = null)
+{
+// Revokes all active sessions for a specific user
+var result = await _sessionController.RevokeAllUserSessionsAsync(userId, reason, CancellationToken.None);
+return Ok(result);
+}
+
+public async Task<IActionResult> CleanupExpiredSessions()
+{
+// Removes all expired sessions from storage
+var result = await _sessionController.CleanupExpiredAsync(CancellationToken.None);
+return Ok(result);
+}
+}
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Services;
