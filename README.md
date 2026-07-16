@@ -213,6 +213,78 @@ public class CacheConfigurationService
 }
 ```
 
+## MemoryCacheService
+
+The `MemoryCacheService` provides an in-memory caching implementation using `ConcurrentDictionary` for thread-safe operations. It's designed for single-server deployments and offers automatic expiration checking, pattern-based cache removal, and atomic get-or-set operations to prevent thundering herd problems.
+
+```csharp
+using DotnetAuthServer.Caching;
+using Microsoft.Extensions.DependencyInjection;
+
+// Register in Program.cs
+builder.Services.AddSingleton<MemoryCacheService>();
+
+// Example usage in a service or controller
+public class DataService
+{
+private readonly MemoryCacheService _cache;
+
+public DataService(MemoryCacheService cache)
+{
+_cache = cache;
+}
+
+public async Task<User?> GetUserAsync(string userId)
+{
+// Try to get from cache first
+var cachedUser = await _cache.GetAsync<User>($"user:{userId}");
+if (cachedUser is not null)
+{
+return cachedUser;
+}
+
+// Cache miss - fetch from database
+var user = await _userRepository.GetByIdAsync(userId);
+
+// Cache the result for 30 minutes
+if (user is not null)
+{
+await _cache.SetAsync($"user:{userId}", user, TimeSpan.FromMinutes(30));
+}
+
+return user;
+}
+
+public async Task<Product[]> GetPopularProductsAsync()
+{
+// Get or set with factory function - prevents thundering herd
+var products = await _cache.GetOrSetAsync(
+key: "popular_products",
+factory: async _ => await _productRepository.GetPopularAsync(),
+// Cache for 1 hour
+expiration: TimeSpan.FromHours(1)
+);
+
+return products ?? Array.Empty<Product>();
+}
+
+public async Task InvalidateUserCacheAsync(string userId)
+{
+// Remove specific user cache
+await _cache.RemoveAsync($"user:{userId}");
+
+// Remove all sessions for this user
+await _cache.RemoveByPatternAsync($"user_sessions:{userId}*");
+}
+
+public async Task ClearAllCacheAsync()
+{
+// Clear entire cache when needed
+await _cache.ClearAsync();
+}
+}
+```
+
 ## LoggingOptions
 
 The `LoggingOptions` class provides configuration for the authorization server's logging system. It controls log verbosity, formatting, and what information is included in logs, making it essential for debugging, security auditing, and performance monitoring while protecting sensitive data.
