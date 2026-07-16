@@ -488,6 +488,68 @@ var publicClientResponse = new ClientRegistrationResponse
 };
 ```
 
+## TokenResponse
+
+The `TokenResponse` class represents the OAuth 2.0 token response returned from the token endpoint (`POST /oauth/token`). It contains the access token, token type, expiration information, optional refresh token, and any additional claims or custom properties. This type is used throughout the authorization flow to return tokens to clients after successful authentication and authorization.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Create a token response after successful authentication
+var tokenResponse = new TokenResponse
+{
+    AccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+    TokenType = "Bearer",
+    ExpiresIn = 3600,
+    RefreshToken = "8xLOxK...",
+    Scope = "openid profile email api:read api:write",
+    IdToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYXVkIjoiYXBpLXNlcnZpY2UiLCJleHAiOjE1MTYyMzkwMjIsImlhdCI6MTUxNjIzOTAyMn0.Pa5eS4...",
+    CustomProperties = new Dictionary<string, object>
+    {
+        { "user_id", "user-123" },
+        { "client_id", "web-client" },
+        { "amr", new List<string> { "pwd", "mfa" } }
+    }
+};
+
+// Example usage in a token endpoint handler
+public async Task<IActionResult> IssueToken(TokenRequest request)
+{
+    if (!request.IsValid())
+    {
+        return BadRequest("Invalid token request");
+    }
+
+    // Generate tokens based on the request
+    var response = await _tokenService.GenerateTokensAsync(
+        request.ClientId,
+        request.GetSubject(),
+        request.GetScopes()
+    );
+
+    return Ok(response);
+}
+
+// Access token response (without refresh token)
+var accessTokenResponse = new TokenResponse
+{
+    AccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    TokenType = "Bearer",
+    ExpiresIn = 3600,
+    Scope = "api:read"
+};
+
+// Refresh token response
+var refreshTokenResponse = new TokenResponse
+{
+    AccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new...",
+    TokenType = "Bearer",
+    ExpiresIn = 3600,
+    RefreshToken = "new-refresh-token-xyz",
+    Scope = "api:read api:write"
+};
+```
+
 ## ConsentRequest
 
 The `ConsentRequest` class represents a user consent decision during the OAuth 2.0 authorization flow. It captures the user's approval or denial of requested scopes, along with contextual information such as the client application, user identity, and request metadata. This type is used to persist consent decisions and enforce scope-based access control.
