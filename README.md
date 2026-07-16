@@ -323,6 +323,37 @@ if (tokenRequest6.IsValid())
 }
 ```
 
+## ApiResponse
+
+The `ApiResponse<T>` and `ApiResponse` classes provide a standardized wrapper for API responses across all endpoints in the authorization server. They support both success and error responses with consistent metadata including success status, optional data payload, error messages, status codes, trace identifiers, and timestamps. These types are used throughout the application to ensure a uniform response format.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Generic success response with data
+var userResponse = ApiResponse<User>.SuccessResponse(
+    new User { Username = "johndoe", Email = "john@example.com" },
+    "User retrieved successfully"
+);
+
+// Error response
+var errorResponse = ApiResponse<TokenResponse>.ErrorResponse(
+    "Invalid client credentials",
+    "Authentication failed",
+    401
+);
+
+// Non-generic success response
+var successResponse = ApiResponse.SuccessResponse("Operation completed successfully");
+
+// Non-generic error response
+var notFoundResponse = ApiResponse.ErrorResponse(
+    "User not found",
+    "The requested user does not exist",
+    404
+);
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
