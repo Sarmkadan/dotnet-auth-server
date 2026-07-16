@@ -488,6 +488,79 @@ var publicClientResponse = new ClientRegistrationResponse
 };
 ```
 
+## ConsentRequest
+
+The `ConsentRequest` class represents a user consent decision during the OAuth 2.0 authorization flow. It captures the user's approval or denial of requested scopes, along with contextual information such as the client application, user identity, and request metadata. This type is used to persist consent decisions and enforce scope-based access control.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Create a consent request for a user approving scopes
+var consentRequest = new ConsentRequest
+{
+    UserId = "user-123",
+    ClientId = "web-client",
+    GrantedScopes = new List<string> { "openid", "profile", "email", "api:read" },
+    Approved = true,
+    RememberConsent = true,
+    IpAddress = "192.168.1.100",
+    UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+};
+
+// Validate the consent request
+if (consentRequest.IsValid())
+{
+    Console.WriteLine("Consent request is valid");
+    Console.WriteLine($"Granted scopes: {consentRequest.GetScopesString()}");
+}
+
+// Create a consent request for a user denying scopes
+var deniedConsentRequest = new ConsentRequest
+{
+    UserId = "user-456",
+    ClientId = "mobile-app",
+    GrantedScopes = new List<string>(),
+    Approved = false,
+    DenialReason = "User declined unnecessary permissions",
+    IpAddress = "10.0.0.5",
+    UserAgent = "MobileApp/1.2.3"
+};
+
+// Check if consent should be remembered
+if (consentRequest.RememberConsent)
+{
+    Console.WriteLine("Consent will be remembered for future requests");
+}
+
+// Example usage in a consent endpoint handler
+public async Task<IActionResult> HandleConsent(ConsentRequest consentRequest)
+{
+    if (!consentRequest.IsValid())
+    {
+        return BadRequest("Invalid consent request");
+    }
+
+    if (consentRequest.Approved)
+    {
+        // Store the consent decision
+        await _consentRepository.SaveConsentAsync(consentRequest);
+        
+        // Generate tokens based on granted scopes
+        var tokenResponse = await _tokenService.GenerateTokensAsync(
+            consentRequest.UserId,
+            consentRequest.ClientId,
+            consentRequest.GetScopesString()
+        );
+        
+        return Ok(tokenResponse);
+    }
+    else
+    {
+        return Forbid("Consent denied by user");
+    }
+}
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Models;
 
