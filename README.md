@@ -151,6 +151,68 @@ foreach (var param in registrationOptions.PubKeyCredParams)
 }
 ```
 
+## CacheOptions
+
+The `CacheOptions` class provides configuration for the authorization server's caching layer. It controls cache backend selection, expiration times, and size limits for various cached data types including clients, users, scopes, authorization grants, and JWKS keys. This configuration is essential for optimizing performance and managing memory usage in production environments.
+
+```csharp
+using DotnetAuthServer.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
+
+// Example usage in a service
+public class CacheConfigurationService
+{
+    private readonly CacheOptions _cacheOptions;
+
+    public CacheConfigurationService(IOptions<CacheOptions> cacheOptions)
+    {
+        _cacheOptions = cacheOptions.Value;
+    }
+
+    public void ConfigureCacheSettings()
+    {
+        // Configure memory cache settings
+        var memoryCacheOptions = new CacheOptions
+        {
+            Enabled = true,
+            Backend = "Memory",
+            DefaultExpirationSeconds = 3600, // 1 hour
+            MaxEntries = 10000,
+            ExpirationScanIntervalSeconds = 300, // 5 minutes
+            ItemExpirations = new CacheItemExpirations
+            {
+                ClientSeconds = 3600,    // 1 hour for client info
+                UserSeconds = 1800,       // 30 minutes for user info
+                ScopeSeconds = 7200,      // 2 hours for scope definitions
+                GrantSeconds = 300,       // 5 minutes for authorization grants
+                JwksSeconds = 86400       // 24 hours for JWKS keys
+            }
+        };
+
+        // Configure Redis cache settings
+        var redisCacheOptions = new CacheOptions
+        {
+            Enabled = true,
+            Backend = "Redis",
+            ConnectionString = "localhost:6379,password=secret",
+            DefaultExpirationSeconds = 3600,
+            MaxEntries = 100000,
+            ItemExpirations = new CacheItemExpirations
+            {
+                ClientSeconds = 7200,    // 2 hours for client info
+                UserSeconds = 3600,       // 1 hour for user info
+                ScopeSeconds = 14400,     // 4 hours for scope definitions
+                GrantSeconds = 600,       // 10 minutes for authorization grants
+                JwksSeconds = 86400       // 24 hours for JWKS keys
+            }
+        };
+    }
+}
+```
+
 ## Scope
 
 The `Scope` entity defines OAuth 2.0 and OpenID Connect scopes that control access to protected resources and user data. Scopes determine which claims are included in ID tokens and access tokens, which roles can request them, and whether user consent is required. This type is used throughout the authorization flow to manage scope validation, token generation, and access control.
