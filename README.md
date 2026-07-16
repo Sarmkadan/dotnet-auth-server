@@ -1477,9 +1477,72 @@ public class MfaController
 }
 ```
 
-## IConsentRepository
+## ConsentRepository
 
-The `IConsentRepository` interface provides data access operations for managing OAuth 2.0 user consent decisions in the authorization server. It stores user approvals or denials of requested scopes for specific OAuth clients, enabling the authorization server to enforce scope-based access control and remember consent decisions across sessions. This repository serves as the data access layer for consent management operations.
+The `ConsentRepository` class provides an in-memory implementation of the `IConsentRepository` interface for managing OAuth 2.0 user consent decisions in the authorization server. It stores user approvals or denials of requested scopes for specific OAuth clients, enabling the authorization server to enforce scope-based access control and remember consent decisions across sessions. This repository serves as the data access layer for consent management operations.
+
+```csharp
+using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Domain.Entities;
+
+// Example usage in a service or controller
+public class ConsentManagementService
+{
+    private readonly ConsentRepository _consentRepository;
+
+    public ConsentManagementService()
+    {
+        _consentRepository = new ConsentRepository();
+    }
+
+    public async Task ManageConsentsExample()
+    {
+        // Create a new consent record
+        var newConsent = new Consent
+        {
+            ConsentId = Guid.NewGuid().ToString(),
+            UserId = "user-123",
+            ClientId = "web-client",
+            GrantedScopes = "openid profile email api:read",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(90)
+        };
+        await _consentRepository.CreateAsync(newConsent);
+
+        // Get a consent by ID
+        var existingConsent = await _consentRepository.GetByIdAsync(newConsent.ConsentId);
+
+        // Get all consents
+        var allConsents = await _consentRepository.GetAllAsync();
+
+        // Get consent for specific user and client
+        var userClientConsent = await _consentRepository.GetByUserAndClientAsync("user-123", "web-client");
+
+        // Get all consents for a user
+        var userConsents = await _consentRepository.GetByUserIdAsync("user-123");
+
+        // Get all consents for a client
+        var clientConsents = await _consentRepository.GetByClientIdAsync("web-client");
+
+        // Check if consent exists
+        var exists = await _consentRepository.ExistsAsync(newConsent.ConsentId);
+
+        // Update a consent
+        if (existingConsent != null)
+        {
+            existingConsent.Grant("openid profile email api:read api:write", "192.168.1.100", "Mozilla/5.0");
+            await _consentRepository.UpdateAsync(existingConsent);
+        }
+
+        // Revoke a consent
+        await _consentRepository.DeleteAsync(existingConsent!);
+
+        // Revoke all consents for a user
+        var revokedCount = await _consentRepository.RevokeUserConsentsAsync("user-123");
+    }
+}
+```
 
 ```csharp
 using DotnetAuthServer.Domain.Entities;
