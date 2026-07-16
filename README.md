@@ -987,6 +987,90 @@ public class ClientManagementController
 }
 ```
 
+## AuthorizationService
+
+The `AuthorizationService` handles core authorization logic for the OAuth 2.0/OpenID Connect authorization server. It validates authorization requests, creates authorization grants, manages user consent, enforces PKCE validation, and cleans up expired grants. This service coordinates the authorization flow between clients, users, and the token issuance process.
+
+```csharp
+using DotnetAuthServer.Services;
+using DotnetAuthServer.Domain.Models;
+
+// Setup in Program.cs
+builder.Services.AddScoped<AuthorizationService>();
+
+// Example usage in an authorization controller
+public class AuthorizationController
+{
+    private readonly AuthorizationService _authService;
+    private readonly ITokenService _tokenService;
+
+    public AuthorizationController(AuthorizationService authService, ITokenService tokenService)
+    {
+        _authService = authService;
+        _tokenService = tokenService;
+    }
+
+    public async Task<IActionResult> ValidateAndAuthorize(AuthorizationRequest authRequest)
+    {
+        // Validate the authorization request
+        var validationResult = await _authService.ValidateAuthorizationRequestAsync(authRequest);
+        
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.Error);
+        }
+
+        // Check if consent is required
+        var consentRequired = await _authService.GetConsentPromptAsync(
+            authRequest.ClientId,
+            authRequest.UserId,
+            authRequest.GetRequestedScopes()
+        );
+
+        if (consentRequired.RequiresConsent)
+        {
+            // Store consent decision and show consent page to user
+            return View("Consent", consentRequired);
+        }
+
+        // Create authorization grant
+        var grant = await _authService.CreateAuthorizationGrantAsync(
+            authRequest.ClientId,
+            authRequest.UserId,
+            authRequest.GetRequestedScopes(),
+            authRequest.CodeChallenge,
+            authRequest.CodeChallengeMethod,
+            authRequest.Nonce,
+            authRequest.MaxAge
+        );
+
+        // Redirect to client with authorization code
+        return Redirect($"{authRequest.RedirectUri}?code={grant.AuthorizationCode}");
+    }
+
+    public async Task<IActionResult> ValidatePkce(string clientId, string codeVerifier)
+    {
+        // Validate PKCE code verifier
+        var isValid = await _authService.ValidatePkceCodeVerifier(clientId, codeVerifier);
+        
+        if (!isValid)
+        {
+            return BadRequest("Invalid PKCE code verifier");
+        }
+
+        return Ok(new { message = "PKCE validation successful" });
+    }
+
+    public async Task<IActionResult> CleanupExpiredGrants()
+    {
+        // Cleanup expired authorization grants
+        await _authService.CleanupExpiredGrantsAsync();
+        
+        return Ok(new { message = "Expired grants cleaned up successfully" });
+    }
+}
+```
+
 ## UserManagementService
 
 The `UserManagementService` provides administrative CRUD operations over user accounts. It is designed for privileged, server-side callers such as admin APIs and background jobs, while end-user self-service operations are handled by the `UserService`. This service includes methods for creating, reading, updating, and deleting user accounts, as well as managing user roles, locking/unlocking accounts, and searching users.
