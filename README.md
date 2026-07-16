@@ -815,6 +815,143 @@ public class TokenController
 }
 ```
 
+## ClientService
+
+The `ClientService` provides OAuth 2.0 client registration and management functionality for the authorization server. It handles client registration, configuration updates, secret rotation, and activation/deactivation of clients. This service is used by the dynamic client registration endpoint and administrative client management operations.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Services;
+
+// Setup in Program.cs
+builder.Services.AddScoped<ClientService>();
+
+// Example usage in a controller or service
+public class ClientManagementController
+{
+    private readonly ClientService _clientService;
+
+    public ClientManagementController(ClientService clientService)
+    {
+        _clientService = clientService;
+    }
+
+    public async Task<IActionResult> RegisterConfidentialClient()
+    {
+        // Register a new confidential client
+        var client = await _clientService.RegisterClientAsync(
+            clientName: "My Web Application",
+            isConfidential: true,
+            redirectUris: new List<string> { "https://client.example.com/callback" },
+            allowedGrantTypes: new List<string> { "authorization_code", "refresh_token" },
+            allowedScopes: new List<string> { "openid", "profile", "email", "api:read" }
+        );
+
+        return CreatedAtAction(nameof(GetClient), new { id = client.ClientId }, client);
+    }
+
+    public async Task<IActionResult> RegisterPublicClient()
+    {
+        // Register a new public client (no client secret)
+        var client = await _clientService.RegisterClientAsync(
+            clientName: "Single Page Application",
+            isConfidential: false,
+            redirectUris: new List<string> { "https://app.example.com/callback" },
+            allowedGrantTypes: new List<string> { "authorization_code" },
+            allowedScopes: new List<string> { "openid", "profile" }
+        );
+
+        return Ok(client);
+    }
+
+    public async Task<IActionResult> UpdateClientConfiguration(string clientId)
+    {
+        // Get the existing client
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        
+        if (client == null)
+        {
+            return NotFound();
+        }
+
+        // Update client configuration
+        var updatedClient = await _clientService.UpdateClientAsync(
+            client: client,
+            clientName: "Updated Client Name",
+            redirectUris: new List<string> { "https://client.example.com/new-callback" },
+            allowedScopes: new List<string> { "openid", "profile", "email", "api:read", "api:write" },
+            corsOrigins: new List<string> { "https://client.example.com" }
+        );
+
+        return Ok(updatedClient);
+    }
+
+    public async Task<IActionResult> RotateClientSecret(string clientId)
+    {
+        // Get the client
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        
+        if (client == null || !client.IsConfidential)
+        {
+            return BadRequest("Client not found or not confidential");
+        }
+
+        // Rotate the client secret
+        var newSecret = await _clientService.RotateClientSecretAsync(client);
+
+        return Ok(new { message = "Client secret rotated successfully", newSecret });
+    }
+
+    public async Task<IActionResult> DeactivateClient(string clientId)
+    {
+        // Get the client
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        
+        if (client == null)
+        {
+            return NotFound();
+        }
+
+        // Deactivate the client
+        await _clientService.DeactivateClientAsync(client);
+
+        return Ok(new { message = "Client deactivated successfully" });
+    }
+
+    public async Task<IActionResult> ReactivateClient(string clientId)
+    {
+        // Get the client
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        
+        if (client == null)
+        {
+            return NotFound();
+        }
+
+        // Reactivate the client
+        await _clientService.ReactivateClientAsync(client);
+
+        return Ok(new { message = "Client reactivated successfully" });
+    }
+
+    public async Task<IActionResult> ValidateClientSecret(string clientId, string providedSecret)
+    {
+        // Get the client
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        
+        if (client == null)
+        {
+            return NotFound();
+        }
+
+        // Validate the client secret
+        var isValid = _clientService.ValidateClientSecret(client, providedSecret);
+
+        return Ok(new { isValid });
+    }
+}
+```
+
 ## UserManagementService
 
 The `UserManagementService` provides administrative CRUD operations over user accounts. It is designed for privileged, server-side callers such as admin APIs and background jobs, while end-user self-service operations are handled by the `UserService`. This service includes methods for creating, reading, updating, and deleting user accounts, as well as managing user roles, locking/unlocking accounts, and searching users.
