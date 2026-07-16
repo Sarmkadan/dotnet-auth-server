@@ -116,6 +116,41 @@ var credential = new WebAuthnCredential
 };
 ```
 
+## WebAuthnPublicKeyParam
+
+The `WebAuthnPublicKeyParam` record describes a public-key credential algorithm offered during a WebAuthn registration ceremony. It specifies the credential type and the COSE algorithm identifier that the authenticator must support.
+
+
+
+```csharp
+using DotnetAuthServer.Services;
+
+// Create a WebAuthnPublicKeyParam for ES256 (ECDSA with P-256 curve)
+var es256Param = new WebAuthnPublicKeyParam(
+    Type: "public-key",
+    Alg: -7  // ES256 algorithm identifier
+);
+
+// Create a WebAuthnPublicKeyParam for RS256 (RSASSA-PKCS1-v1_5)
+var rs256Param = new WebAuthnPublicKeyParam(
+    Type: "public-key",
+    Alg: -257  // RS256 algorithm identifier
+);
+
+// These parameters are used when generating registration options
+var registrationOptions = await webAuthnService.GenerateRegistrationOptionsAsync(
+    userId: "user-123",
+    username: "johndoe",
+    displayName: "John Doe"
+);
+
+// The PubKeyCredParams collection contains the supported algorithms
+foreach (var param in registrationOptions.PubKeyCredParams)
+{
+    Console.WriteLine($"Supported algorithm: Type={param.Type}, Alg={param.Alg}");
+}
+```
+
 ## Scope
 
 The `Scope` entity defines OAuth 2.0 and OpenID Connect scopes that control access to protected resources and user data. Scopes determine which claims are included in ID tokens and access tokens, which roles can request them, and whether user consent is required. This type is used throughout the authorization flow to manage scope validation, token generation, and access control.
