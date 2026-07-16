@@ -1216,6 +1216,86 @@ public class TokenManagementService
 }
 ```
 
+## IUserSessionRepository
+
+The `IUserSessionRepository` interface provides data access operations for managing user session entities in the authorization server. It extends the base `IRepository<UserSession, string>` interface and adds session-specific operations for retrieving sessions by user ID, managing active sessions, revoking sessions, and cleaning up expired sessions. This repository serves as the data access layer for user session management operations.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a session management service or controller
+public class SessionManagementService
+{
+    private readonly IUserSessionRepository _sessionRepository;
+
+    public SessionManagementService(IUserSessionRepository sessionRepository)
+    {
+        _sessionRepository = sessionRepository;
+    }
+
+    public async Task ManageUserSessionsExample()
+    {
+        // Create a new user session
+        var newSession = new UserSession
+        {
+            SessionId = Guid.NewGuid().ToString(),
+            UserId = "user-123",
+            ClientId = "web-client",
+            SessionToken = "session-token-abc123",
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(8),
+            LastActivityAt = DateTime.UtcNow,
+            IpAddress = "192.168.1.100",
+            UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            GrantedScopes = "openid profile email api:read",
+            IsRevoked = false,
+            RevokedAt = null,
+            RevokedReason = null
+        };
+        await _sessionRepository.CreateAsync(newSession);
+
+        // Get a session by ID
+        var existingSession = await _sessionRepository.GetByIdAsync(newSession.SessionId);
+
+        // Get all sessions
+        var allSessions = await _sessionRepository.GetAllAsync();
+
+        // Get all sessions for a specific user
+        var userSessions = await _sessionRepository.GetByUserIdAsync("user-123");
+
+        // Get all active sessions for a specific user
+        var activeUserSessions = await _sessionRepository.GetActiveByUserIdAsync("user-123");
+
+        // Get all active sessions across all users
+        var allActiveSessions = await _sessionRepository.GetAllActiveAsync();
+
+        // Check if session exists
+        var exists = await _sessionRepository.ExistsAsync(newSession.SessionId);
+
+        // Update a session
+        if (existingSession != null)
+        {
+            existingSession.LastActivityAt = DateTime.UtcNow;
+            existingSession.ExpiresAt = DateTime.UtcNow.AddHours(8);
+            await _sessionRepository.UpdateAsync(existingSession);
+        }
+
+        // Revoke a session
+        await _sessionRepository.DeleteAsync(existingSession!);
+
+        // Revoke all sessions for a user (e.g., after password change)
+        var revokedCount = await _sessionRepository.RevokeAllUserSessionsAsync("user-123", "Password changed - all sessions invalidated");
+
+        // Delete by ID
+        await _sessionRepository.DeleteByIdAsync(newSession.SessionId);
+
+        // Delete expired sessions
+        var deletedCount = await _sessionRepository.DeleteExpiredAsync();
+    }
+}
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Services;
