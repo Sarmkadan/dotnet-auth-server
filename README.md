@@ -677,6 +677,33 @@ var notFoundResponse = ApiResponse.ErrorResponse(
 );
 ```
 
+## AuditLoggingService
+
+The AuditLoggingService class provides methods for logging various security-related events, such as token issuance, authentication, authorization decisions, suspicious activity, and administrative actions.
+
+Example usage:
+```csharp
+public AuditLoggingService auditLogger = new AuditLoggingService();
+
+// Log token issuance
+auditLogger.LogTokenIssuance();
+
+// Log authentication attempt
+auditLogger.LogAuthentication();
+
+// Log authorization decision
+auditLogger.LogAuthorizationDecision();
+
+// Log suspicious activity
+auditLogger.LogSuspiciousActivity();
+
+// Log administrative action
+auditLogger.LogAdministrativeAction();
+
+// Retrieve recent audit log entries
+var recentEntries = auditLogger.GetRecentEntries();
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
