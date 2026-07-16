@@ -1865,6 +1865,79 @@ public class SessionManagementService
 
 The `SessionManagementController` provides a REST API for managing user sessions in the authorization server. It exposes endpoints for listing active sessions, viewing session statistics, retrieving user-specific sessions, and revoking sessions either individually or for all sessions belonging to a user. This controller is essential for administrative operations, security monitoring, and user session management.
 
+## MfaController
+
+The `MfaController` provides a REST API for managing Time-based One-Time Password (TOTP) multi-factor authentication in the authorization server. It handles enrollment initiation with secret generation and QR code provisioning URIs, setup confirmation via code verification, ongoing code verification with configurable time-step windows, backup code redemption, status queries, and MFA disablement. All routes are nested under `/api/users/{userId}/mfa`.
+
+```csharp
+using DotnetAuthServer.Controllers;
+using Microsoft.AspNetCore.Mvc;
+
+// Example usage in a controller or service
+public class UserMfaManagementService
+{
+    private readonly MfaController _mfaController;
+
+    public UserMfaManagementService(MfaController mfaController)
+    {
+        _mfaController = mfaController;
+    }
+
+    public async Task<IActionResult> CheckMfaStatus(string userId)
+    {
+        // Get current MFA status for a user
+        var result = await _mfaController.GetStatusAsync(userId, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> EnableMfaForUser(string userId, string username)
+    {
+        // Initiate MFA enrollment for a user
+        var setupResult = await _mfaController.SetupAsync(userId, CancellationToken.None);
+        
+        // The response contains:
+        // - SecretKey: The TOTP secret key to share with the user
+        // - ProvisioningUri: A URI for QR code generation
+        // - BackupCodes: 8-character backup codes for offline recovery
+        
+        return Ok(setupResult);
+    }
+
+    public async Task<IActionResult> ConfirmMfaSetup(string userId, string totpCode)
+    {
+        // Confirm MFA setup with the user's TOTP code
+        var confirmRequest = new MfaVerifyRequest { Code = totpCode };
+        var confirmResult = await _mfaController.ConfirmSetupAsync(
+            userId, 
+            confirmRequest, 
+            CancellationToken.None
+        );
+        
+        return Ok(confirmResult);
+    }
+
+    public async Task<IActionResult> VerifyMfaCode(string userId, string code)
+    {
+        // Verify a TOTP or backup code during login
+        var verifyRequest = new MfaVerifyRequest { Code = code };
+        var verifyResult = await _mfaController.VerifyAsync(
+            userId, 
+            verifyRequest, 
+            CancellationToken.None
+        );
+        
+        return verifyResult;
+    }
+
+    public async Task<IActionResult> DisableMfa(string userId)
+    {
+        // Disable MFA for a user
+        var disableResult = await _mfaController.DisableMfaAsync(userId, CancellationToken.None);
+        return Ok(disableResult);
+    }
+}
+```
+
 ```csharp
 using DotnetAuthServer.Controllers;
 using Microsoft.AspNetCore.Mvc;
