@@ -116,6 +116,51 @@ var credential = new WebAuthnCredential
 };
 ```
 
+## Scope
+
+The `Scope` entity defines OAuth 2.0 and OpenID Connect scopes that control access to protected resources and user data. Scopes determine which claims are included in ID tokens and access tokens, which roles can request them, and whether user consent is required. This type is used throughout the authorization flow to manage scope validation, token generation, and access control.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+
+// Define a custom scope for API access
+var apiReadScope = new Scope
+{
+    ScopeId = "api:read",
+    DisplayName = "Read API Access",
+    Description = "Allows reading data from the API. Includes claims: name, email, and profile information.",
+    IsRequired = false,
+    RequiresConsent = true,
+    IsOpenIdScope = false,
+    IsActive = true,
+    IdTokenClaims = new List<string> { "name", "email" },
+    AccessTokenClaims = new List<string> { "name", "email", "scope" },
+    AllowedRoles = new List<string> { "user", "admin", "api-consumer" },
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow
+};
+
+// Validate the scope
+if (apiReadScope.IsValid())
+{
+    Console.WriteLine("Scope is valid");
+}
+
+// Check if a user can access this scope
+var userRoles = new List<string> { "user", "premium" };
+if (apiReadScope.CanUserAccessScope(userRoles))
+{
+    Console.WriteLine("User has access to this scope");
+}
+
+// Get all claims that will be included in tokens
+var allClaims = apiReadScope.GetAllClaims();
+foreach (var claim in allClaims)
+{
+    Console.WriteLine($"Claim: {claim}");
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
