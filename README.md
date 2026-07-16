@@ -490,6 +490,95 @@ else
 
 The `Consent` entity represents user consent for OAuth2/OIDC client scope access. It tracks consent status, granted scopes, expiration, and audit information including IP address and user agent. The class provides methods to grant, deny, revoke consent and check scope permissions.
 
+## Client
+
+The `Client` entity represents an OAuth2/OIDC client application registered with the authorization server. It defines client metadata such as identifiers, secrets, redirect URIs, allowed grant types, scopes, and token lifetime settings. Clients can be confidential (with secrets) or public, and support various OAuth2 flows including authorization code, implicit, client credentials, and refresh token flows.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+
+// Create a new confidential client
+var client = new Client
+{
+    ClientId = "web-client-123",
+    ClientName = "Web Application Client",
+    ClientSecretHash = "hashed-secret-value-here", // In production, use proper hashing
+    IsConfidential = true,
+    IsActive = true,
+    Description = "Main web application client for user authentication",
+    
+    // Redirect URIs for authorization code flow
+    RedirectUris = new List<string>
+    {
+        "https://example.com/auth/callback",
+        "https://example.com/silent-renew"
+    },
+    
+    // Post-logout redirect URIs
+    PostLogoutRedirectUris = new List<string>
+    {
+        "https://example.com/",
+        "https://example.com/logged-out"
+    },
+    
+    // Allowed OAuth2 grant types
+    AllowedGrantTypes = new List<string>
+    {
+        "authorization_code",
+        "refresh_token",
+        "client_credentials"
+    },
+    
+    // Allowed scopes
+    AllowedScopes = new List<string>
+    {
+        "openid",
+        "profile",
+        "email",
+        "api:read",
+        "api:write"
+    },
+    
+    // CORS origins
+    AllowedCorsOrigins = new List<string>
+    {
+        "https://example.com",
+        "https://staging.example.com"
+    },
+    
+    // Token lifetime settings (in seconds)
+    AccessTokenLifetime = 3600, // 1 hour
+    RefreshTokenLifetime = 2592000, // 30 days
+    
+    // Security settings
+    RequirePkce = true,
+    RequireConsent = true,
+    RefreshTokenRotation = true,
+    
+    // Contact information
+    Contacts = new List<string> { "admin@example.com", "security@example.com" },
+    
+    // URIs for branding and policies
+    LogoUri = "https://example.com/images/logo.png",
+    PolicyUri = "https://example.com/policies/privacy",
+    TermsOfServiceUri = "https://example.com/terms"
+};
+
+// Validate client configuration
+bool isValid = client.IsValid();
+
+// Check if a redirect URI is registered
+bool isValidRedirect = client.IsRedirectUriValid("https://example.com/auth/callback");
+
+// Check if a grant type is allowed
+bool allowsAuthorizationCode = client.IsGrantTypeAllowed("authorization_code");
+
+// Check if a scope is allowed
+bool hasEmailScope = client.IsScopeAllowed("email");
+```
+
 ### Usage Example
 
 ```csharp
