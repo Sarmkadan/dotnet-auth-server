@@ -1034,3 +1034,57 @@ public class TokenController
 ## License
 
 MIT - see [LICENSE](LICENSE).
+
+## PkceValidationService
+
+The `PkceValidationService` implements RFC 7636 (PKCE - Proof Key for Code Exchange) to protect authorization code flows from interception attacks. It generates cryptographically secure code verifiers and challenges, validates code verifier/challenge pairs, and determines when PKCE is required based on client type and configuration.
+
+```csharp
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<PkceValidationService>();
+
+// Example usage in a token endpoint handler
+public class TokenController
+{
+    private readonly PkceValidationService _pkceValidation;
+
+    public TokenController(PkceValidationService pkceValidation)
+    {
+        _pkceValidation = pkceValidation;
+    }
+
+    public async Task<IActionResult> ExchangeAuthorizationCode(TokenRequest request)
+    {
+        // Generate code verifier and challenge during authorization request
+        var codeVerifier = _pkceValidation.GenerateCodeVerifier();
+        var codeChallenge = _pkceValidation.GenerateCodeChallenge(codeVerifier, "S256");
+        
+        // Store verifier and challenge temporarily (in session/state)
+        _sessionService.StorePkceValues(request.State, codeVerifier, codeChallenge);
+
+        // Later, during token exchange, validate the code verifier
+        var isValid = _pkceValidation.ValidateCodeVerifier(
+            request.CodeVerifier, 
+            storedCodeChallenge,
+            "S256"
+        );
+
+        if (!isValid)
+        {
+            return BadRequest("Invalid code verifier");
+        }
+
+        // Check if PKCE is required for this client type
+        var isConfidentialClient = true; // or false for public clients
+        var pkceRequired = _pkceValidation.IsPkceRequired(isConfidentialClient);
+
+        // Validate challenge format
+        var isValidChallenge = _pkceValidation.IsValidChallenge(codeChallenge, "S256");
+
+        return Ok(new { success = true, requiresPkce = pkceRequired });
+    }
+}
+```
