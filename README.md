@@ -529,6 +529,41 @@ else
 
 The `Consent` entity represents user consent for OAuth2/OIDC client scope access. It tracks consent status, granted scopes, expiration, and audit information including IP address and user agent. The class provides methods to grant, deny, revoke consent and check scope permissions.
 
+## TotpCredential
+
+The `TotpCredential` entity stores the TOTP (RFC 6238) secret and state for a user's MFA enrollment. It manages the TOTP shared secret, backup codes, and the enablement lifecycle including verification timestamps. Each user may have at most one active TOTP credential.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+
+// Create a new TOTP credential during user registration
+var totpCredential = new TotpCredential
+{
+    UserId = "user-123",
+    SecretKey = "JBSWY3DPEHPK3PXP", // Base32-encoded TOTP secret
+    BackupCodes = new List<string> { "123456", "789012", "345678", "901234", "567890" }
+};
+
+// Enable MFA after user confirms the TOTP setup with a valid code
+totpCredential.Enable();
+
+// Record successful TOTP verification (e.g., after user logs in with MFA)
+totpCredential.RecordVerification();
+
+Console.WriteLine($"TOTP credential enabled: {totpCredential.IsEnabled}");
+Console.WriteLine($"Enabled at: {totpCredential.EnabledAt}");
+Console.WriteLine($"Last used at: {totpCredential.LastUsedAt}");
+Console.WriteLine($"Backup codes count: {totpCredential.BackupCodes.Count}");
+
+// Check if MFA is enabled for the user
+if (totpCredential.IsEnabled)
+{
+    Console.WriteLine("Multi-factor authentication is enabled for this user.");
+}
+```
+
 ## RefreshToken
 
 The `RefreshToken` entity represents a refresh token used for obtaining new access tokens without requiring the user to re-authenticate. It tracks token metadata including expiration, usage count, revocation status, and provides methods for token validation, usage recording, and revocation. Refresh tokens support rotation for enhanced security by maintaining a chain of previous token hashes.
