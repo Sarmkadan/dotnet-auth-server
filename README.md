@@ -327,6 +327,46 @@ if (tokenRequest6.IsValid())
 
 The `ApiResponse<T>` and `ApiResponse` classes provide a standardized wrapper for API responses across all endpoints in the authorization server. They support both success and error responses with consistent metadata including success status, optional data payload, error messages, status codes, trace identifiers, and timestamps. These types are used throughout the application to ensure a uniform response format.
 
+## ClientRegistrationResponse
+
+The `ClientRegistrationResponse` class represents the response returned from the OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591). It contains the registered client metadata including identifiers, credentials, grant types, redirect URIs, and other registration details that the client must persist for future authentication requests.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Create a client registration response for a confidential client
+var clientResponse = new ClientRegistrationResponse
+{
+    ClientId = "web-client-123",
+    ClientSecret = "s3cr3tP@ssw0rd",
+    ClientIdIssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+    ClientSecretExpiresAt = DateTimeOffset.UtcNow.AddDays(90).ToUnixTimeSeconds(),
+    ClientName = "My Web Application",
+    GrantTypes = new List<string> { "authorization_code", "refresh_token" },
+    RedirectUris = new List<string> { "https://client.example.com/callback" },
+    ResponseTypes = new List<string> { "code" },
+    Scope = "openid profile email api:read",
+    TokenEndpointAuthMethod = "client_secret_basic",
+    LogoUri = "https://client.example.com/logo.png",
+    PolicyUri = "https://client.example.com/policy",
+    TosUri = "https://client.example.com/tos",
+    Contacts = new List<string> { "admin@client.example.com" }
+};
+
+// Example for a public client (no client_secret)
+var publicClientResponse = new ClientRegistrationResponse
+{
+    ClientId = "spa-client-456",
+    ClientIdIssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+    ClientName = "Single Page Application",
+    GrantTypes = new List<string> { "authorization_code", "refresh_token" },
+    RedirectUris = new List<string> { "https://app.example.com/callback" },
+    ResponseTypes = new List<string> { "code" },
+    Scope = "openid profile",
+    TokenEndpointAuthMethod = "none"
+};
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Models;
 
