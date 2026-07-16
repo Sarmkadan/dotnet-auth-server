@@ -704,6 +704,55 @@ auditLogger.LogAdministrativeAction();
 var recentEntries = auditLogger.GetRecentEntries();
 ```
 
+## ScopeValidationService
+
+The `ScopeValidationService` class provides methods for validating, filtering, and managing OAuth 2.0 scopes. It validates requested scopes against registered scopes, checks for required scopes (like `openid` for OIDC requests), merges multiple scope lists, and filters scopes to ensure only allowed scopes are used.
+
+```csharp
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<ScopeValidationService>();
+
+// Example usage in a controller or service
+public class TokenController
+{
+    private readonly ScopeValidationService _scopeValidation;
+    
+    public TokenController(ScopeValidationService scopeValidation)
+    {
+        _scopeValidation = scopeValidation;
+    }
+    
+    public async Task<IActionResult> IssueToken(TokenRequest request)
+    {
+        // Validate requested scopes
+        var validScopes = await _scopeValidation.ValidateScopesAsync(request.Scope);
+        
+        // Check if required scopes are present (e.g., "openid" for OIDC)
+        var hasRequiredScopes = _scopeValidation.ContainsRequiredScopes(validScopes);
+        
+        // Get the minimum required scopes
+        var requiredScopes = _scopeValidation.GetRequiredScopes(isOidc: true);
+        
+        // Merge multiple scope lists
+        var mergedScopes = _scopeValidation.MergeScopes(
+            new[] { "openid", "profile" },
+            new[] { "email", "api:read" }
+        );
+        
+        // Filter scopes to only include granted scopes
+        var filteredScopes = _scopeValidation.FilterScopes(
+            new[] { "openid", "profile", "email", "api:read", "api:write" },
+            new[] { "openid", "profile", "api:read" }
+        );
+        
+        return Ok(new { validScopes, hasRequiredScopes, requiredScopes, mergedScopes, filteredScopes });
+    }
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
