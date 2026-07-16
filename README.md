@@ -1361,6 +1361,155 @@ public class ClientManagementService
 }
 ```
 
+## IUserRepository
+
+The `IUserRepository` interface provides data access operations for managing user accounts in the authorization server. It extends the base `IRepository<User, string>` interface and adds user-specific operations for retrieving users by username, email, role, and searching users by name or email. This repository serves as the data access layer for user management operations.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a user management service or controller
+public class UserManagementService
+{
+    private readonly IUserRepository _userRepository;
+
+    public UserManagementService(IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
+    public async Task ManageUsersExample()
+    {
+        // Create a new user
+        var newUser = new User
+        {
+            UserId = Guid.NewGuid().ToString(),
+            Username = "johndoe",
+            Email = "john.doe@example.com",
+            FullName = "John Doe",
+            PasswordHash = "$2a$11$NkI5dDkscjyLJ5Y7YQO2u...".ToString(), // bcrypt hash
+            EmailVerified = true,
+            IsActive = true,
+            Roles = new List<string> { "user", "premium" },
+            Attributes = new Dictionary<string, object>
+            {
+                { "department", "engineering" },
+                { "max_sessions", 5 }
+            },
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await _userRepository.CreateAsync(newUser);
+
+        // Get a user by ID
+        var existingUser = await _userRepository.GetByIdAsync(newUser.UserId);
+
+        // Get all users
+        var allUsers = await _userRepository.GetAllAsync();
+
+        // Get a user by username
+        var userByUsername = await _userRepository.GetByUsernameAsync("johndoe");
+
+        // Get a user by email
+        var userByEmail = await _userRepository.GetByEmailAsync("john.doe@example.com");
+
+        // Get all users with a specific role
+        var adminUsers = await _userRepository.GetByRoleAsync("admin");
+
+        // Get active users only
+        var activeUsers = await _userRepository.GetActiveUsersAsync();
+
+        // Search users by query
+        var searchResults = await _userRepository.SearchAsync("john");
+
+        // Check if user exists
+        var exists = await _userRepository.ExistsAsync(newUser.UserId);
+
+        // Update a user
+        if (existingUser != null)
+        {
+            existingUser.FullName = "John Doe Updated";
+            existingUser.Roles = new List<string> { "user", "premium", "vip" };
+            await _userRepository.UpdateAsync(existingUser);
+        }
+
+        // Delete a user
+        await _userRepository.DeleteAsync(existingUser!);
+
+        // Delete by ID
+        await _userRepository.DeleteByIdAsync(newUser.UserId);
+    }
+}
+```
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a client management service or controller
+public class ClientManagementService
+{
+    private readonly IClientRepository _clientRepository;
+
+    public ClientManagementService(IClientRepository clientRepository)
+    {
+        _clientRepository = clientRepository;
+    }
+
+    public async Task ManageClientsExample()
+    {
+        // Create a new OAuth client
+        var newClient = new Client
+        {
+            ClientId = "web-client-123",
+            ClientName = "My Web Application",
+            ClientSecret = "s3cr3tP@ssw0rd",
+            IsConfidential = true,
+            GrantTypes = new List<string> { "authorization_code", "refresh_token" },
+            RedirectUris = new List<string> { "https://client.example.com/callback" },
+            AllowedScopes = new List<string> { "openid", "profile", "email", "api:read" },
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await _clientRepository.CreateAsync(newClient);
+
+        // Get a client by ID
+        var existingClient = await _clientRepository.GetByIdAsync("web-client-123");
+
+        // Get all clients
+        var allClients = await _clientRepository.GetAllAsync();
+
+        // Get active clients
+        var activeClients = await _clientRepository.GetActiveClientsAsync();
+
+        // Get client by client ID
+        var clientByClientId = await _clientRepository.GetByClientIdAsync("web-client-123");
+
+        // Check if client exists
+        var exists = await _clientRepository.ExistsAsync("web-client-123");
+
+        // Search clients by query
+        var searchResults = await _clientRepository.SearchAsync("web");
+
+        // Update a client
+        if (existingClient != null)
+        {
+            existingClient.ClientName = "Updated Web Application";
+            existingClient.AllowedScopes = new List<string> { "openid", "profile", "email", "api:read", "api:write" };
+            await _clientRepository.UpdateAsync(existingClient);
+        }
+
+        // Delete a client
+        await _clientRepository.DeleteAsync(existingClient!);
+
+        // Delete by ID
+        await _clientRepository.DeleteByIdAsync("web-client-123");
+    }
+}
+```
+
 ## IUserSessionRepository
 
 The `IUserSessionRepository` interface provides data access operations for managing user session entities in the authorization server. It extends the base `IRepository<UserSession, string>` interface and adds session-specific operations for retrieving sessions by user ID, managing active sessions, revoking sessions, and cleaning up expired sessions. This repository serves as the data access layer for user session management operations.
