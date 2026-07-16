@@ -51,6 +51,47 @@ dotnet test tests/dotnet-auth-server.Tests
 dotnet run -c Release --project dotnet-auth-server.Benchmarks
 ```
 
+## User
+
+The `User` entity represents an account in the authorization system, storing identity information, authentication state, and authorization metadata. It supports role-based and attribute-based access control, account lockout policies, and login tracking.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+
+var user = new User
+{
+    UserId = Guid.NewGuid().ToString(),
+    Username = "johndoe",
+    Email = "john@example.com",
+    FullName = "John Doe",
+    PasswordHash = "$2a$11$NkI5dDkscjyLJ5Y7YQO2u...".ToString(), // bcrypt hash
+    EmailVerified = true,
+    IsActive = true,
+    Roles = new List<string> { "user", "premium" },
+    Attributes = new Dictionary<string, object>
+    {
+        { "department", "engineering" },
+        { "max_sessions", 5 }
+    },
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow
+};
+
+// Usage examples:
+if (user.IsValid())
+{
+    user.RecordSuccessfulLogin();
+    
+    if (user.IsLocked())
+    {
+        Console.WriteLine("Account is locked until: " + user.LockedUntil);
+    }
+    
+    user.LockAccount(TimeSpan.FromHours(1));
+    user.RecordFailedLogin(lockoutThreshold: 5, TimeSpan.FromMinutes(30));
+}
+```
+
 ## WebAuthnCredential
 
 The `WebAuthnCredential` entity represents a WebAuthn/FIDO2 public-key credential
