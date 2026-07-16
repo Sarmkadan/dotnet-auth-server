@@ -815,6 +815,73 @@ public class TokenController
 }
 ```
 
+## UserSessionService
+
+The `UserSessionService` manages the lifecycle of authenticated user sessions in the authorization server. Sessions are created automatically after successful token issuance and can be revoked individually or in bulk (e.g., on password change or account deletion). The service provides methods for session management, statistics, and cleanup of expired sessions.
+
+```csharp
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<UserSessionService>();
+
+// Example usage in a controller or service
+public class SessionManagementController
+{
+    private readonly UserSessionService _sessionService;
+
+    public SessionManagementController(UserSessionService sessionService)
+    {
+        _sessionService = sessionService;
+    }
+
+    public async Task<IActionResult> ManageSessions(string userId)
+    {
+        // Create a new session after successful authentication
+        var session = await _sessionService.CreateSessionAsync(
+            userId: userId,
+            clientId: "web-client",
+            grantedScopes: "openid profile email api:read",
+            ipAddress: "192.168.1.100",
+            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        );
+
+        // Get all active sessions for a user
+        var activeSessions = await _sessionService.GetActiveSessionsAsync(userId);
+
+        // Get all sessions (including revoked and expired) for a user
+        var allSessions = await _sessionService.GetAllSessionsAsync(userId);
+
+        // Get all active sessions across all users (admin dashboard)
+        var globalActiveSessions = await _sessionService.GetAllActiveSessionsAsync();
+
+        // Revoke a single session
+        await _sessionService.RevokeSessionAsync(session.SessionId, "User requested logout");
+
+        // Revoke all sessions for a user (e.g., on password change)
+        var revokedCount = await _sessionService.RevokeAllUserSessionsAsync(
+            userId,
+            "Password changed - all sessions invalidated"
+        );
+
+        // Record activity on a session (extends expiration)
+        await _sessionService.TouchSessionAsync(session.SessionId);
+
+        // Get session statistics
+        var stats = await _sessionService.GetStatsAsync();
+        Console.WriteLine($"Total: {stats.TotalSessions}, Active: {stats.ActiveSessions}, " +
+                        $"Revoked: {stats.RevokedSessions}, Expired: {stats.ExpiredSessions}, " +
+                        $"Unique Users: {stats.UniqueUsers}");
+
+        // Cleanup expired sessions (typically run as background job)
+        var cleanupCount = await _sessionService.CleanupExpiredSessionsAsync();
+
+        return Ok(new { session, activeSessions, allSessions, stats });
+    }
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
