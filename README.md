@@ -1290,6 +1290,77 @@ public class TokenManagementService
 }
 ```
 
+## IClientRepository
+
+The `IClientRepository` interface provides data access operations for managing OAuth 2.0 clients in the authorization server. It extends the base `IRepository<Client, string>` interface and adds client-specific operations for retrieving clients by client ID, managing active clients, searching clients by name or identifier, and checking client existence. This repository serves as the data access layer for OAuth client management operations.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a client management service or controller
+public class ClientManagementService
+{
+    private readonly IClientRepository _clientRepository;
+
+    public ClientManagementService(IClientRepository clientRepository)
+    {
+        _clientRepository = clientRepository;
+    }
+
+    public async Task ManageClientsExample()
+    {
+        // Create a new OAuth client
+        var newClient = new Client
+        {
+            ClientId = "web-client-123",
+            ClientName = "My Web Application",
+            ClientSecret = "s3cr3tP@ssw0rd",
+            IsConfidential = true,
+            GrantTypes = new List<string> { "authorization_code", "refresh_token" },
+            RedirectUris = new List<string> { "https://client.example.com/callback" },
+            AllowedScopes = new List<string> { "openid", "profile", "email", "api:read" },
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await _clientRepository.CreateAsync(newClient);
+
+        // Get a client by ID
+        var existingClient = await _clientRepository.GetByIdAsync("web-client-123");
+
+        // Get all clients
+        var allClients = await _clientRepository.GetAllAsync();
+
+        // Get active clients
+        var activeClients = await _clientRepository.GetActiveClientsAsync();
+
+        // Get client by client ID
+        var clientByClientId = await _clientRepository.GetByClientIdAsync("web-client-123");
+
+        // Check if client exists
+        var exists = await _clientRepository.ExistsAsync("web-client-123");
+
+        // Search clients by query
+        var searchResults = await _clientRepository.SearchAsync("web");
+
+        // Update a client
+        if (existingClient != null)
+        {
+            existingClient.ClientName = "Updated Web Application";
+            existingClient.AllowedScopes = new List<string> { "openid", "profile", "email", "api:read", "api:write" };
+            await _clientRepository.UpdateAsync(existingClient);
+        }
+
+        // Delete a client
+        await _clientRepository.DeleteAsync(existingClient!);
+
+        // Delete by ID
+        await _clientRepository.DeleteByIdAsync("web-client-123");
+    }
+}
+```
+
 ## IUserSessionRepository
 
 The `IUserSessionRepository` interface provides data access operations for managing user session entities in the authorization server. It extends the base `IRepository<UserSession, string>` interface and adds session-specific operations for retrieving sessions by user ID, managing active sessions, revoking sessions, and cleaning up expired sessions. This repository serves as the data access layer for user session management operations.
