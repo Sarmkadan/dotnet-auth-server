@@ -1189,6 +1189,111 @@ public class UserController
 }
 ```
 
+## TotpService
+
+The `TotpService` implements TOTP (RFC 6238) multi-factor authentication for the authorization server. It handles enrollment initiation with secret generation and QR code provisioning URIs, setup confirmation via code verification, ongoing code verification with configurable time-step windows, and backup code redemption. The service also provides status queries and MFA disablement.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+using DotnetAuthServer.Services;
+
+// Setup in Program.cs
+builder.Services.AddScoped<TotpService>();
+
+// Example usage in a controller or service
+public class MfaController
+{
+    private readonly TotpService _totpService;
+
+    public MfaController(TotpService totpService)
+    {
+        _totpService = totpService;
+    }
+
+    public async Task<IActionResult> InitiateTotpSetup(string userId, string username)
+    {
+        // Begin enrollment - generates secret, backup codes, and provisioning URI
+        var setupResponse = await _totpService.InitiateSetupAsync(userId, username);
+
+        // Display the secret key and QR code URI to the user (only once!)
+        Console.WriteLine($"Secret Key: {setupResponse.SecretKey}");
+        Console.WriteLine($"Scan this URI with your authenticator app: {setupResponse.ProvisioningUri}");
+
+        // Show backup codes for offline storage (display only once!)
+        Console.WriteLine("Backup codes (store these securely):");
+        foreach (var code in setupResponse.BackupCodes)
+        {
+            Console.WriteLine($"  {code}");
+        }
+
+        return Ok(new { setupResponse.SecretKey, setupResponse.ProvisioningUri });
+    }
+
+    public async Task<IActionResult> ConfirmSetup(string userId, string code)
+    {
+        // Confirm the setup by verifying the user's TOTP code
+        await _totpService.ConfirmSetupAsync(userId, code);
+
+        return Ok(new { message = "TOTP MFA setup confirmed and enabled" });
+    }
+
+    public async Task<IActionResult> VerifyTotpCode(string userId, string code)
+    {
+        // Verify a TOTP code or backup code
+        var isValid = await _totpService.VerifyAsync(userId, code);
+
+        if (isValid)
+        {
+            return Ok(new { message = "MFA verification successful" });
+        }
+
+        return Unauthorized(new { message = "Invalid MFA code" });
+    }
+
+    public async Task<IActionResult> GetMfaStatus(string userId)
+    {
+        // Check if MFA is enabled and get usage statistics
+        var status = await _totpService.GetStatusAsync(userId);
+
+        return Ok(new {
+            status.IsEnabled,
+            status.EnabledAt,
+            status.LastUsedAt,
+            status.BackupCodesRemaining
+        });
+    }
+
+    public async Task<IActionResult> DisableMfa(string userId)
+    {
+        // Disable and remove TOTP MFA for the user
+        await _totpService.DisableMfaAsync(userId);
+
+        return Ok(new { message = "TOTP MFA disabled successfully" });
+    }
+
+    public void ValidateTotpCodeManually()
+    {
+        // You can also manually verify codes using the static methods
+        var secretKey = "JBSWY3DPEHPK3PXP";
+        var code = "123456";
+        var isValid = TotpService.VerifyTotpCode(secretKey, code);
+        Console.WriteLine(isValid ? "Code is valid" : "Code is invalid");
+
+        // Generate provisioning URI for QR code generation
+        var provisioningUri = TotpService.BuildProvisioningUri(
+            secretKey, 
+            "user@example.com", 
+            "MyAuthServer"
+        );
+        Console.WriteLine(provisioningUri);
+
+        // Base32 encoding/decoding utilities
+        var bytes = TotpService.DecodeBase32(secretKey);
+        var encoded = TotpService.EncodeBase32(bytes);
+    }
+}
+```
+
 ## UserSessionService
 
 The `UserSessionService` manages the lifecycle of authenticated user sessions in the authorization server. Sessions are created automatically after successful token issuance and can be revoked individually or in bulk (e.g., on password change or account deletion). The service provides methods for session management, statistics, and cleanup of expired sessions.
