@@ -120,6 +120,68 @@ var credential = new WebAuthnCredential
 
 The `Scope` entity defines OAuth 2.0 and OpenID Connect scopes that control access to protected resources and user data. Scopes determine which claims are included in ID tokens and access tokens, which roles can request them, and whether user consent is required. This type is used throughout the authorization flow to manage scope validation, token generation, and access control.
 
+## IScopeRepository
+
+The `IScopeRepository` interface provides data access operations for managing OAuth 2.0 and OpenID Connect scopes in the authorization server. It extends the base `IRepository<Scope, string>` interface and adds scope-specific operations for retrieving scopes by their unique identifier, filtering active scopes, and searching scopes by name or description. This repository serves as the data access layer for scope management operations.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Services;
+
+// Example usage in a service or controller
+public class ScopeManagementService
+{
+    private readonly IScopeRepository _scopeRepository;
+
+    public ScopeManagementService(IScopeRepository scopeRepository)
+    {
+        _scopeRepository = scopeRepository;
+    }
+
+    public async Task ManageScopesExample()
+    {
+        // Create a new scope
+        var newScope = new Scope
+        {
+            ScopeId = "api:read",
+            DisplayName = "Read API Access",
+            Description = "Allows reading data from the API",
+            IsOpenIdScope = false,
+            IsActive = true
+        };
+        await _scopeRepository.CreateAsync(newScope);
+
+        // Get a scope by ID
+        var existingScope = await _scopeRepository.GetByIdAsync("api:read");
+
+        // Get a scope by scope ID (case-insensitive)
+        var scopeByScopeId = await _scopeRepository.GetByScopeIdAsync("api:read");
+
+        // Get all active scopes
+        var activeScopes = await _scopeRepository.GetActiveScopesAsync();
+
+        // Search scopes by query
+        var searchResults = await _scopeRepository.SearchAsync("api");
+
+        // Check if scope exists
+        var exists = await _scopeRepository.ExistsAsync("api:read");
+
+        // Update a scope
+        if (existingScope != null)
+        {
+            existingScope.Description = "Updated description for read access";
+            await _scopeRepository.UpdateAsync(existingScope);
+        }
+
+        // Delete a scope
+        await _scopeRepository.DeleteAsync(existingScope!);
+        
+        // Delete by ID
+        await _scopeRepository.DeleteByIdAsync("api:read");
+    }
+}
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Entities;
 
