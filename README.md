@@ -529,6 +529,54 @@ else
 
 The `Consent` entity represents user consent for OAuth2/OIDC client scope access. It tracks consent status, granted scopes, expiration, and audit information including IP address and user agent. The class provides methods to grant, deny, revoke consent and check scope permissions.
 
+## RefreshToken
+
+The `RefreshToken` entity represents a refresh token used for obtaining new access tokens without requiring the user to re-authenticate. It tracks token metadata including expiration, usage count, revocation status, and provides methods for token validation, usage recording, and revocation. Refresh tokens support rotation for enhanced security by maintaining a chain of previous token hashes.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+
+// Create a new refresh token
+var refreshToken = new RefreshToken
+{
+    TokenId = Guid.NewGuid().ToString(),
+    TokenHash = "hashed-refresh-token-value", // In production, use proper hashing
+    ClientId = "web-client-123",
+    UserId = "user-456",
+    GrantedScopes = "openid profile email api:read api:write",
+    ExpiresAt = DateTime.UtcNow.AddDays(30),
+    IssuedToDeviceId = "device-789",
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow
+};
+
+// Check if token is valid
+bool isValid = refreshToken.IsValid(); // Returns true if not revoked and not expired
+
+// Check if token has expired
+bool isExpired = refreshToken.IsExpired();
+
+// Record token usage (e.g., when exchanging for a new access token)
+refreshToken.RecordUsage();
+
+Console.WriteLine($"Token used {refreshToken.UsageCount} times");
+Console.WriteLine($"Last used at: {refreshToken.LastUsedAt}");
+
+// Rotate the token for enhanced security (creates new version)
+refreshToken.Rotate();
+
+// Revoke the token when needed (e.g., user logout, security incident)
+refreshToken.Revoke("User requested revocation");
+
+if (refreshToken.IsRevoked)
+{
+    Console.WriteLine($"Token revoked at: {refreshToken.RevokedAt}");
+    Console.WriteLine($"Reason: {refreshToken.RevocationReason}");
+}
+```
+
 ## Client
 
 The `Client` entity represents an OAuth2/OIDC client application registered with the authorization server. It defines client metadata such as identifiers, secrets, redirect URIs, allowed grant types, scopes, and token lifetime settings. Clients can be confidential (with secrets) or public, and support various OAuth2 flows including authorization code, implicit, client credentials, and refresh token flows.
