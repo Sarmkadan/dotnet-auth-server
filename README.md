@@ -2307,9 +2307,84 @@ public class UserAdminController
 }
 ```
 
+
+## JwtTokenFormatter
+
+The `JwtTokenFormatter` class provides utilities for formatting, inspecting, and serializing JWT tokens in the authorization server. It handles JWT token construction with configurable headers and payloads, supports token inspection for debugging and validation, and provides formatting options for logging and display purposes. The formatter works with standard JWT claims and supports custom claims through a dictionary interface.
+
+```csharp
+using DotnetAuthServer.Formatters;
+using System.Security.Claims;
+
+// Create a JWT token formatter with default settings
+var formatter = new JwtTokenFormatter();
+
+// Create a token header with standard JWT properties
+var header = new TokenHeader
+{
+    Alg = "HS256",
+    Typ = "JWT",
+    Kid = "key-123"
+};
+
+// Create a token payload with standard JWT claims
+var payload = new TokenPayload
+{
+    Subject = "user-123",
+    Issuer = "https://auth.example.com",
+    Audience = "https://api.example.com",
+    IssuedAt = DateTime.UtcNow,
+    ExpiresAt = DateTime.UtcNow.AddHours(1),
+    NotBefore = DateTime.UtcNow,
+    Claims = new Dictionary<string, List<string>>
+    {
+        { "scope", new List<string> { "openid", "profile", "email" } },
+        { "roles", new List<string> { "user", "premium" } },
+        { "department", new List<string> { "engineering" } }
+    }
+};
+
+// Format the token
+var rawToken = formatter.Format(header, payload);
+Console.WriteLine($"Generated JWT: {rawToken}");
+
+// Inspect the token (useful for debugging)
+var inspection = formatter.InspectToken(rawToken);
+if (inspection != null)
+{
+    Console.WriteLine($"Token Header Alg: {inspection.Header.Alg}");
+    Console.WriteLine($"Token Payload Subject: {inspection.Payload.Subject}");
+    Console.WriteLine($"Token Payload Issuer: {inspection.Payload.Issuer}");
+    Console.WriteLine($"Token Payload ExpiresAt: {inspection.Payload.ExpiresAt}");
+    Console.WriteLine($"Token Claims Count: {inspection.Payload.Claims.Count}");
+}
+
+// Format token for logging (redacts sensitive parts)
+var logFormatted = formatter.FormatForLogging(rawToken);
+Console.WriteLine($"Log-safe token: {logFormatted}");
+
+// Access individual properties
+Console.WriteLine($"Token Raw: {formatter.Raw}");
+Console.WriteLine($"Token Alg: {formatter.Alg}");
+Console.WriteLine($"Token Typ: {formatter.Typ}");
+Console.WriteLine($"Token Kid: {formatter.Kid}");
+Console.WriteLine($"Token Subject: {formatter.Subject}");
+Console.WriteLine($"Token Issuer: {formatter.Issuer}");
+Console.WriteLine($"Token Audience: {formatter.Audience}");
+Console.WriteLine($"Token IssuedAt: {formatter.IssuedAt}");
+Console.WriteLine($"Token ExpiresAt: {formatter.ExpiresAt}");
+Console.WriteLine($"Token NotBefore: {formatter.NotBefore}");
+```
+
 ## UserService
 
 The `UserService` handles user authentication and self-service management operations. It provides methods for authenticating users, creating new accounts, updating profiles, changing passwords, and managing user roles. This service is designed for end-user operations and integrates with the authorization server's authentication flows.
+
+```csharp
+
+## JwtTokenFormatter
+
+The `JwtTokenFormatter` class provides utilities for formatting, inspecting, and serializing JWT tokens in the authorization server. It handles JWT token construction with configurable headers and payloads, supports token inspection for debugging and validation, and provides formatting options for logging and display purposes. The formatter works with standard JWT claims and supports custom claims through a dictionary interface.
 
 ```csharp
 using DotnetAuthServer.Domain.Entities;
