@@ -217,6 +217,70 @@ public class ScopeManagementService
 }
 ```
 
+## ITotpCredentialRepository
+
+The `ITotpCredentialRepository` interface provides data access operations for managing Time-based One-Time Password (TOTP) credentials used for multi-factor authentication in the authorization server. It extends the base `IRepository<TotpCredential, string>` interface and adds TOTP-specific operations for retrieving and managing credentials by user ID, enabling efficient lookups and deletions of user-associated TOTP credentials.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a service or controller
+public class MfaManagementService
+{
+    private readonly ITotpCredentialRepository _totpRepository;
+
+    public MfaManagementService(ITotpCredentialRepository totpRepository)
+    {
+        _totpRepository = totpRepository;
+    }
+
+    public async Task ManageTotpCredentialsExample()
+    {
+        // Create a new TOTP credential for a user
+        var newTotpCredential = new TotpCredential
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserId = "user-123",
+            SecretKey = "JBSWY3DPEHPK3PXP",
+            Issuer = "MyAuthServer",
+            AccountName = "john@example.com",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await _totpRepository.CreateAsync(newTotpCredential);
+
+        // Get a TOTP credential by ID
+        var existingCredential = await _totpRepository.GetByIdAsync(newTotpCredential.Id);
+
+        // Get all TOTP credentials
+        var allCredentials = await _totpRepository.GetAllAsync();
+
+        // Get TOTP credential by user ID
+        var userTotp = await _totpRepository.GetByUserIdAsync("user-123");
+
+        // Check if TOTP credential exists
+        var exists = await _totpRepository.ExistsAsync(newTotpCredential.Id);
+
+        // Update a TOTP credential
+        if (existingCredential != null)
+        {
+            existingCredential.UpdatedAt = DateTime.UtcNow;
+            await _totpRepository.UpdateAsync(existingCredential);
+        }
+
+        // Delete a TOTP credential
+        await _totpRepository.DeleteAsync(existingCredential!);
+
+        // Delete by ID
+        await _totpRepository.DeleteByIdAsync(newTotpCredential.Id);
+
+        // Delete TOTP credential by user ID
+        await _totpRepository.DeleteByUserIdAsync("user-123");
+    }
+}
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Entities;
 
