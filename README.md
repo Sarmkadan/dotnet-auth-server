@@ -1594,6 +1594,81 @@ public class ResourceController
 }
 ```
 
+## SecretsService
+
+The `SecretsService` provides cryptographically secure operations for generating, hashing, and verifying secrets in the authorization server. It uses PBKDF2 with SHA256 for secure hashing, constant-time comparison to prevent timing attacks, and cryptographically secure random number generation for all secret values. This service is essential for securely handling client secrets, API keys, user passwords, and tokens.
+
+```csharp
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<SecretsService>();
+
+// Example usage in a controller or service
+public class SecretManagementController
+{
+    private readonly SecretsService _secretsService;
+
+    public SecretManagementController(SecretsService secretsService)
+    {
+        _secretsService = secretsService;
+    }
+
+    public IActionResult GenerateClientSecret()
+    {
+        // Generate a secure client secret for OAuth 2.0 client registration
+        var clientSecret = _secretsService.GenerateSecureSecret(length: 48);
+        Console.WriteLine($"Generated client secret: {SecretsService.MaskSecret(clientSecret)}");
+        
+        return Ok(new { secret = SecretsService.MaskSecret(clientSecret) });
+    }
+
+    public IActionResult HashAndStorePassword(string plainPassword)
+    {
+        // Hash a user password for secure storage
+        var hash = _secretsService.HashSecret(plainPassword, iterations: 15000);
+        Console.WriteLine($"Password hash stored: {hash}");
+        
+        // Store hash.Salt, hash.Hash, hash.Iterations, hash.Algorithm in database
+        return Ok(new { 
+            algorithm = hash.Algorithm,
+            iterations = hash.Iterations,
+            salt = hash.Salt // Store this securely!
+        });
+    }
+
+    public IActionResult VerifyUserPassword(string plainPassword, SecretsService.SecretHash storedHash)
+    {
+        // Verify a user's password against stored hash
+        bool isValid = _secretsService.VerifySecret(plainPassword, storedHash);
+        
+        return Ok(new { isValid });
+    }
+
+    public IActionResult GenerateApiToken()
+    {
+        // Generate a secure API token for service-to-service authentication
+        var apiToken = _secretsService.GenerateToken(length: 64);
+        Console.WriteLine($"Generated API token: {SecretsService.MaskSecret(apiToken)}");
+        
+        return Ok(new { token = SecretsService.MaskSecret(apiToken) });
+    }
+
+    public IActionResult MaskSensitiveData()
+    {
+        // Mask secrets for logging/display purposes
+        var clientSecret = "s3cr3tP@ssw0rd123456789";
+        var masked = SecretsService.MaskSecret(clientSecret);
+        
+        Console.WriteLine($"Original: {clientSecret}");
+        Console.WriteLine($"Masked: {masked}"); // Shows: s3c***789
+        
+        return Ok(new { maskedSecret = masked });
+    }
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
