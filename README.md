@@ -1865,6 +1865,118 @@ public class SessionManagementService
 
 The `SessionManagementController` provides a REST API for managing user sessions in the authorization server. It exposes endpoints for listing active sessions, viewing session statistics, retrieving user-specific sessions, and revoking sessions either individually or for all sessions belonging to a user. This controller is essential for administrative operations, security monitoring, and user session management.
 
+
+## UserManagementController
+
+The `UserManagementController` provides a REST API for administrative user account management. It exposes CRUD operations, user search, role assignment/removal, and account lock/unlock functionality. All routes are under `/api/users`.
+
+```csharp
+using DotnetAuthServer.Controllers;
+using Microsoft.AspNetCore.Mvc;
+
+// Example usage in an admin controller or background service
+public class UserAdminController
+{
+    private readonly UserManagementController _userController;
+
+    public UserAdminController(UserManagementController userController)
+    {
+        _userController = userController;
+    }
+
+    public async Task<IActionResult> ListAllUsers()
+    {
+        // Returns all registered users
+        var result = await _userController.GetUsersAsync(null, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> GetUserDetails(string userId)
+    {
+        // Get a specific user by ID
+        var result = await _userController.GetUserAsync(userId, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> SearchUsers(string query)
+    {
+        // Search users by username, email, or full name
+        var result = await _userController.GetUsersAsync(query, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> CreateNewUser()
+    {
+        // Create a new user account
+        var createRequest = new CreateUserRequest
+        {
+            Username = "newuser",
+            Email = "new@example.com",
+            Password = "SecurePassword123!",
+            FullName = "New User",
+            Roles = new List<string> { "user" }
+        };
+
+        var result = await _userController.CreateUserAsync(createRequest, CancellationToken.None);
+        return CreatedAtAction(nameof(GetUserDetails), new { userId = "newuser" }, result);
+    }
+
+    public async Task<IActionResult> UpdateUserProfile(string userId)
+    {
+        // Update user profile fields
+        var updateRequest = new UpdateUserRequest
+        {
+            FullName = "Updated Name",
+            IsActive = true,
+            Attributes = new Dictionary<string, object>
+            {
+                { "department", "engineering" },
+                { "max_sessions", 5 }
+            }
+        };
+
+        var result = await _userController.UpdateUserAsync(userId, updateRequest, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> AssignRoleToUser(string userId, string role)
+    {
+        // Assign a role to a user
+        var assignRequest = new AssignRoleRequest { Role = role };
+        var result = await _userController.AssignRoleAsync(userId, assignRequest, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> RemoveRoleFromUser(string userId, string role)
+    {
+        // Remove a role from a user
+        var result = await _userController.RemoveRoleAsync(userId, role, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> LockUserAccount(string userId, int hours = 24)
+    {
+        // Lock a user account for security reasons
+        var result = await _userController.LockUserAsync(userId, hours * 60, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> UnlockUserAccount(string userId)
+    {
+        // Unlock a user account
+        var result = await _userController.UnlockUserAsync(userId, CancellationToken.None);
+        return Ok(result);
+    }
+
+    public async Task<IActionResult> DeleteUser(string userId)
+    {
+        // Permanently delete a user account and revoke all tokens
+        var result = await _userController.DeleteUserAsync(userId, CancellationToken.None);
+        return NoContent();
+    }
+}
+```
+
 ## MfaController
 
 The `MfaController` provides a REST API for managing Time-based One-Time Password (TOTP) multi-factor authentication in the authorization server. It handles enrollment initiation with secret generation and QR code provisioning URIs, setup confirmation via code verification, ongoing code verification with configurable time-step windows, backup code redemption, status queries, and MFA disablement. All routes are nested under `/api/users/{userId}/mfa`.
