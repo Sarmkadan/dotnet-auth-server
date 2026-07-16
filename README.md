@@ -218,6 +218,111 @@ foreach (var scope in requestedScopes)
 }
 ```
 
+## TokenRequest
+
+The `TokenRequest` class represents an OAuth 2.0 token request containing all parameters required to obtain access tokens, refresh tokens, or exchange tokens. It supports multiple grant types including authorization code, refresh token, client credentials, password grant, and token exchange (RFC 8693). The class provides validation methods to ensure required parameters are present for each grant type.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Create a token request for the authorization code grant type
+var tokenRequest1 = new TokenRequest
+{
+    GrantType = "authorization_code",
+    ClientId = "web-client",
+    ClientSecret = "secret",
+    Code = "auth-code-123",
+    RedirectUri = "https://client.example.com/callback",
+    CodeVerifier = "code-verifier-456"
+};
+
+// Validate the request for authorization_code grant type
+if (tokenRequest1.IsValidForGrantType("authorization_code"))
+{
+    Console.WriteLine("Authorization code token request is valid");
+}
+
+// Create a token request for the password grant type
+var tokenRequest2 = new TokenRequest
+{
+    GrantType = "password",
+    ClientId = "confidential-client",
+    ClientSecret = "secret",
+    Username = "user@example.com",
+    Password = "password123",
+    Scope = "api:read api:write",
+    IpAddress = "192.168.1.100"
+};
+
+// Validate the request for password grant type
+if (tokenRequest2.IsValidForGrantType("password"))
+{
+    Console.WriteLine("Password grant token request is valid");
+}
+
+// Create a token request for the refresh token grant type
+var tokenRequest3 = new TokenRequest
+{
+    GrantType = "refresh_token",
+    ClientId = "web-client",
+    ClientSecret = "secret",
+    RefreshToken = "refresh-token-789",
+    Scope = "api:read"
+};
+
+// Validate the request for refresh_token grant type
+if (tokenRequest3.IsValidForGrantType("refresh_token"))
+{
+    Console.WriteLine("Refresh token request is valid");
+}
+
+// Create a token request for the client credentials grant type
+var tokenRequest4 = new TokenRequest
+{
+    GrantType = "client_credentials",
+    ClientId = "service-account",
+    ClientSecret = "secret",
+    Scope = "api:read api:write"
+};
+
+// Validate the request for client_credentials grant type
+if (tokenRequest4.IsValidForGrantType("client_credentials"))
+{
+    Console.WriteLine("Client credentials token request is valid");
+}
+
+// Create a token request for token exchange (RFC 8693)
+var tokenRequest5 = new TokenRequest
+{
+    GrantType = "urn:ietf:params:oauth:grant-type:token-exchange",
+    ClientId = "exchange-client",
+    SubjectToken = "subject-token-abc",
+    SubjectTokenType = "urn:ietf:params:oauth:token-type:access_token",
+    ActorToken = "actor-token-def",
+    ActorTokenType = "urn:ietf:params:oauth:token-type:jwt",
+    RequestedTokenType = "urn:ietf:params:oauth:token-type:refresh_token",
+    Scope = "api:read"
+};
+
+// Validate the request for token exchange
+if (tokenRequest5.IsValidForGrantType("urn:ietf:params:oauth:grant-type:token-exchange"))
+{
+    Console.WriteLine("Token exchange request is valid");
+}
+
+// Validate a generic token request
+var tokenRequest6 = new TokenRequest
+{
+    GrantType = "password",
+    ClientId = "client-id"
+};
+
+if (tokenRequest6.IsValid())
+{
+    Console.WriteLine("Token request is valid");
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
