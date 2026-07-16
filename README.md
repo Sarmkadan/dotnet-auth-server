@@ -1404,6 +1404,91 @@ public class TokenManagementService
 }
 ```
 
+## AuthServerOptions
+
+The `AuthServerOptions` class provides configuration for the authorization server's core authentication and token issuance settings. It controls JWT signing, token lifetimes, security policies, database connectivity, and various behavioral options that determine how the authorization server operates in different environments.
+
+```csharp
+using DotnetAuthServer.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.Configure<AuthServerOptions>(builder.Configuration.GetSection("AuthServer"));
+
+// Example usage in a service
+public class AuthServerConfigurationService
+{
+    private readonly AuthServerOptions _authOptions;
+
+    public AuthServerConfigurationService(IOptions<AuthServerOptions> authOptions)
+    {
+        _authOptions = authOptions.Value;
+    }
+
+    public void ConfigureAuthSettings()
+    {
+        // Configure JWT signing settings
+        var jwtOptions = new AuthServerOptions
+        {
+            IssuerUrl = "https://auth.example.com",
+            JwtSigningKey = "your-256-bit-secret-key-here-at-least-32-characters",
+            JwtAlgorithm = "HS256",
+            AccessTokenLifetimeSeconds = 3600, // 1 hour
+            RefreshTokenLifetimeSeconds = 2592000, // 30 days
+            AuthorizationCodeLifetimeSeconds = 600, // 10 minutes
+            ClockSkewToleranceSeconds = 300 // 5 minutes
+        };
+
+        // Configure security policies
+        var securityOptions = new AuthServerOptions
+        {
+            RequirePkceForAllClients = true, // Enforce PKCE for all clients
+            AutoRefreshTokenRotation = true, // Auto-rotate refresh tokens
+            MaxRefreshTokenGenerations = 5, // Maximum refresh token generations
+            FailedLoginAttemptThreshold = 5, // Lock account after 5 failed attempts
+            AccountLockoutDurationMinutes = 15, // Lock for 15 minutes
+            RequireUserConsent = true // Require explicit user consent
+        };
+
+        // Configure database settings
+        var dbOptions = new AuthServerOptions
+        {
+            DatabaseConnectionString = "Server=localhost;Database=AuthServer;User Id=sa;Password=YourPassword123;",
+            UseInMemoryDatabase = false // Use real database in production
+        };
+
+        // Configure supported scopes and grant types
+        var featuresOptions = new AuthServerOptions
+        {
+            SupportedScopes = new List<string> { "openid", "profile", "email", "api:read", "api:write" },
+            SupportedGrantTypes = new List<string> { "authorization_code", "refresh_token", "client_credentials", "password" }
+        };
+
+        // Combine all configurations
+        var fullConfig = new AuthServerOptions
+        {
+            IssuerUrl = "https://auth.example.com",
+            JwtSigningKey = Environment.GetEnvironmentVariable("JWT_SIGNING_KEY") ?? "default-secret-key-32-chars-minimum",
+            JwtAlgorithm = "HS256",
+            AccessTokenLifetimeSeconds = 3600,
+            RefreshTokenLifetimeSeconds = 2592000,
+            AuthorizationCodeLifetimeSeconds = 600,
+            RequirePkceForAllClients = true,
+            AutoRefreshTokenRotation = true,
+            MaxRefreshTokenGenerations = 5,
+            ClockSkewToleranceSeconds = 300,
+            DatabaseConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING"),
+            UseInMemoryDatabase = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")),
+            FailedLoginAttemptThreshold = 5,
+            AccountLockoutDurationMinutes = 15,
+            RequireUserConsent = true,
+            SupportedScopes = new List<string> { "openid", "profile", "email", "api:read", "api:write" },
+            SupportedGrantTypes = new List<string> { "authorization_code", "refresh_token", "client_credentials", "password" }
+        };
+    }
+}
+```
+
 ## IClientRepository
 
 The `IClientRepository` interface provides data access operations for managing OAuth 2.0 clients in the authorization server. It extends the base `IRepository<Client, string>` interface and adds client-specific operations for retrieving clients by client ID, managing active clients, searching clients by name or identifier, and checking client existence. This repository serves as the data access layer for OAuth client management operations.
