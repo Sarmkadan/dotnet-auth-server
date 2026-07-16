@@ -486,6 +486,55 @@ else
 }
 ```
 
+## Consent
+
+The `Consent` entity represents user consent for OAuth2/OIDC client scope access. It tracks consent status, granted scopes, expiration, and audit information including IP address and user agent. The class provides methods to grant, deny, revoke consent and check scope permissions.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Domain.Enums;
+
+// Create a new consent record
+var consent = new Consent
+{
+    ConsentId = Guid.NewGuid().ToString(),
+    UserId = "user-123",
+    ClientId = "web-client",
+    GrantedScopes = "openid profile email api:read",
+    IsOfflineConsent = true,
+    IpAddress = "192.168.1.100",
+    UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+};
+
+// Grant consent for specific scopes
+consent.Grant("openid profile email api:write");
+
+// Check if consent is valid and approved
+bool isValid = consent.IsValidAndApproved(); // Returns true
+
+// Check if a specific scope is granted
+bool hasProfileScope = consent.HasScopeConsent("profile"); // Returns true
+bool hasAdminScope = consent.HasScopeConsent("admin"); // Returns false
+
+// Get all granted scopes
+var grantedScopes = consent.GetGrantedScopes();
+foreach (var scope in grantedScopes)
+{
+    Console.WriteLine($"Granted scope: {scope}");
+}
+
+// Check if consent has expired
+bool isExpired = consent.IsExpired(); // Returns false
+
+// Revoke consent
+consent.Revoke("User requested revocation");
+
+// Deny consent
+// consent.Deny("User declined the request");
+```
+
 ## WebAuthnServiceExtensions
 
 The `WebAuthnServiceExtensions` class provides extension methods for `IServiceCollection` to register WebAuthn/FIDO2 services in the dependency injection container. By default, it configures an in-process, thread-safe credential store suitable for development, which can be replaced with a database-backed implementation for production environments.
