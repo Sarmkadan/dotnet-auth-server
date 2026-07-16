@@ -323,6 +323,46 @@ if (tokenRequest6.IsValid())
 }
 ```
 
+## CreateUserRequest
+
+The `CreateUserRequest` class represents the payload for creating a new user account in the authorization system. It contains the essential user registration information including credentials, contact details, and initial role assignments. All properties are required except for `FullName` and `Roles`, which are optional.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Create a new user registration request
+var createUserRequest = new CreateUserRequest
+{
+    Username = "johndoe",
+    Email = "john.doe@example.com",
+    Password = "SecurePassword123!",
+    FullName = "John Doe",
+    Roles = new List<string> { "user", "premium" }
+};
+
+// Usage in a controller or service
+public async Task<IActionResult> RegisterUser(CreateUserRequest request)
+{
+    // Validate the request
+    if (!ModelState.IsValid)
+    {
+        return BadRequest(ModelState);
+    }
+    
+    // Create the user account
+    var user = await _userService.CreateUserAsync(request);
+    
+    return CreatedAtAction(
+        nameof(GetUser),
+        new { id = user.UserId },
+        ApiResponse<UserResponse>.SuccessResponse(
+            user,
+            "User created successfully"
+        )
+    );
+}
+```
+
 ## ApiResponse
 
 The `ApiResponse<T>` and `ApiResponse` classes provide a standardized wrapper for API responses across all endpoints in the authorization server. They support both success and error responses with consistent metadata including success status, optional data payload, error messages, status codes, trace identifiers, and timestamps. These types are used throughout the application to ensure a uniform response format.
