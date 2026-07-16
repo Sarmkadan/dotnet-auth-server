@@ -385,6 +385,33 @@ public async Task<IActionResult> RegisterUser(CreateUserRequest request)
 }
 ```
 
+## ErrorHandlingMiddleware
+
+The `ErrorHandlingMiddleware` class is an ASP.NET Core middleware component that intercepts exceptions thrown during request processing and converts them into consistent, client-safe HTTP error responses. It prevents sensitive internal error details from leaking to clients while ensuring all errors follow a standardized format with machine-readable error codes, human-readable descriptions, and optional documentation URIs.
+
+```csharp
+using DotnetAuthServer.Middleware;
+using DotnetAuthServer.Exceptions;
+
+// Register in Program.cs
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
+// Example usage in a controller that might throw exceptions
+public async Task<IActionResult> GetProtectedResource()
+{
+    try
+    {
+        var resource = await _service.GetResourceAsync();
+        return Ok(resource);
+    }
+    catch (AuthServerException ex) when (ex.StatusCode == 404)
+    {
+        // AuthServerException will be automatically converted to JSON by the middleware
+        return NotFound(); // This will be handled by ErrorHandlingMiddleware
+    }
+}
+```
+
 ## ApiResponse
 
 The `ApiResponse<T>` and `ApiResponse` classes provide a standardized wrapper for API responses across all endpoints in the authorization server. They support both success and error responses with consistent metadata including success status, optional data payload, error messages, status codes, trace identifiers, and timestamps. These types are used throughout the application to ensure a uniform response format.
