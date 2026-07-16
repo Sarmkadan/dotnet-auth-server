@@ -1294,6 +1294,117 @@ public class MfaController
 }
 ```
 
+## IConsentRepository
+
+The `IConsentRepository` interface provides data access operations for managing OAuth 2.0 user consent decisions in the authorization server. It stores user approvals or denials of requested scopes for specific OAuth clients, enabling the authorization server to enforce scope-based access control and remember consent decisions across sessions. This repository serves as the data access layer for consent management operations.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Services;
+
+// Example usage in a service or controller
+public class ConsentManagementService
+{
+    private readonly IConsentRepository _consentRepository;
+
+    public ConsentManagementService(IConsentRepository consentRepository)
+    {
+        _consentRepository = consentRepository;
+    }
+
+    public async Task ManageConsentsExample()
+    {
+        // Create a new consent record
+        var newConsent = new Consent
+        {
+            ConsentId = Guid.NewGuid().ToString(),
+            UserId = "user-123",
+            ClientId = "web-client",
+            GrantedScopes = "openid profile email api:read",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(90) // Persistent consent
+        };
+        await _consentRepository.CreateAsync(newConsent);
+
+        // Get a consent by ID
+        var existingConsent = await _consentRepository.GetByIdAsync("consent-123");
+
+        // Get all consents
+        var allConsents = await _consentRepository.GetAllAsync();
+
+        // Get consent for specific user and client
+        var userClientConsent = await _consentRepository.GetByUserAndClientAsync("user-123", "web-client");
+
+        // Get all consents for a user
+        var userConsents = await _consentRepository.GetByUserIdAsync("user-123");
+
+        // Get all consents for a client
+        var clientConsents = await _consentRepository.GetByClientIdAsync("web-client");
+
+        // Check if consent exists
+        var exists = await _consentRepository.ExistsAsync("consent-123");
+
+        // Update a consent
+        if (existingConsent != null)
+        {
+            existingConsent.Grant("openid profile email api:read api:write", "192.168.1.100", "Mozilla/5.0");
+            await _consentRepository.UpdateAsync(existingConsent);
+        }
+
+        // Revoke a consent
+        await _consentRepository.DeleteAsync(existingConsent!);
+
+        // Revoke all consents for a user
+        await _consentRepository.RevokeAllUserConsentsAsync("user-123");
+    }
+}
+```
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+
+// Define a consent for API access
+var consent = new Consent
+{
+    ConsentId = Guid.NewGuid().ToString(),
+    UserId = "user-123",
+    ClientId = "mobile-app",
+    GrantedScopes = "openid profile email",
+    IsRevoked = false,
+    RevokedAt = null,
+    RevokedReason = null,
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow,
+    ExpiresAt = DateTime.UtcNow.AddDays(30)
+};
+
+// Grant additional scopes
+consent.Grant("api:read api:write", "192.168.1.100", "MobileApp/1.2.3");
+
+// Check if consent is valid and approved
+if (consent.IsValidAndApproved())
+{
+    Console.WriteLine("Consent is valid and approved");
+}
+
+// Get all granted scopes
+var grantedScopes = consent.GetGrantedScopes();
+foreach (var scope in grantedScopes)
+{
+    Console.WriteLine($"Granted scope: {scope}");
+}
+
+// Revoke consent
+consent.Revoke("User requested revocation");
+
+// Check if consent is revoked
+if (consent.IsRevoked)
+{
+    Console.WriteLine("Consent has been revoked");
+}
+```
+
 ## UserSessionService
 
 The `UserSessionService` manages the lifecycle of authenticated user sessions in the authorization server. Sessions are created automatically after successful token issuance and can be revoked individually or in bulk (e.g., on password change or account deletion). The service provides methods for session management, statistics, and cleanup of expired sessions.
