@@ -1139,6 +1139,80 @@ public class AuthorizationController
 
 The `UserManagementService` provides administrative CRUD operations over user accounts. It is designed for privileged, server-side callers such as admin APIs and background jobs, while end-user self-service operations are handled by the `UserService`. This service includes methods for creating, reading, updating, and deleting user accounts, as well as managing user roles, locking/unlocking accounts, and searching users.
 
+## IAuthorizationGrantRepository
+
+The `IAuthorizationGrantRepository` interface provides data access operations for managing OAuth 2.0 authorization grants in the authorization server. It extends the base `IRepository<AuthorizationGrant, string>` interface and adds grant-specific operations for retrieving grants by authorization code, user ID, client ID, and managing expired grants. This repository serves as the data access layer for authorization grant management operations during the authorization code flow.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a token service or controller
+public class AuthorizationGrantManagementService
+{
+    private readonly IAuthorizationGrantRepository _grantRepository;
+
+    public AuthorizationGrantManagementService(IAuthorizationGrantRepository grantRepository)
+    {
+        _grantRepository = grantRepository;
+    }
+
+    public async Task ManageAuthorizationGrantsExample()
+    {
+        // Create a new authorization grant
+        var newGrant = new AuthorizationGrant
+        {
+            GrantId = Guid.NewGuid().ToString(),
+            Code = "auth-code-123",
+            UserId = "user-123",
+            ClientId = "web-client",
+            Scope = "openid profile email api:read",
+            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            CodeChallenge = "E9Melhoa2OwvFrEMTJks93UTHBbYu3_KJDijOhbwNY",
+            CodeChallengeMethod = "S256",
+            RedirectUri = "https://client.example.com/callback"
+        };
+        await _grantRepository.CreateAsync(newGrant);
+
+        // Get a grant by ID
+        var existingGrant = await _grantRepository.GetByIdAsync(newGrant.GrantId);
+
+        // Get all grants
+        var allGrants = await _grantRepository.GetAllAsync();
+
+        // Get grant by authorization code
+        var grantByCode = await _grantRepository.GetByCodeAsync("auth-code-123");
+
+        // Get all grants for a specific user
+        var userGrants = await _grantRepository.GetByUserIdAsync("user-123");
+
+        // Get all grants for a specific client
+        var clientGrants = await _grantRepository.GetByClientIdAsync("web-client");
+
+        // Check if grant exists
+        var exists = await _grantRepository.ExistsAsync(newGrant.GrantId);
+
+        // Update a grant
+        if (existingGrant != null)
+        {
+            existingGrant.UpdatedAt = DateTime.UtcNow;
+            await _grantRepository.UpdateAsync(existingGrant);
+        }
+
+        // Delete a grant
+        await _grantRepository.DeleteAsync(existingGrant!);
+
+        // Delete by ID
+        await _grantRepository.DeleteByIdAsync(newGrant.GrantId);
+
+        // Cleanup expired grants
+        await _grantRepository.DeleteExpiredAsync();
+    }
+}
+```
+
 ## IRefreshTokenRepository
 
 The `IRefreshTokenRepository` interface provides data access operations for managing OAuth 2.0 refresh tokens in the authorization server. It extends the base `IRepository<RefreshToken, string>` interface and adds refresh token-specific operations for retrieving tokens by hash, user ID, client ID, managing valid tokens, revoking all tokens for a user, and cleaning up expired tokens. This repository serves as the data access layer for refresh token management operations.
