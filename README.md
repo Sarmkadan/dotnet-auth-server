@@ -882,6 +882,90 @@ public class SessionManagementController
 }
 ```
 
+## SessionStateService
+
+The `SessionStateService` manages OAuth2 session states during authorization flows, storing temporary state needed for multi-step flows like the authorization code flow. It uses in-memory storage suitable for single-server deployments, with methods for creating, retrieving, updating, and completing sessions. Sessions automatically expire after 10 minutes to prevent replay attacks.
+
+```csharp
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<SessionStateService>();
+
+// Example usage in an authorization controller
+public class AuthorizationController
+{
+    private readonly SessionStateService _sessionService;
+
+    public AuthorizationController(SessionStateService sessionService)
+    {
+        _sessionService = sessionService;
+    }
+
+    public async Task<IActionResult> InitiateAuthorization(string clientId, string redirectUri, string scopes, string? nonce = null)
+    {
+        // Create a new session state
+        var stateId = _sessionService.CreateSession(clientId, redirectUri, scopes, nonce);
+
+        // Store stateId in a secure cookie or return to client
+        Response.Cookies.Append("oauth_state", stateId, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+        });
+
+        // Redirect to authorization endpoint with state parameter
+        var authorizationUrl = $"/oauth/authorize?client_id={clientId}&redirect_uri={redirectUri}&response_type=code&scope={scopes}&state={stateId}";
+        return Redirect(authorizationUrl);
+    }
+
+    public async Task<IActionResult> HandleAuthorizationCallback(string stateId, string code, string? userId = null)
+    {
+        // Retrieve the session state
+        var session = _sessionService.GetSession(stateId);
+
+        if (session == null)
+        {
+            return BadRequest("Invalid or expired session state");
+        }
+
+        // Update session with user information after authentication
+        _sessionService.UpdateSession(stateId, userId: userId, grantedScopes: session.RequestedScopes);
+
+        // Exchange authorization code for tokens
+        var tokenResponse = await _tokenService.ExchangeCodeForTokensAsync(
+            clientId: session.ClientId,
+            code: code,
+            redirectUri: session.RedirectUri,
+            state: stateId
+        );
+
+        // Complete the session to prevent replay attacks
+        _sessionService.CompleteSession(stateId);
+
+        // Redirect to client with tokens
+        return Redirect($"{session.RedirectUri}?code={tokenResponse.AccessToken}");
+    }
+
+    public async Task<IActionResult> CleanupSessions()
+    {
+        // Periodically cleanup expired sessions (e.g., as background job)
+        var cleanupCount = _sessionService.CleanupExpiredSessions();
+        return Ok($"Cleaned up {cleanupCount} expired sessions");
+    }
+
+    public IActionResult GetSessionStats()
+    {
+        // Get current session count for monitoring
+        var activeSessions = _sessionService.GetActiveSessionCount();
+        return Ok(new { ActiveSessions = activeSessions });
+    }
+}
+```
+
 ## ClientValidationService
 
 The `ClientValidationService` provides comprehensive validation for OAuth 2.0 clients during authorization flows. It validates client credentials, redirect URIs, allowed scopes, and grant types while leveraging caching to reduce database queries and improve performance. The service handles both confidential and public clients, ensuring proper security checks are applied based on client type.
