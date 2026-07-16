@@ -161,6 +161,28 @@ foreach (var claim in allClaims)
 }
 ```
 
+## MfaSetupResponse
+
+The `MfaSetupResponse` class represents the response returned when initiating TOTP multi-factor authentication enrollment. It contains the secret key, provisioning URI for QR code generation, and a set of backup codes that the user should store securely for account recovery.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Example of handling MfaSetupResponse from an MFA enrollment endpoint
+var mfaSetupResponse = await _mfaService.InitiateMfaSetupAsync(userId);
+
+// Display the secret key and QR code URI to the user (only once!)
+Console.WriteLine($"Secret Key: {mfaSetupResponse.SecretKey}");
+Console.WriteLine($"Scan this URI with your authenticator app: {mfaSetupResponse.ProvisioningUri}");
+
+// Show backup codes for offline storage (display only once!)
+Console.WriteLine("Backup codes (store these securely):");
+foreach (var code in mfaSetupResponse.BackupCodes)
+{
+    Console.WriteLine($"  {code}");
+}
+```
+
 ## AuthorizationRequest
 
 The `AuthorizationRequest` class represents an OAuth 2.0 / OpenID Connect authorization request containing all parameters sent by a client during the authorization flow. It encapsulates standard OAuth parameters like `client_id`, `response_type`, `redirect_uri`, `scope`, and OpenID Connect extensions such as `nonce`, `code_challenge`, and `prompt`. The class provides helper methods to validate requests, parse scopes, and check for PKCE or OpenID Connect compliance.
