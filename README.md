@@ -1535,6 +1535,96 @@ public class AuthServerConfigurationService
             SupportedScopes = new List<string> { "openid", "profile", "email", "api:read", "api:write" },
             SupportedGrantTypes = new List<string> { "authorization_code", "refresh_token", "client_credentials", "password" }
         };
+    }
+}
+```
+
+## JsonTokenResponseFormatter
+
+The `JsonTokenResponseFormatter` class provides utilities for serializing and deserializing OAuth 2.0 token responses according to RFC 6749. It ensures consistent JSON formatting with snake_case field names and compact output suitable for client parsing, while handling both standard and non-standard fields gracefully.
+
+```csharp
+using DotnetAuthServer.Formatters;
+using DotnetAuthServer.Domain.Models;
+
+// Format a token response to JSON
+var tokenResponse = new TokenResponse
+{
+    AccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    TokenType = "Bearer",
+    ExpiresIn = 3600,
+    RefreshToken = "refresh-token-xyz",
+    Scope = "openid profile email api:read"
+};
+
+// Serialize to JSON (snake_case fields)
+string jsonResponse = JsonTokenResponseFormatter.FormatTokenResponse(tokenResponse);
+// Output: {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...","token_type":"Bearer","expires_in":3600,"refresh_token":"refresh-token-xyz","scope":"openid profile email api:read"}
+
+// Parse JSON back to TokenResponse
+var parsedResponse = JsonTokenResponseFormatter.ParseTokenResponse(jsonResponse);
+if (parsedResponse != null)
+{
+    Console.WriteLine($"Access Token: {parsedResponse.AccessToken}");
+    Console.WriteLine($"Expires In: {parsedResponse.ExpiresIn} seconds");
+}
+```
+
+```csharp
+using DotnetAuthServer.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.Configure<AuthServerOptions>(builder.Configuration.GetSection("AuthServer"));
+
+// Example usage in a service
+public class AuthServerConfigurationService
+{
+    private readonly AuthServerOptions _authOptions;
+
+    public AuthServerConfigurationService(IOptions<AuthServerOptions> authOptions)
+    {
+        _authOptions = authOptions.Value;
+    }
+
+    public void ConfigureAuthSettings()
+    {
+        // Configure JWT signing settings
+        var jwtOptions = new AuthServerOptions
+        {
+            IssuerUrl = "https://auth.example.com",
+            JwtSigningKey = "your-256-bit-secret-key-here-at-least-32-characters",
+            JwtAlgorithm = "HS256",
+            AccessTokenLifetimeSeconds = 3600, // 1 hour
+            RefreshTokenLifetimeSeconds = 2592000, // 30 days
+            AuthorizationCodeLifetimeSeconds = 600, // 10 minutes
+            ClockSkewToleranceSeconds = 300 // 5 minutes
+        };
+
+        // Configure security policies
+        var securityOptions = new AuthServerOptions
+        {
+            RequirePkceForAllClients = true, // Enforce PKCE for all clients
+            AutoRefreshTokenRotation = true, // Auto-rotate refresh tokens
+            MaxRefreshTokenGenerations = 5, // Maximum refresh token generations
+            FailedLoginAttemptThreshold = 5, // Lock account after 5 failed attempts
+            AccountLockoutDurationMinutes = 15, // Lock for 15 minutes
+            RequireUserConsent = true // Require explicit user consent
+        };
+
+        // Configure database settings
+        var dbOptions = new AuthServerOptions
+        {
+            DatabaseConnectionString = "Server=localhost;Database=AuthServer;User Id=sa;Password=YourPassword123;",
+            UseInMemoryDatabase = false // Use real database in production
+        };
+
+        // Configure supported scopes and grant types
+        var featuresOptions = new AuthServerOptions
+        {
+            SupportedScopes = new List<string> { "openid", "profile", "email", "api:read", "api:write" },
+            SupportedGrantTypes = new List<string> { "authorization_code", "refresh_token", "client_credentials", "password" }
+        };
 
         // Combine all configurations
         var fullConfig = new AuthServerOptions
