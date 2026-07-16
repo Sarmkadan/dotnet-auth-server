@@ -367,6 +367,65 @@ public async Task<IActionResult> RegisterUser(CreateUserRequest request)
 
 The `ApiResponse<T>` and `ApiResponse` classes provide a standardized wrapper for API responses across all endpoints in the authorization server. They support both success and error responses with consistent metadata including success status, optional data payload, error messages, status codes, trace identifiers, and timestamps. These types are used throughout the application to ensure a uniform response format.
 
+## ClientRegistrationRequest
+
+The `ClientRegistrationRequest` class represents the payload for registering a new OAuth 2.0 client application per RFC 7591 §2. It contains all metadata required to create a client registration, including grant types, redirect URIs, response types, and other client configuration options. The class provides validation to ensure required fields are present based on the grant types being used.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+
+// Create a client registration request for a confidential client
+var clientRequest = new ClientRegistrationRequest
+{
+    ClientName = "My Web Application",
+    GrantTypes = new List<string> { "authorization_code", "refresh_token" },
+    RedirectUris = new List<string> { "https://client.example.com/callback" },
+    ResponseTypes = new List<string> { "code" },
+    Scope = "openid profile email api:read",
+    TokenEndpointAuthMethod = "client_secret_basic",
+    LogoUri = "https://client.example.com/logo.png",
+    PolicyUri = "https://client.example.com/policy",
+    TosUri = "https://client.example.com/tos",
+    Contacts = new List<string> { "admin@client.example.com" },
+    ClientUri = "https://client.example.com"
+};
+
+// Validate the request
+if (clientRequest.IsValid())
+{
+    Console.WriteLine("Client registration request is valid");
+}
+
+// Create a client registration request for a public client (no client secret)
+var publicClientRequest = new ClientRegistrationRequest
+{
+    ClientName = "Single Page Application",
+    GrantTypes = new List<string> { "authorization_code", "refresh_token" },
+    RedirectUris = new List<string> { "https://app.example.com/callback" },
+    ResponseTypes = new List<string> { "code" },
+    Scope = "openid profile",
+    TokenEndpointAuthMethod = "none"
+};
+
+// Validate the public client request
+if (publicClientRequest.IsValid())
+{
+    Console.WriteLine("Public client registration request is valid");
+}
+
+// Create a client registration request with minimal required fields
+var minimalRequest = new ClientRegistrationRequest
+{
+    ClientName = "Mobile App Client"
+};
+
+// Validate the minimal request
+if (minimalRequest.IsValid())
+{
+    Console.WriteLine("Minimal client registration request is valid");
+}
+```
+
 ## ClientRegistrationResponse
 
 The `ClientRegistrationResponse` class represents the response returned from the OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591). It contains the registered client metadata including identifiers, credentials, grant types, redirect URIs, and other registration details that the client must persist for future authentication requests.
