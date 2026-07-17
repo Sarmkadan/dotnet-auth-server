@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Collections.Generic;
@@ -48,18 +48,25 @@ public static class ResourceServerStartupExampleJsonExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         return JsonSerializer.Serialize(value, indented ? new JsonSerializerOptions(_jsonOptions)
-            { WriteIndented = true } : _jsonOptions);
+        {
+            WriteIndented = true
+        } : _jsonOptions);
     }
 
     /// <summary>
     /// Deserializes a JSON string to a ResourceServerStartupExample instance
     /// </summary>
-    /// <param name="json">JSON string to deserialize</param>
-    /// <returns>Deserialized instance, or null if JSON is invalid</returns>
-    /// <exception cref="ArgumentException">Thrown when json is null or empty</exception>
+    /// <param name="json">JSON string to deserialize. Must be valid JSON; whitespace-only strings are treated as invalid.</param>
+    /// <returns>Deserialized instance if successful, null if JSON is invalid or cannot be deserialized</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null, empty, or consists only of whitespace</exception>
     public static ResourceServerStartupExample? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
 
         try
         {
@@ -77,10 +84,16 @@ public static class ResourceServerStartupExampleJsonExtensions
     /// <param name="json">JSON string to deserialize</param>
     /// <param name="value">Output parameter containing the deserialized instance</param>
     /// <returns>True if deserialization succeeded, false otherwise</returns>
-    /// <exception cref="ArgumentException">Thrown when json is null or empty</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null, empty, or consists only of whitespace</exception>
     public static bool TryFromJson(string json, out ResourceServerStartupExample? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            value = null;
+            return false;
+        }
 
         try
         {
