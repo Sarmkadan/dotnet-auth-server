@@ -1997,7 +1997,35 @@ public class AuthServerConfigurationService
 }
 ```
 
-## IClientRepository
+## PkceValidationServiceTests
+
+The `PkceValidationServiceTests` class provides comprehensive unit tests for the `PkceValidationService`, which handles Proof Key for Code Exchange (PKCE) generation and validation. It ensures that code verifiers adhere to RFC 7636 length and character requirements, that code challenges are correctly derived using "plain" and "S256" methods, and that PKCE enforcement policies correctly distinguish between public and confidential clients.
+
+```csharp
+using DotnetAuthServer.Services;
+using DotnetAuthServer.Configuration;
+using Xunit;
+using FluentAssertions;
+
+// Setup in a test class
+var options = new AuthServerOptions { RequirePkceForAllClients = true };
+var service = new PkceValidationService(options, logger);
+
+// 1. Generate a valid code verifier
+var verifier = service.GenerateCodeVerifier();
+verifier.Length.Should().BeInRange(43, 128);
+
+// 2. Generate a code challenge using S256 (recommended)
+var challenge = service.GenerateCodeChallenge(verifier, "S256");
+
+// 3. Validate a verifier against a challenge
+var isValid = service.ValidateCodeVerifier(verifier, challenge, "S256");
+isValid.Should().BeTrue();
+
+// 4. Check if PKCE is required for a client type
+var isPkceRequired = service.IsPkceRequired(isConfidentialClient: false); // Public client
+isPkceRequired.Should().BeTrue();
+```
 
 The `IClientRepository` interface provides data access operations for managing OAuth 2.0 clients in the authorization server. It extends the base `IRepository<Client, string>` interface and adds client-specific operations for retrieving clients by client ID, managing active clients, searching clients by name or identifier, and checking client existence. This repository serves as the data access layer for OAuth client management operations.
 
