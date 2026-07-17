@@ -1032,6 +1032,51 @@ The `DomainEntityTests` class provides unit tests for domain entity classes in t
 
 The `SessionManagementTests` class provides unit tests for user session management functionality in the authorization server. It verifies session creation, revocation, status checks, and statistics, ensuring that session lifecycle operations work correctly according to the domain model's invariants.
 
+## ScopeAndExtensionTests
+
+The `ScopeAndExtensionTests` class provides unit tests for scope validation and extension methods used throughout the OAuth 2.0 and OpenID Connect authorization flow. It verifies scope parsing, merging, filtering, validation, URI validation, timestamp conversion, and expiration checking logic that ensures proper token issuance and access control.
+
+```csharp
+using DotnetAuthServer.Extensions;
+using DotnetAuthServer.Services;
+
+// Validate that required scopes are present for OIDC requests
+var scopeService = new ScopeValidationService(...);
+var hasRequiredScopes = scopeService.ContainsRequiredScopes(new[] { "openid", "profile" }, isOidc: true);
+// Returns: true
+
+// Merge multiple scope lists and deduplicate
+var mergedScopes = scopeService.MergeScopes(
+    new[] { "profile", "openid" },
+    new[] { "email", "openid" }
+);
+// Returns: "email openid profile"
+
+// Filter scopes to only include granted scopes
+var filteredScopes = scopeService.FilterScopes(
+    new[] { "openid", "profile", "email" },
+    new[] { "profile", "offline_access" }
+).ToList();
+// Returns: ["profile"]
+
+// Parse scope strings with duplicates and whitespace
+var parsedScopes = "openid profile openid email profile".ParseScopes().ToList();
+// Returns: ["openid", "profile", "email"]
+
+// Validate absolute URIs (e.g., for redirect URIs)
+var isValidUri = "https://client.example.com/callback".IsValidAbsoluteUri();
+// Returns: true
+
+// Check token expiration with clock skew tolerance
+var expiresAt = DateTime.UtcNow.AddSeconds(3);
+var isExpired = expiresAt.IsExpired();
+// Returns: true (within 5-second tolerance window)
+
+// Convert dates to Unix timestamps
+var timestamp = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).ToUnixTimestamp();
+// Returns: 0
+```
+
 ## SecretsServiceTests
 
 The `SecretsServiceTests` class provides unit tests for the `SecretsService` class, which handles secure secret generation, hashing, verification, and masking operations. It verifies that secrets are generated with the correct length, hashing produces valid results, verification correctly identifies valid and invalid secrets, and masking properly obfuscates secret values for display purposes.
