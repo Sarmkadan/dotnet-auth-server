@@ -1024,6 +1024,71 @@ var notFoundResponse = ApiResponse.ErrorResponse(
 );
 ```
 
+## DomainEntityTests
+
+The `DomainEntityTests` class provides unit tests for domain entity classes in the authorization server. It verifies core domain logic and behavior for entities like `User`, `Client`, and `RefreshToken`, ensuring that authentication, authorization, and token management operations work correctly according to the domain model's invariants.
+
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using Xunit;
+
+// Test user login behavior
+var user = new User
+{
+    UserId = "user-123",
+    Username = "testuser",
+    Email = "test@example.com",
+    PasswordHash = "hashed-password"
+};
+
+// Simulate failed login attempts
+for (int i = 0; i < 4; i++)
+{
+    user.RecordFailedLogin();
+}
+
+Assert.False(user.IsLocked());
+Assert.Equal(4, user.FailedLoginAttempts);
+
+// Simulate successful login
+user.RecordSuccessfulLogin();
+Assert.Equal(0, user.FailedLoginAttempts);
+Assert.NotNull(user.LastLoginAt);
+
+// Test client validation
+var client = new Client
+{
+    ClientId = "web-client",
+    ClientName = "Web Client",
+    IsConfidential = true,
+    ClientSecretHash = "secret-hash",
+    RedirectUris = new List<string> { "https://client.example.com/callback" },
+    AllowedGrantTypes = new List<string> { "authorization_code", "refresh_token" }
+};
+
+Assert.True(client.IsValid());
+Assert.True(client.IsGrantTypeAllowed("authorization_code"));
+Assert.True(client.IsRedirectUriValid("https://CLIENT.EXAMPLE.COM/callback"));
+
+// Test refresh token rotation
+var token = new RefreshToken
+{
+    TokenId = Guid.NewGuid().ToString(),
+    TokenHash = "original-hash",
+    ClientId = "client-123",
+    UserId = "user-123",
+    GrantedScopes = "openid profile email",
+    ExpiresAt = DateTime.UtcNow.AddDays(30)
+};
+
+var originalVersion = token.Version;
+token.Rotate();
+
+Assert.Equal(originalVersion + 1, token.Version);
+Assert.Equal("original-hash", token.PreviousTokenHash);
+```
+
 ## AuditLoggingService
 
 The AuditLoggingService class provides methods for logging various security-related events, such as token issuance, authentication, authorization decisions, suspicious activity, and administrative actions.
