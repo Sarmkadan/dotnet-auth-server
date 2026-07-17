@@ -1917,6 +1917,56 @@ The `DomainEntityTests` class provides unit tests for domain entity classes in t
 
 The `SessionManagementTests` class provides unit tests for user session management functionality in the authorization server. It verifies session creation, revocation, status checks, and statistics, ensuring that session lifecycle operations work correctly according to the domain model's invariants.
 
+## SessionManagementTestsExtensions
+
+The `SessionManagementTestsExtensions` class provides extension methods for creating and managing test user sessions in the authorization server. It simplifies test setup by providing methods to create individual sessions, multiple sessions for the same user, expiring sessions, and session retrieval utilities.
+
+Example usage:
+```csharp
+// Create a single test session
+var session = SessionManagementTestsExtensions.CreateTestSession(
+    userId: "user-123",
+    clientId: "web-client",
+    grantedScopes: new[] { "openid", "profile", "email" }
+);
+
+// Create multiple sessions for the same user
+var sessions = SessionManagementTestsExtensions.CreateMultipleSessions(
+    userId: "user-123",
+    clientIds: new[] { "web-client", "mobile-app" },
+    baseGrantedScopes: new[] { "openid", "profile" }
+);
+
+// Check if a user has exactly one active session
+var hasSingleActiveSession = SessionManagementTestsExtensions.ShouldContainSingleActiveSessionForUser(
+    sessions,
+    userId: "user-123"
+);
+
+// Get a session by its ID
+var foundSession = SessionManagementTestsExtensions.GetSessionById(
+    sessions,
+    sessionId: session.SessionId
+);
+
+// Calculate session duration in seconds
+var durationSeconds = SessionManagementTestsExtensions.GetSessionDurationSeconds(session);
+
+// Create a session that expires in 1 hour
+var expiringSession = SessionManagementTestsExtensions.CreateExpiringSession(
+    userId: "user-123",
+    clientId: "web-client",
+    expiresInHours: 1
+);
+
+// Create a session with specific expiration
+var sessionWithExpiration = SessionManagementTestsExtensions.CreateSessionWithExpiration(
+    userId: "user-123",
+    clientId: "web-client",
+    expiresAt: DateTime.UtcNow.AddHours(2)
+);
+```
+
 ## ScopeAndExtensionTests
 
 The `ScopeAndExtensionTests` class provides unit tests for scope validation and extension methods used throughout the OAuth 2.0 and OpenID Connect authorization flow. It verifies scope parsing, merging, filtering, validation, URI validation, timestamp conversion, and expiration checking logic that ensures proper token issuance and access control.
