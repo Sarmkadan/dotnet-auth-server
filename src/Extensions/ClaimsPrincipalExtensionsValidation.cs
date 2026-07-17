@@ -8,13 +8,12 @@ namespace DotnetAuthServer.Extensions;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using DotnetAuthServer.Configuration;
 
 /// <summary>
-/// Validation extension methods for ClaimsPrincipal to check the validity of claims
+/// Validation extension methods for <see cref="ClaimsPrincipal"/> to check the validity of claims
 /// and their values. Provides comprehensive validation for standard OIDC/OAuth2 claims.
 /// </summary>
 public static class ClaimsPrincipalExtensionsValidation
@@ -148,10 +147,7 @@ public static class ClaimsPrincipalExtensionsValidation
     /// <param name="principal">The claims principal to check.</param>
     /// <returns>True if all claims are valid; otherwise false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if principal is null.</exception>
-    public static bool IsValid(this ClaimsPrincipal principal)
-    {
-        return principal.Validate().Count == 0;
-    }
+    public static bool IsValid(this ClaimsPrincipal principal) => principal.Validate().Count == 0;
 
     /// <summary>
     /// Ensures all claims in the principal are valid, throwing an exception if any are invalid.
