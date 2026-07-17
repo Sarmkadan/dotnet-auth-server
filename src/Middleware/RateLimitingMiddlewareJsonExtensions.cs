@@ -12,7 +12,7 @@ using System.Text.Json.Serialization;
 
 /// <summary>
 /// Provides System.Text.Json serialization and deserialization extensions for
-/// <see cref="RateLimitingMiddleware"/> to enable configuration persistence and inter-process communication.
+/// <see cref="RateLimitingMiddleware"/> configuration to enable configuration persistence and inter-process communication.
 /// </summary>
 public static class RateLimitingMiddlewareJsonExtensions
 {
@@ -25,13 +25,13 @@ public static class RateLimitingMiddlewareJsonExtensions
     };
 
     /// <summary>
-    /// Serializes the <see cref="RateLimitingMiddleware"/> instance to a JSON string.
+    /// Serializes the <see cref="RateLimitingOptions"/> instance to a JSON string.
     /// </summary>
-    /// <param name="value">The middleware instance to serialize.</param>
+    /// <param name="value">The options instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
-    /// <returns>A JSON string representation of the middleware instance.</returns>
+    /// <returns>A JSON string representation of the options instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static string ToJson(this RateLimitingMiddleware value, bool indented = false)
+    public static string ToJson(this RateLimitingOptions value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -43,39 +43,33 @@ public static class RateLimitingMiddlewareJsonExtensions
     }
 
     /// <summary>
-    /// Deserializes a JSON string to a <see cref="RateLimitingMiddleware"/> instance.
+    /// Deserializes a JSON string to a <see cref="RateLimitingOptions"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized middleware instance, or null if deserialization fails.</returns>
+    /// <returns>The deserialized options instance, or null if deserialization fails.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
-    public static RateLimitingMiddleware? FromJson(string json)
+    /// <exception cref="JsonException">Thrown when the JSON is invalid.</exception>
+    public static RateLimitingOptions? FromJson(this string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        try
-        {
-            return JsonSerializer.Deserialize<RateLimitingMiddleware>(json, _jsonOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        return JsonSerializer.Deserialize<RateLimitingOptions>(json, _jsonOptions);
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to a <see cref="RateLimitingMiddleware"/> instance.
+    /// Attempts to deserialize a JSON string to a <see cref="RateLimitingOptions"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized middleware instance if successful.</param>
+    /// <param name="value">Receives the deserialized options instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
-    public static bool TryFromJson(string json, out RateLimitingMiddleware? value)
+    public static bool TryFromJson(this string json, out RateLimitingOptions? value)
     {
         ArgumentNullException.ThrowIfNull(json);
 
         try
         {
-            value = JsonSerializer.Deserialize<RateLimitingMiddleware>(json, _jsonOptions);
+            value = JsonSerializer.Deserialize<RateLimitingOptions>(json, _jsonOptions);
             return true;
         }
         catch (JsonException)

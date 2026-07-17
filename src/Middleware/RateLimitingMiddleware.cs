@@ -10,6 +10,33 @@ using System.Collections.Concurrent;
 using System.Net;
 
 /// <summary>
+/// Configuration for rate limiting middleware.
+/// </summary>
+public sealed class RateLimitingOptions
+{
+    /// <summary>
+    /// Gets or sets the number of requests allowed per minute per client.
+    /// </summary>
+    public int RequestsPerMinute { get; set; } = 60;
+
+    /// <summary>
+    /// Gets or sets the burst size (maximum tokens in bucket).
+    /// </summary>
+    public int BurstSize { get; set; } = 10;
+
+    /// <summary>
+    /// Gets or sets the endpoints that require stricter rate limiting.
+    /// </summary>
+    public HashSet<string> SensitiveEndpoints { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/oauth/token",
+        "/oauth/authorize",
+        "/oauth/introspect",
+        "/oauth/revoke"
+    };
+}
+
+/// <summary>
 /// Middleware for enforcing rate limits on sensitive OAuth2 endpoints.
 /// Uses a token bucket algorithm to allow bursts while preventing abuse.
 /// This is critical for preventing brute force attacks on token endpoints and
@@ -22,22 +49,24 @@ public sealed class RateLimitingMiddleware
     private readonly ConcurrentDictionary<string, TokenBucket> _buckets = new();
     private readonly int _requestsPerMinute;
     private readonly int _burstSize;
+    private readonly HashSet<string> _sensitiveEndpoints;
 
-    // Endpoints that require stricter rate limiting (tokens, authorization)
-    private readonly HashSet<string> _sensitiveEndpoints = new(StringComparer.OrdinalIgnoreCase)
+    public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger, RateLimitingOptions? options = null)
     {
-        "/oauth/token",
-        "/oauth/authorize",
-        "/oauth/introspect",
-        "/oauth/revoke"
-    };
+        ArgumentNullException.ThrowIfNull(next);
+        ArgumentNullException.ThrowIfNull(logger);
 
-    public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger)
-    {
         _next = next;
         _logger = logger;
-        _requestsPerMinute = 60;
-        _burstSize = 10;
+        _requestsPerMinute = options?.RequestsPerMinute ?? 60;
+        _burstSize = options?.BurstSize ?? 10;
+        _sensitiveEndpoints = options?.SensitiveEndpoints ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "/oauth/token",
+            "/oauth/authorize",
+            "/oauth/introspect",
+            "/oauth/revoke"
+        };
     }
 
     public async Task InvokeAsync(HttpContext context)
