@@ -213,6 +213,56 @@ public class CacheConfigurationService
 }
 ```
 
+## ClientCredentialsFlowExample
+
+The `ClientCredentialsFlowExample` class demonstrates how to use the OAuth 2.0 Client Credentials flow for machine-to-machine (M2M) authentication. This flow is ideal for service-to-service communication where no user involvement is required, such as background jobs, microservices communication, or automated processes.
+
+The example shows how to:
+
+- Request access tokens using client credentials
+- Call downstream APIs with the obtained token
+- Validate tokens via introspection
+- Revoke tokens when they're no longer needed
+- Implement background services with automatic token refresh
+- Manage multiple services with different permission scopes
+
+```csharp
+using DotnetAuthServer.Examples;
+
+// Initialize the flow with your auth server URL
+var flow = new ClientCredentialsFlowExample("https://localhost:7001");
+
+// Request an access token for service-to-service communication
+var tokenResponse = await flow.GetServiceAccessTokenAsync("api:read api:write");
+
+if (tokenResponse is not null)
+{
+Console.WriteLine($"Access Token: {tokenResponse.AccessToken}");
+Console.WriteLine($"Token Type: {tokenResponse.TokenType}");
+Console.WriteLine($"Expires In: {tokenResponse.ExpiresIn} seconds");
+Console.WriteLine($"Scope: {tokenResponse.Scope}");
+
+// Use the token to call a downstream API
+await flow.CallDownstreamApiAsync(tokenResponse.AccessToken, "https://api.example.com/data");
+
+// Validate the token is still active
+var isValid = await flow.ValidateTokenAsync(tokenResponse.AccessToken);
+Console.WriteLine($"Token is valid: {isValid}");
+
+// Revoke the token when done
+await flow.RevokeTokenAsync(tokenResponse.AccessToken);
+}
+
+// Background service example with automatic token refresh
+var processor = new BackgroundDataProcessorService("https://localhost:7001");
+await processor.ExecuteJobAsync("data-processing-job-001");
+await processor.ShutdownAsync();
+
+// Multiple services with different scopes
+var multiService = new MultiServiceAuthenticationExample("https://localhost:7001");
+await multiService.DemonstrateMultiServiceAsync();
+```
+
 ## MemoryCacheService
 
 The `MemoryCacheService` provides an in-memory caching implementation using `ConcurrentDictionary` for thread-safe operations. It's designed for single-server deployments and offers automatic expiration checking, pattern-based cache removal, and atomic get-or-set operations to prevent thundering herd problems.
