@@ -25,12 +25,7 @@ public static class ClientRegistrationResponseJsonExtensions
         return JsonSerializer.Serialize(value, indented ? GetIndentedOptions() : _options);
     }
 
-    private static JsonSerializerOptions GetIndentedOptions()
-    {
-        var options = new JsonSerializerOptions(_options);
-        options.WriteIndented = true;
-        return options;
-    }
+  private static JsonSerializerOptions GetIndentedOptions() => new(_options) { WriteIndented = true };
 
     /// <summary>
     /// Deserializes a JSON string into a <see cref="ClientRegistrationResponse"/> instance.
@@ -51,6 +46,8 @@ public static class ClientRegistrationResponseJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out ClientRegistrationResponse? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
