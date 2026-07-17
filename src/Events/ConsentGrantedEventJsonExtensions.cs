@@ -44,7 +44,7 @@ public static class ConsentGrantedEventJsonExtensions
     /// Deserializes a JSON string into a <see cref="ConsentGrantedEvent"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized event, or null if deserialization fails.</returns>
+    /// <returns>The deserialized event if successful; otherwise, null.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static ConsentGrantedEvent? FromJson(string json)
     {
@@ -64,7 +64,7 @@ public static class ConsentGrantedEventJsonExtensions
     /// Attempts to deserialize a JSON string into a <see cref="ConsentGrantedEvent"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized event if successful.</param>
+    /// <param name="value">Receives the deserialized event if successful; otherwise, null.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out ConsentGrantedEvent? value)
@@ -74,7 +74,7 @@ public static class ConsentGrantedEventJsonExtensions
         try
         {
             value = JsonSerializer.Deserialize<ConsentGrantedEvent>(json, _options);
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
