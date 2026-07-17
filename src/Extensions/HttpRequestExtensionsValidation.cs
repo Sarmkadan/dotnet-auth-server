@@ -2,9 +2,10 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System.Globalization;
+using System.Linq;
 
 namespace DotnetAuthServer.Extensions;
 
@@ -20,15 +21,12 @@ public static class HttpRequestExtensionsValidation
     /// </summary>
     /// <param name="request">The HttpRequest to extract and validate parameters from.</param>
     /// <returns>An enumerable of validation problems, or empty if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if request is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="request"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this HttpRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var problems = new List<string>();
-
-        // Validate GetOAuthParameter results (client_id, client_secret, etc.)
-        // These are strings that should not be empty when present
 
         // Validate ExtractClientCredentials results
         var (clientId, clientSecret) = request.ExtractClientCredentials();
@@ -51,13 +49,11 @@ public static class HttpRequestExtensionsValidation
             {
                 problems.Add("IP address contains only whitespace characters");
             }
-            else if (ipAddress == "::1" || ipAddress == "127.0.0.1")
+            else if (ipAddress is "::1" or "127.0.0.1")
             {
                 problems.Add("IP address is localhost (::1 or 127.0.0.1)");
             }
         }
-
-        // Validate IsSecureTransport result - no validation needed as it's a boolean
 
         // Validate GetBearerToken result
         var bearerToken = request.GetBearerToken();
@@ -81,19 +77,19 @@ public static class HttpRequestExtensionsValidation
     /// </summary>
     /// <param name="request">The HttpRequest to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if request is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="request"/> is null.</exception>
     public static bool IsValid(this HttpRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return Validate(request).Count == 0;
+        return !Validate(request).Any();
     }
 
     /// <summary>
     /// Ensures that the HttpRequest parameters are valid, throwing an exception if not.
     /// </summary>
     /// <param name="request">The HttpRequest to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown if request is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="request"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems.</exception>
     public static void EnsureValid(this HttpRequest request)
     {
