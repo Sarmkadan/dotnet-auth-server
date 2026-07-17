@@ -21,14 +21,14 @@ public static class DotnetAuthServerOptionsExtensions
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        return options.AuthServer is not null
+        return options.AuthServer?.IsValid() == true
             && options.Cache is not null
-            && options.Logging is not null
+            && options.Logging?.IsValid() == true
             && options.Opa is not null
-            && !string.IsNullOrWhiteSpace(options.AuthServer.IssuerUrl)
-            && !string.IsNullOrWhiteSpace(options.AuthServer.JwtSigningKey)
-            && options.AuthServer.AccessTokenLifetimeSeconds > 0
-            && options.AuthServer.RefreshTokenLifetimeSeconds > 0;
+            && !string.IsNullOrWhiteSpace(options.AuthServer?.IssuerUrl)
+            && !string.IsNullOrWhiteSpace(options.AuthServer?.JwtSigningKey)
+            && options.AuthServer?.AccessTokenLifetimeSeconds > 0
+            && options.AuthServer?.RefreshTokenLifetimeSeconds > 0;
     }
 
     /// <summary>
@@ -38,6 +38,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing cache configuration.</param>
     /// <returns>The normalized cache backend type.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.Cache"/> is null.</exception>
     public static string GetEffectiveCacheBackend(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -57,6 +58,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing cache configuration.</param>
     /// <returns>True if Redis is the cache backend; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.Cache"/> is null.</exception>
     public static bool UsesRedisCache(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -74,6 +76,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing auth server configuration.</param>
     /// <returns>The JWT signing algorithm to use.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.AuthServer"/> is null.</exception>
     public static string GetEffectiveJwtAlgorithm(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -90,6 +93,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing auth server configuration.</param>
     /// <returns>A read-only list of supported scopes.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.AuthServer"/> is null.</exception>
     public static IReadOnlyList<string> GetSupportedScopes(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -104,6 +108,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing auth server configuration.</param>
     /// <returns>A read-only list of supported grant types.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.AuthServer"/> is null.</exception>
     public static IReadOnlyList<string> GetSupportedGrantTypes(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -119,6 +124,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="scope">The scope to check.</param>
     /// <returns>True if the scope is supported; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.AuthServer"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="scope"/> is null or whitespace.</exception>
     public static bool SupportsScope(this DotnetAuthServerOptions options, string scope)
     {
@@ -137,6 +143,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="grantType">The grant type to check.</param>
     /// <returns>True if the grant type is supported; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.AuthServer"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="grantType"/> is null or whitespace.</exception>
     public static bool SupportsGrantType(this DotnetAuthServerOptions options, string grantType)
     {
@@ -154,6 +161,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing logging configuration.</param>
     /// <returns>The effective minimum log level as a string.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.Logging"/> is null.</exception>
     public static string GetEffectiveMinimumLogLevel(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -168,6 +176,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing logging configuration.</param>
     /// <returns>True if sensitive data logging is enabled; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.Logging"/> is null.</exception>
     public static bool IsSensitiveDataLoggingEnabled(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -182,6 +191,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing OPA configuration.</param>
     /// <returns>The formatted OPA policy path.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.Opa"/> is null.</exception>
     public static string GetEffectiveOpaPolicyPath(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -199,6 +209,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing OPA configuration.</param>
     /// <returns>The complete OPA policy query URL.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.Opa"/> is null.</exception>
     public static string GetOpaPolicyUrl(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -216,6 +227,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing auth server configuration.</param>
     /// <returns>A formatted string representing the access token lifetime.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.AuthServer"/> is null.</exception>
     public static string GetAccessTokenLifetimeDisplay(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -231,6 +243,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing auth server configuration.</param>
     /// <returns>A formatted string representing the refresh token lifetime.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.AuthServer"/> is null.</exception>
     public static string GetRefreshTokenLifetimeDisplay(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -246,6 +259,7 @@ public static class DotnetAuthServerOptionsExtensions
     /// <param name="options">The options containing cache configuration.</param>
     /// <returns>A formatted string representing the cache default expiration.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options.Cache"/> is null.</exception>
     public static string GetCacheDefaultExpirationDisplay(this DotnetAuthServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
