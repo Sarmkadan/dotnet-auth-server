@@ -1981,6 +1981,41 @@ var sessionWithExpiration = SessionManagementTestsExtensions.CreateSessionWithEx
 );
 ```
 
+## TokenIntrospectionBenchmarksExtensions
+
+The `TokenIntrospectionBenchmarksExtensions` type provides extension methods for retrieving token introspection results and status information from benchmark instances. It offers methods to get individual token results, collections of results, and summary information for valid, invalid, and expired tokens.
+
+```csharp
+using DotnetAuthServer.Benchmarks;
+
+// Example usage of token introspection benchmark extensions
+public class TokenIntrospectionExample
+{
+    public void DemonstrateExtensions(TokenIntrospectionBenchmarks benchmarks)
+    {
+        // Get results for all token types
+        IReadOnlyList<TokenIntrospectionResult> allResults = benchmarks.GetAllTokenResults();
+        
+        // Get individual token results
+        TokenIntrospectionResult validResult = benchmarks.IntrospectValidTokenResult();
+        TokenIntrospectionResult invalidResult = benchmarks.IntrospectInvalidTokenResult();
+        TokenIntrospectionResult expiredResult = benchmarks.IntrospectExpiredTokenResult();
+        
+        // Check active status for each token type
+        bool validIsActive = benchmarks.IntrospectValidToken();
+        bool invalidIsActive = benchmarks.IntrospectInvalidToken();
+        bool expiredIsActive = benchmarks.IntrospectExpiredToken();
+        
+        // Get active status as a dictionary
+        IReadOnlyDictionary<string, bool> activeStatus = benchmarks.GetTokenActiveStatus();
+        
+        // Get formatted summary of results
+        string summary = benchmarks.GetResultsSummary();
+        Console.WriteLine(summary);
+    }
+}
+```
+
 ## ScopeAndExtensionTests
 
 The `ScopeAndExtensionTests` class provides unit tests for scope validation and extension methods used throughout the OAuth 2.0 and OpenID Connect authorization flow. It verifies scope parsing, merging, filtering, validation, URI validation, timestamp conversion, and expiration checking logic that ensures proper token issuance and access control.
