@@ -59,6 +59,7 @@ public static class ClientValidationBenchmarksJsonExtensions
     /// <param name="value">Receives the deserialized benchmarks instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized into the target type.</exception>
     public static bool TryFromJson(string json, out ClientValidationBenchmarks? value)
     {
         ArgumentNullException.ThrowIfNull(json);
