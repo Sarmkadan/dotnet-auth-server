@@ -369,6 +369,58 @@ public class TokenBenchmarksConfig
 }
 ```
 
+## PkceBenchmarks
+
+The `PkceBenchmarks` class provides performance benchmarks for Proof Key for Code Exchange (PKCE) operations, which are essential for securing OAuth 2.0 authorization code flows. It measures the execution time and memory allocation of PKCE code verifier generation, code challenge generation, and validation operations. These benchmarks help identify performance bottlenecks in PKCE validation, which is critical for preventing authorization code interception attacks.
+
+The benchmark suite includes:
+
+- Code verifier generation for PKCE
+- Code challenge generation from code verifiers  
+- Valid PKCE validation (matching verifier and challenge)
+- Invalid PKCE validation (mismatched verifier and challenge)
+- Wrong challenge PKCE validation (invalid challenge)
+
+```csharp
+using DotnetAuthServer.Benchmarks;
+using BenchmarkDotNet.Running;
+
+// Run all benchmarks
+var summary = BenchmarkRunner.Run<PkceBenchmarks>();
+
+// Example benchmark configuration
+public class PkceBenchmarksConfig
+{
+    public void RunBenchmarks()
+    {
+        var benchmarks = new PkceBenchmarks();
+
+        // Setup benchmark environment
+        benchmarks.Setup();
+
+        // Generate a code verifier
+        var codeVerifier = benchmarks.GenerateCodeVerifier();
+        Console.WriteLine($"Generated code verifier: {codeVerifier}");
+
+        // Generate a code challenge from the verifier
+        var codeChallenge = benchmarks.GenerateCodeChallenge();
+        Console.WriteLine($"Generated code challenge: {codeChallenge}");
+
+        // Validate a correct PKCE pair
+        var isValid = benchmarks.ValidatePkce();
+        Console.WriteLine($"PKCE validation successful: {isValid}");
+
+        // Validate with an invalid code verifier
+        var isInvalid = benchmarks.ValidatePkce_Invalid();
+        Console.WriteLine($"PKCE validation with invalid verifier: {isInvalid}");
+
+        // Validate with a wrong challenge
+        var isWrongChallenge = benchmarks.ValidatePkce_WrongChallenge();
+        Console.WriteLine($"PKCE validation with wrong challenge: {isWrongChallenge}");
+    }
+}
+```
+
 ## MemoryCacheService
 
 The `MemoryCacheService` provides an in-memory caching implementation using `ConcurrentDictionary` for thread-safe operations. It's designed for single-server deployments and offers automatic expiration checking, pattern-based cache removal, and atomic get-or-set operations to prevent thundering herd problems.
