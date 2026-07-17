@@ -13,42 +13,32 @@ namespace DotnetAuthServer.Domain.Entities;
 /// </summary>
 public static class RefreshTokenValidation
 {
+    private const string DateTimeDefaultError = "{0} must be a valid date, but was default(DateTime)";
+    private const string NonEmptyStringError = "{0} must be a non-empty string";
+
     /// <summary>
     /// Validates a refresh token and returns a list of human-readable problems
     /// </summary>
     /// <param name="value">The refresh token to validate</param>
     /// <returns>List of validation errors; empty if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static IReadOnlyList<string> Validate(this RefreshToken? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
         var errors = new List<string>();
 
-        // Validate string properties
+        // Validate required string properties
         ValidateNonEmptyString(value.TokenId, nameof(value.TokenId), errors);
         ValidateNonEmptyString(value.TokenHash, nameof(value.TokenHash), errors);
         ValidateNonEmptyString(value.ClientId, nameof(value.ClientId), errors);
         ValidateNonEmptyString(value.UserId, nameof(value.UserId), errors);
         ValidateNonEmptyString(value.GrantedScopes, nameof(value.GrantedScopes), errors);
 
-        // Validate PreviousTokenHash if not null
-        if (value.PreviousTokenHash is not null)
-        {
-            ValidateNonEmptyString(value.PreviousTokenHash, nameof(value.PreviousTokenHash), errors);
-        }
-
-        // Validate RevocationReason if not null
-        if (value.RevocationReason is not null)
-        {
-            ValidateNonEmptyString(value.RevocationReason, nameof(value.RevocationReason), errors);
-        }
-
-        // Validate IssuedToDeviceId if not null
-        if (value.IssuedToDeviceId is not null)
-        {
-            ValidateNonEmptyString(value.IssuedToDeviceId, nameof(value.IssuedToDeviceId), errors);
-        }
+        // Validate optional string properties
+        ValidateNonEmptyString(value.PreviousTokenHash, nameof(value.PreviousTokenHash), errors);
+        ValidateNonEmptyString(value.RevocationReason, nameof(value.RevocationReason), errors);
+        ValidateNonEmptyString(value.IssuedToDeviceId, nameof(value.IssuedToDeviceId), errors);
 
         // Validate Version (must be positive)
         if (value.Version <= 0)
@@ -62,13 +52,13 @@ public static class RefreshTokenValidation
             errors.Add($"UsageCount must be non-negative, but was {value.UsageCount}");
         }
 
-        // Validate dates
+        // Validate required dates
         ValidateDateNotDefault(value.ExpiresAt, nameof(value.ExpiresAt), errors);
         ValidateDateNotDefault(value.CreatedAt, nameof(value.CreatedAt), errors);
         ValidateDateNotDefault(value.UpdatedAt, nameof(value.UpdatedAt), errors);
 
         // Validate RevokedAt if not null
-        if (value.RevokedAt is not null)
+        if (value.RevokedAt.HasValue)
         {
             ValidateDateNotDefault(value.RevokedAt.Value, nameof(value.RevokedAt), errors);
 
@@ -80,7 +70,7 @@ public static class RefreshTokenValidation
         }
 
         // Validate LastUsedAt if not null
-        if (value.LastUsedAt is not null)
+        if (value.LastUsedAt.HasValue)
         {
             ValidateDateNotDefault(value.LastUsedAt.Value, nameof(value.LastUsedAt), errors);
 
@@ -143,17 +133,16 @@ public static class RefreshTokenValidation
     /// </summary>
     /// <param name="value">The refresh token to check</param>
     /// <returns>True if valid; false otherwise</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static bool IsValid(this RefreshToken? value)
-    {
-        return Validate(value).Count == 0;
-    }
+        => Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures a refresh token is valid, throwing an exception with all validation errors if not
     /// </summary>
     /// <param name="value">The refresh token to validate</param>
-    /// <exception cref="ArgumentException">Thrown when value is null or invalid</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
+    /// <exception cref="ArgumentException">Thrown when the refresh token is invalid</exception>
     public static void EnsureValid(this RefreshToken? value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -172,7 +161,7 @@ public static class RefreshTokenValidation
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            errors.Add($"{propertyName} must be a non-empty string");
+            errors.Add(string.Format(NonEmptyStringError, propertyName));
         }
     }
 
@@ -180,7 +169,7 @@ public static class RefreshTokenValidation
     {
         if (date == default)
         {
-            errors.Add($"{propertyName} must be a valid date, but was default(DateTime)");
+            errors.Add(string.Format(DateTimeDefaultError, propertyName));
         }
     }
 }
