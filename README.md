@@ -263,6 +263,63 @@ var multiService = new MultiServiceAuthenticationExample("https://localhost:7001
 await multiService.DemonstrateMultiServiceAsync();
 ```
 
+## TokenRefreshRotationExample
+
+The `TokenRefreshRotationExample` class demonstrates OAuth 2.0 refresh token rotation, a security best practice that invalidates old refresh tokens on each refresh to limit damage from token leaks and detect token reuse attacks. This pattern is essential for mobile applications and long-running services that need to maintain authenticated sessions.
+
+The example shows how to:
+
+- Refresh access tokens using refresh tokens
+- Handle automatic token rotation (old tokens become invalid)
+- Manage token lifecycle with expiration handling
+- Build mobile app token managers with automatic refresh
+- Implement resilient token refresh with retry logic
+- Handle refresh failures with fallback authentication
+
+```csharp
+using DotnetAuthServer.Examples;
+
+// Initialize with your auth server URL
+var flow = new TokenRefreshRotationExample("https://localhost:7001");
+
+// Refresh an access token using a refresh token
+var newToken = await flow.RefreshTokenAsync("old-refresh-token-xyz");
+
+if (newToken is not null)
+{
+    Console.WriteLine($"New Access Token: {newToken.AccessToken[..30]}...");
+    Console.WriteLine($"New Refresh Token: {newToken.RefreshToken[..30]}...");
+    Console.WriteLine("Old refresh token is now INVALID (rotated)");
+}
+
+// Demonstrate token rotation security (old tokens can't be reused)
+var rotationDemo = new TokenRefreshRotationExample("https://localhost:7001");
+var initialRefreshToken = "initial-refresh-token";
+await rotationDemo.DemonstrateTokenRotationAsync(initialRefreshToken);
+
+// Mobile app token manager with automatic refresh
+var tokenManager = new MobileAppTokenManager("https://localhost:7001");
+tokenManager.SetToken(new TokenResponse
+{
+    AccessToken = "access-token-123",
+    RefreshToken = "refresh-token-456",
+    ExpiresIn = 3600
+});
+
+// Make API calls - token auto-refreshes when needed
+var success = await tokenManager.CallApiAsync("https://api.example.com/user/profile");
+
+// Resilient token refresh with retry logic
+var resilient = new ResilientTokenRefreshExample("https://localhost:7001");
+var result = await resilient.RefreshWithRetryAsync("refresh-token");
+
+// Refresh with fallback authentication
+var fallbackResult = await resilient.RefreshWithFallbackAsync(
+    "failed-refresh-token",
+    async () => await GetNewAuthCodeAsync() // Your fallback auth method
+);
+```
+
 ## MemoryCacheService
 
 The `MemoryCacheService` provides an in-memory caching implementation using `ConcurrentDictionary` for thread-safe operations. It's designed for single-server deployments and offers automatic expiration checking, pattern-based cache removal, and atomic get-or-set operations to prevent thundering herd problems.
