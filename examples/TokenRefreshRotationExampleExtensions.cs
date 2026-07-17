@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace DotnetAuthServer.Examples;
 
 /// <summary>
-/// Extension methods for TokenRefreshRotationExample providing additional functionality
+/// Extension methods for <see cref="TokenRefreshRotationExample"/> providing additional functionality
 /// for token refresh and rotation scenarios
 /// </summary>
 public static class TokenRefreshRotationExampleExtensions
@@ -16,10 +16,10 @@ public static class TokenRefreshRotationExampleExtensions
     /// <summary>
     /// Validates that the token response contains all required fields
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="tokenResponse">Token response to validate</param>
     /// <returns>True if token is valid; otherwise false</returns>
-    /// <exception cref="ArgumentNullException">Thrown when tokenResponse is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tokenResponse"/> is null</exception>
     public static bool ValidateTokenResponse(this TokenRefreshRotationExample example, TokenResponse? tokenResponse)
     {
         ArgumentNullException.ThrowIfNull(example);
@@ -34,10 +34,10 @@ public static class TokenRefreshRotationExampleExtensions
     /// <summary>
     /// Gets the token expiration time based on current time and expires_in value
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="tokenResponse">Token response containing expires_in</param>
     /// <returns>DateTime when token expires</returns>
-    /// <exception cref="ArgumentNullException">Thrown when tokenResponse is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tokenResponse"/> is null</exception>
     public static DateTime GetTokenExpirationTime(this TokenRefreshRotationExample example, TokenResponse tokenResponse)
     {
         ArgumentNullException.ThrowIfNull(example);
@@ -49,10 +49,10 @@ public static class TokenRefreshRotationExampleExtensions
     /// <summary>
     /// Calculates time remaining until token expiration in seconds
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="tokenResponse">Token response containing expires_in</param>
     /// <returns>Time remaining in seconds, or 0 if token is expired</returns>
-    /// <exception cref="ArgumentNullException">Thrown when tokenResponse is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tokenResponse"/> is null</exception>
     public static double GetTokenTimeRemaining(this TokenRefreshRotationExample example, TokenResponse tokenResponse)
     {
         ArgumentNullException.ThrowIfNull(example);
@@ -66,10 +66,10 @@ public static class TokenRefreshRotationExampleExtensions
     /// <summary>
     /// Safely extracts the access token with null/empty checks
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="tokenResponse">Token response to extract from</param>
     /// <returns>Access token if valid; otherwise null</returns>
-    /// <exception cref="ArgumentNullException">Thrown when tokenResponse is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tokenResponse"/> is null</exception>
     public static string? SafeGetAccessToken(this TokenRefreshRotationExample example, TokenResponse? tokenResponse)
     {
         ArgumentNullException.ThrowIfNull(example);
@@ -82,10 +82,10 @@ public static class TokenRefreshRotationExampleExtensions
     /// <summary>
     /// Safely extracts the refresh token with null/empty checks
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="tokenResponse">Token response to extract from</param>
     /// <returns>Refresh token if valid; otherwise null</returns>
-    /// <exception cref="ArgumentNullException">Thrown when tokenResponse is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tokenResponse"/> is null</exception>
     public static string? SafeGetRefreshToken(this TokenRefreshRotationExample example, TokenResponse? tokenResponse)
     {
         ArgumentNullException.ThrowIfNull(example);
@@ -98,10 +98,10 @@ public static class TokenRefreshRotationExampleExtensions
     /// <summary>
     /// Creates a formatted string representation of the token response
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="tokenResponse">Token response to format</param>
     /// <returns>Formatted string with token information</returns>
-    /// <exception cref="ArgumentNullException">Thrown when tokenResponse is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tokenResponse"/> is null</exception>
     public static string FormatTokenInfo(this TokenRefreshRotationExample example, TokenResponse tokenResponse)
     {
         ArgumentNullException.ThrowIfNull(example);
@@ -124,11 +124,11 @@ Token Information:
     /// <summary>
     /// Creates a batch of token refresh operations for multiple refresh tokens
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="refreshTokens">Collection of refresh tokens to refresh</param>
     /// <returns>Collection of refresh results with success/failure information</returns>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when example or refreshTokens is null
+    /// Thrown when <paramref name="example"/> or <paramref name="refreshTokens"/> is null
     /// </exception>
     public static async IAsyncEnumerable<TokenRefreshResult> BatchRefreshTokensAsync(
         this TokenRefreshRotationExample example,
@@ -165,41 +165,38 @@ Token Information:
     /// <summary>
     /// Gets token statistics from a collection of token responses
     /// </summary>
-    /// <param name="example">The TokenRefreshRotationExample instance</param>
+    /// <param name="example">The <see cref="TokenRefreshRotationExample"/> instance</param>
     /// <param name="tokenResponses">Collection of token responses</param>
     /// <returns>Token statistics including average expiration, total count, etc.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when example or tokenResponses is null</exception>
+/// <exception cref="ArgumentNullException">Thrown when <paramref name="example"/> or <paramref name="tokenResponses"/> is null</exception>
     public static TokenStatistics GetTokenStatistics(
         this TokenRefreshRotationExample example,
         IEnumerable<TokenResponse> tokenResponses)
-    {
-        ArgumentNullException.ThrowIfNull(example);
-        ArgumentNullException.ThrowIfNull(tokenResponses);
 
+    private static TokenStatistics CalculateTokenStatistics(IEnumerable<TokenResponse> tokenResponses)
+    {
         var tokens = tokenResponses.ToList();
         var validTokens = tokens.Where(t => t.ExpiresIn > 0).ToList();
 
-        if (validTokens.Count == 0)
-        {
-            return new TokenStatistics
+        return validTokens.Count == 0
+            ? new TokenStatistics
             {
                 TotalTokens = tokens.Count,
                 ValidTokens = 0,
                 AverageExpiresIn = 0,
                 MinExpiresIn = 0,
-                MaxExpiresIn = 0
+                MaxExpiresIn = 0,
+                TotalValidDuration = 0
+            }
+            : new TokenStatistics
+            {
+                TotalTokens = tokens.Count,
+                ValidTokens = validTokens.Count,
+                AverageExpiresIn = (int)validTokens.Average(t => t.ExpiresIn),
+                MinExpiresIn = validTokens.Min(t => t.ExpiresIn),
+                MaxExpiresIn = validTokens.Max(t => t.ExpiresIn),
+                TotalValidDuration = (int)validTokens.Sum(t => t.ExpiresIn)
             };
-        }
-
-        return new TokenStatistics
-        {
-            TotalTokens = tokens.Count,
-            ValidTokens = validTokens.Count,
-            AverageExpiresIn = (int)validTokens.Average(t => t.ExpiresIn),
-            MinExpiresIn = validTokens.Min(t => t.ExpiresIn),
-            MaxExpiresIn = validTokens.Max(t => t.ExpiresIn),
-            TotalValidDuration = (int)validTokens.Sum(t => t.ExpiresIn)
-        };
     }
 }
 
