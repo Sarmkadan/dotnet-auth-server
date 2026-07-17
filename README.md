@@ -2108,6 +2108,139 @@ public class AuthorizationGrantManagementService
 }
 ```
 
+## IPolicyEngine
+
+The `IPolicyEngine` interface provides a flexible mechanism for evaluating attribute-based access control (ABAC) policies. It enables fine-grained authorization decisions based on user attributes, resource attributes, and environmental context, allowing for complex access rules beyond simple role-based access control (RBAC).
+
+
+
+The policy engine evaluates access requests by checking attributes like user roles, department, tenure, resource classification, and request context (time, location, device type) against defined policies. This approach supports compliance requirements, data sensitivity levels, and time/location-based access restrictions.
+
+
+
+```csharp
+using DotnetAuthServer.Examples;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+// Create policy engine instance
+var policyEngine = new AbacPolicyEngine();
+
+// Build access context with user, resource, and environment attributes
+var accessContext = new AccessContext
+{
+    User = new UserAttributes
+    {
+        UserId = "user123",
+        Roles = new List<string> { "manager", "engineering" },
+        Department = "engineering",
+        IsManager = true,
+        TenureMonths = 36,
+        Clearances = new List<string> { "internal", "confidential" }
+    },
+    Resource = new ResourceAttributes
+    {
+        ResourceId = "file456",
+        ResourceType = "file",
+        Classification = "internal",
+        Owner = "user123",
+        Tags = new List<string> { "dept:engineering", "project:alpha" }
+    },
+    Environment = new EnvironmentAttributes
+    {
+        RequestTime = DateTime.UtcNow,
+        SourceIp = "203.0.113.1",
+        IsVpnConnected = true,
+        Location = "US",
+        DeviceType = "desktop"
+    }
+};
+
+// Evaluate access policies
+var canRead = await policyEngine.EvaluateAsync("can_read_file", accessContext);
+var canWrite = await policyEngine.EvaluateAsync("can_write_file", accessContext);
+var requiresMfa = await policyEngine.EvaluateAsync("requires_mfa", accessContext);
+var isBusinessHours = await policyEngine.EvaluateAsync("can_access_during_business_hours", accessContext);
+
+Console.WriteLine($"Can read file: {canRead}");
+Console.WriteLine($"Can write file: {canWrite}");
+Console.WriteLine($"Requires MFA: {requiresMfa}");
+Console.WriteLine($"Within business hours: {isBusinessHours}");
+```
+
+## IAuthorizationGrantRepository
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Data.Repositories;
+
+// Example usage in a token service or controller
+public class AuthorizationGrantManagementService
+{
+    private readonly IAuthorizationGrantRepository _grantRepository;
+
+    public AuthorizationGrantManagementService(IAuthorizationGrantRepository grantRepository)
+    {
+        _grantRepository = grantRepository;
+    }
+
+    public async Task ManageAuthorizationGrantsExample()
+    {
+        // Create a new authorization grant
+        var newGrant = new AuthorizationGrant
+        {
+            GrantId = Guid.NewGuid().ToString(),
+            Code = "auth-code-123",
+            UserId = "user-123",
+            ClientId = "web-client",
+            Scope = "openid profile email api:read",
+            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            CodeChallenge = "E9Melhoa2OwvFrEMTJks93UTHBbYu3_KJDijOhbwNY",
+            CodeChallengeMethod = "S256",
+            RedirectUri = "https://client.example.com/callback"
+        };
+        await _grantRepository.CreateAsync(newGrant);
+
+        // Get a grant by ID
+        var existingGrant = await _grantRepository.GetByIdAsync(newGrant.GrantId);
+
+        // Get all grants
+        var allGrants = await _grantRepository.GetAllAsync();
+
+        // Get grant by authorization code
+        var grantByCode = await _grantRepository.GetByCodeAsync("auth-code-123");
+
+        // Get all grants for a specific user
+        var userGrants = await _grantRepository.GetByUserIdAsync("user-123");
+
+        // Get all grants for a specific client
+        var clientGrants = await _grantRepository.GetByClientIdAsync("web-client");
+
+        // Check if grant exists
+        var exists = await _grantRepository.ExistsAsync(newGrant.GrantId);
+
+        // Update a grant
+        if (existingGrant != null)
+        {
+            existingGrant.UpdatedAt = DateTime.UtcNow;
+            await _grantRepository.UpdateAsync(existingGrant);
+        }
+
+        // Delete a grant
+        await _grantRepository.DeleteAsync(existingGrant!);
+
+        // Delete by ID
+        await _grantRepository.DeleteByIdAsync(newGrant.GrantId);
+
+        // Cleanup expired grants
+        await _grantRepository.DeleteExpiredAsync();
+    }
+}
+```
+
 ## IRefreshTokenRepository
 
 The `IRefreshTokenRepository` interface provides data access operations for managing OAuth 2.0 refresh tokens in the authorization server. It extends the base `IRepository<RefreshToken, string>` interface and adds refresh token-specific operations for retrieving tokens by hash, user ID, client ID, managing valid tokens, revoking all tokens for a user, and cleaning up expired tokens. This repository serves as the data access layer for refresh token management operations.
