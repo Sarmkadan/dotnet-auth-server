@@ -17,12 +17,7 @@ public static class PolicyEnforcementServiceValidation
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var errors = new List<string>();
-
-        // PolicyEnforcementService itself doesn't have public properties to validate
-        // The validation happens at the method parameter level
-
-        return errors.AsReadOnly();
+        return Array.Empty<string>();
     }
 
     /// <summary>
@@ -30,10 +25,7 @@ public static class PolicyEnforcementServiceValidation
     /// </summary>
     /// <param name="value">The service instance to check.</param>
     /// <returns>True if the instance is valid; otherwise, false.</returns>
-    public static bool IsValid(this PolicyEnforcementService value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this PolicyEnforcementService value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that a <see cref="PolicyEnforcementService"/> instance is valid, throwing an <see cref="ArgumentException"/> if not.
@@ -89,10 +81,7 @@ public static class PolicyEnforcementServiceValidation
     /// </summary>
     /// <param name="value">The policy to check.</param>
     /// <returns>True if the policy is valid; otherwise, false.</returns>
-    public static bool IsValid(this Policy value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this Policy value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that a <see cref="Policy"/> instance is valid, throwing an <see cref="ArgumentException"/> if not.
@@ -156,10 +145,7 @@ public static class PolicyEnforcementServiceValidation
     /// </summary>
     /// <param name="value">The policy rule to check.</param>
     /// <returns>True if the policy rule is valid; otherwise, false.</returns>
-    public static bool IsValid(this PolicyRule value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this PolicyRule value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that a <see cref="PolicyRule"/> instance is valid, throwing an <see cref="ArgumentException"/> if not.
@@ -185,9 +171,13 @@ public static class PolicyEnforcementServiceValidation
     /// Validates a <see cref="string"/> policy name.
     /// </summary>
     /// <param name="value">The policy name to validate.</param>
+    /// <param name="paramName">The name of the parameter being validated.</param>
     /// <returns>An empty list if valid; otherwise, a list of human-readable validation errors.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this string? value, string paramName = "policyName")
     {
+        ArgumentNullException.ThrowIfNull(value);
+
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(value))
@@ -207,10 +197,7 @@ public static class PolicyEnforcementServiceValidation
     /// </summary>
     /// <param name="value">The policy name to check.</param>
     /// <returns>True if the policy name is valid; otherwise, false.</returns>
-    public static bool IsValid(this string? value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this string? value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that a policy name is valid, throwing an <see cref="ArgumentException"/> if not.
