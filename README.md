@@ -1106,6 +1106,69 @@ var publicClientResponse = new ClientRegistrationResponse
 };
 ```
 
+## RateLimitingOptions
+
+The `RateLimitingOptions` class provides configuration for the rate limiting middleware that protects sensitive OAuth 2.0 endpoints from abuse and brute force attacks. It controls the token bucket algorithm parameters including requests per minute, burst size, and sensitive endpoints that require stricter rate limiting.
+
+```csharp
+using DotnetAuthServer.Middleware;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection("RateLimiting"));
+
+// Example usage in a service
+public class RateLimitingConfigurationService
+{
+    private readonly RateLimitingOptions _options;
+
+    public RateLimitingConfigurationService(IOptions<RateLimitingOptions> options)
+    {
+        _options = options.Value;
+    }
+
+    public void ConfigureRateLimitingSettings()
+    {
+        // Configure basic rate limiting settings
+        var rateLimitingOptions = new RateLimitingOptions
+        {
+            RequestsPerMinute = 100, // Allow 100 requests per minute
+            BurstSize = 20, // Allow bursts up to 20 tokens
+            SensitiveEndpoints = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "/oauth/token",
+                "/oauth/authorize",
+                "/oauth/introspect",
+                "/oauth/revoke",
+                "/api/tokens"
+            }
+        };
+
+        // Configure aggressive rate limiting for production
+        var productionRateLimiting = new RateLimitingOptions
+        {
+            RequestsPerMinute = 60, // 1 request per second average
+            BurstSize = 10, // Allow small bursts
+            SensitiveEndpoints = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "/oauth/token",
+                "/oauth/authorize",
+                "/oauth/introspect",
+                "/oauth/revoke"
+            }
+        };
+    }
+}
+
+// Register the middleware in your application
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection("RateLimiting"));
+
+var app = builder.Build();
+
+app.UseMiddleware<RateLimitingMiddleware>();
+```
+
 ## ResourceServerStartupExample
 
 The `ResourceServerStartupExample` class demonstrates how to integrate an OAuth 2.0 resource server (API) with the dotnet-auth-server authorization server. It shows how to configure JWT Bearer authentication, protect API endpoints with authorization attributes, validate tokens from the auth server, and implement role-based and scope-based access control.
