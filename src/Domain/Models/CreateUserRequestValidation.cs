@@ -3,13 +3,12 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ===========================================================================
 
 namespace DotnetAuthServer.Domain.Models;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text.RegularExpressions;
 
 /// <summary>
@@ -19,6 +18,9 @@ public static class CreateUserRequestValidation
 {
     private const string UsernamePattern = "^[a-zA-Z0-9._-]{3,50}$";
     private static readonly Regex UsernameRegex = new(UsernamePattern, RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+
+    private const string PasswordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$";
+    private static readonly Regex PasswordRegex = new(PasswordPattern, RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     /// <summary>
     /// Validates the given <see cref="CreateUserRequest"/> and returns a list of human-readable validation errors.
@@ -65,6 +67,10 @@ public static class CreateUserRequestValidation
         {
             errors.Add("Password must be at least 8 characters long.");
         }
+        else if (!PasswordRegex.IsMatch(value.Password))
+        {
+            errors.Add("Password must contain at least one uppercase letter, one lowercase letter, and one digit.");
+        }
 
         // Validate Roles collection (if not null)
         if (value.Roles is not null)
@@ -109,7 +115,7 @@ public static class CreateUserRequestValidation
         if (errors.Count > 0)
         {
             throw new ArgumentException(
-                $"CreateUserRequest is invalid. Errors: {string.Join(" ", errors)}",
+                $"CreateUserRequest is invalid. Errors: {string.Join("; ", errors)}",
                 nameof(value));
         }
     }
@@ -123,15 +129,14 @@ public static class CreateUserRequestValidation
 
         try
         {
-            // Use simple validation that matches the [EmailAddress] attribute behavior
-            var emailParts = email.Split('@');
-            if (emailParts.Length != 2)
+            var atIndex = email.LastIndexOf('@');
+            if (atIndex <= 0 || atIndex == email.Length - 1)
             {
                 return false;
             }
 
-            var localPart = emailParts[0];
-            var domainPart = emailParts[1];
+            var localPart = email[..atIndex];
+            var domainPart = email[(atIndex + 1)..];
 
             if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
             {
@@ -143,15 +148,16 @@ public static class CreateUserRequestValidation
                 return false;
             }
 
-            // Check for valid characters
-            var validLocalPattern = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$";
-            var validDomainPattern = "^[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*$";
+            // Local part: dot-atom pattern (most common email format)
+            // Domain part: standard domain name format with proper subdomain handling
+            var validLocalPattern = "^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(\\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*$";
+            var validDomainPattern = "^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
 
             return Regex.IsMatch(localPart, validLocalPattern, RegexOptions.None, TimeSpan.FromSeconds(1))
-                   && Regex.IsMatch(domainPart, validDomainPattern, RegexOptions.None, TimeSpan.FromSeconds(1))
-                   && domainPart.Contains('.')
-                   && !domainPart.StartsWith('.')
-                   && !domainPart.EndsWith('.');
+                && Regex.IsMatch(domainPart, validDomainPattern, RegexOptions.None, TimeSpan.FromSeconds(1))
+                && domainPart.Contains('.')
+                && !domainPart.StartsWith('.')
+                && !domainPart.EndsWith('.');
         }
         catch (RegexMatchTimeoutException)
         {
