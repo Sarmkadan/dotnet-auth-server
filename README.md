@@ -320,6 +320,20 @@ var fallbackResult = await resilient.RefreshWithFallbackAsync(
 );
 ```
 
+## TokenRefreshRotationExampleExtensions
+
+The `TokenRefreshRotationExampleExtensions` type provides methods for token validation, refresh, and statistics. Here is a realistic example of how to use it:
+
+```csharp
+public class TokenValidator
+{
+    public bool IsValidToken(string token)
+    {
+        return TokenRefreshRotationExampleExtensions.ValidateTokenResponse(token);
+    }
+}
+```
+
 ## TokenBenchmarks
 
 The `TokenBenchmarks` class provides performance benchmarks for critical token-related operations in the DotnetAuthServer. It measures the execution time and memory allocation of key authentication and authorization workflows including token introspection, PKCE validation, client credential validation, and client credentials grant handling. These benchmarks are essential for performance monitoring, capacity planning, and identifying performance regressions in the authorization server.
