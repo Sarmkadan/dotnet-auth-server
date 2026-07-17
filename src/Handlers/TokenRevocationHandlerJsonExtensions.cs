@@ -31,7 +31,7 @@ public static class TokenRevocationHandlerJsonExtensions
     /// <param name="value">The handler instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the handler.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
     public static string ToJson(this TokenRevocationHandler value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -47,8 +47,8 @@ public static class TokenRevocationHandlerJsonExtensions
     /// Deserializes a JSON string into a <see cref="TokenRevocationHandler"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized handler instance, or null if deserialization fails.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <returns>The deserialized handler instance, or <see langword="null"/> if deserialization fails.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static TokenRevocationHandler? FromJson(string json)
     {
@@ -64,7 +64,7 @@ public static class TokenRevocationHandlerJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized handler instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
     public static bool TryFromJson(string json, out TokenRevocationHandler? value)
     {
         ArgumentNullException.ThrowIfNull(json);

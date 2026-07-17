@@ -174,18 +174,28 @@ public sealed class TokenRevocationHandler
 public sealed class RevocationResult
 {
     /// <summary>
-    /// Whether the operation completed without errors.
+    /// Gets or sets a value indicating whether the operation completed without errors.
     /// Per RFC 7009, always true if no authentication error occurred.
     /// </summary>
     public bool Success { get; set; }
 
     /// <summary>
-    /// Whether the token was actually found and revoked.
+    /// Gets or sets a value indicating whether the token was actually found and revoked.
     /// </summary>
     public bool Revoked { get; set; }
 
     /// <summary>
-    /// Error message if operation failed.
+    /// Gets or sets the error message if operation failed.
     /// </summary>
     public string? Error { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RevocationResult"/> class.
+    /// </summary>
+    public RevocationResult()
+    {
+        Success = false;
+        Revoked = false;
+        Error = null;
+    }
 }
