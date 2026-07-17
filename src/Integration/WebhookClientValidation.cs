@@ -55,10 +55,7 @@ public static class WebhookClientValidation
     /// </summary>
     /// <param name="options">The webhook options to check</param>
     /// <returns>true if valid; false otherwise</returns>
-    public static bool IsValid(this WebhookOptions? options)
-    {
-        return options is not null && Validate(options).Count == 0;
-    }
+    public static bool IsValid(this WebhookOptions? options) => options is not null && Validate(options).Count == 0;
 
     /// <summary>
     /// Ensures that a webhook client configuration is valid, throwing an exception if not.
