@@ -1666,6 +1666,118 @@ var factory = new HttpClientFactory(config);
 var httpClient = factory.CreateClient("default");
 ```
 
+## ClientServiceExtensions
+
+The `ClientServiceExtensions` class provides extension methods for the `ClientService` that simplify OAuth 2.0 client registration and management. It offers convenient methods for registering different types of clients (public, confidential, and client credentials), updating client metadata, and checking client capabilities like grant types, scopes, and redirect URIs.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddScoped<ClientService>();
+
+// Example usage in a controller or service
+public class ClientManagementController
+{
+  private readonly ClientService _clientService;
+
+  public ClientManagementController(ClientService clientService)
+  {
+    _clientService = clientService;
+  }
+
+  public async Task<IActionResult> RegisterPublicClient()
+  {
+    // Register a new public client (no client secret required)
+    var client = await _clientService.RegisterPublicClientAsync(
+      clientName: "My Single Page Application",
+      redirectUris: new List<string> { "https://app.example.com/callback" },
+      allowedScopes: new List<string> { "openid", "profile", "email" }
+    );
+
+    return Ok(client);
+  }
+
+  public async Task<IActionResult> RegisterConfidentialClient()
+  {
+    // Register a new confidential client with PKCE support
+    var client = await _clientService.RegisterConfidentialClientAsync(
+      clientName: "My Web Application",
+      redirectUris: new List<string> { "https://client.example.com/callback" },
+      allowedScopes: new List<string> { "openid", "profile", "email", "api:read", "api:write" },
+      requirePkce: true
+    );
+
+    return Ok(client);
+  }
+
+  public async Task<IActionResult> RegisterMachineToMachineClient()
+  {
+    // Register a client for client credentials grant (machine-to-machine)
+    var client = await _clientService.RegisterClientCredentialsClientAsync(
+      clientName: "Background Service",
+      allowedScopes: new List<string> { "api:read", "api:write" }
+    );
+
+    return Ok(client);
+  }
+
+  public async Task<IActionResult> UpdateClientMetadata(string clientId)
+  {
+    // Get the existing client
+    var client = await _clientRepository.GetByIdAsync(clientId);
+    
+    if (client == null)
+    {
+      return NotFound();
+    }
+
+    // Update client metadata (name, description, URIs, etc.)
+    var updatedClient = await _clientService.UpdateClientMetadataAsync(
+      client,
+      clientName: "Updated Client Name",
+      description: "Updated client description",
+      contacts: new List<string> { "admin@client.example.com" },
+      logoUri: "https://client.example.com/logo.png"
+    );
+
+    return Ok(updatedClient);
+  }
+
+  public IActionResult CheckClientCapabilities(string clientId)
+  {
+    // Get the client
+    var client = _clientRepository.GetById(clientId);
+    
+    if (client == null)
+    {
+      return NotFound();
+    }
+
+    // Check if client has specific grant types
+    var hasAuthorizationCode = _clientService.HasGrantType(client, Constants.GrantTypes.AuthorizationCode);
+    var hasClientCredentials = _clientService.HasGrantType(client, Constants.GrantTypes.ClientCredentials);
+
+    // Check if client has specific scopes
+    var hasOpenIdScope = _clientService.HasScope(client, "openid");
+    var hasApiReadScope = _clientService.HasScope(client, "api:read");
+
+    // Check if redirect URI is valid
+    var isValidRedirect = _clientService.IsValidRedirectUri(client, "https://client.example.com/callback");
+
+    return Ok(new {
+      hasAuthorizationCode,
+      hasClientCredentials,
+      hasOpenIdScope,
+      hasApiReadScope,
+      isValidRedirect
+    });
+  }
+}
+```
+
 ## DomainEntityTests
 
 The `DomainEntityTests` class provides unit tests for domain entity classes in the authorization server. It verifies core domain logic and behavior for entities like `User`, `Client`, and `RefreshToken`, ensuring that authentication, authorization, and token management operations work correctly according to the domain model's invariants.
