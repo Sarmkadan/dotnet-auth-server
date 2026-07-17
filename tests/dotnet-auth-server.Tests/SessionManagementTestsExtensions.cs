@@ -26,8 +26,8 @@ public static class SessionManagementTestsExtensions
     /// <param name="ipAddress">The IP address for the session.</param>
     /// <param name="userAgent">The user agent string.</param>
     /// <returns>The created <see cref="UserSession"/> instance.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
-    /// <exception cref="ArgumentException">Thrown if userId or clientId is empty.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="userId"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="clientId"/> is null or empty.</exception>
     public static UserSession CreateTestSession(
         this SessionManagementTests test,
         string userId,
@@ -61,8 +61,8 @@ public static class SessionManagementTestsExtensions
     /// <param name="count">Number of sessions to create.</param>
     /// <param name="clientIdPrefix">Prefix for client identifiers (e.g., "client" becomes "client1", "client2").</param>
     /// <returns>Read-only list of created sessions.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if userId is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if count is less than 1.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="userId"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="count"/> is less than 1.</exception>
     public static IReadOnlyList<UserSession> CreateMultipleSessions(
         this SessionManagementTests test,
         string userId,
@@ -94,7 +94,7 @@ public static class SessionManagementTestsExtensions
     /// <param name="sessions">The session collection to verify.</param>
     /// <param name="userId">The expected user identifier.</param>
     /// <returns>True if verification succeeds; otherwise false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="sessions"/> or <paramref name="userId"/> is null.</exception>
     public static bool ShouldContainSingleActiveSessionForUser(
         this SessionManagementTests test,
         IEnumerable<UserSession> sessions,
@@ -105,7 +105,7 @@ public static class SessionManagementTestsExtensions
 
         var activeSessions = sessions.Where(s => s.IsActive()).ToList();
         return activeSessions.Count == 1
-               && activeSessions[0].UserId.Equals(userId, StringComparison.Ordinal);
+            && activeSessions[0].UserId.Equals(userId, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public static class SessionManagementTestsExtensions
     /// <param name="sessions">The session collection.</param>
     /// <param name="sessionId">The session identifier to find.</param>
     /// <returns>The found session, or null if not found.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if sessions or sessionId is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="sessions"/> or <paramref name="sessionId"/> is null.</exception>
     public static UserSession? GetSessionById(
         this SessionManagementTests test,
         IEnumerable<UserSession> sessions,
@@ -137,13 +137,9 @@ public static class SessionManagementTestsExtensions
         this SessionManagementTests test,
         UserSession? session)
     {
-        if (session is null)
-        {
-            return 0;
-        }
-
-        var duration = session.ExpiresAt - session.CreatedAt;
-        return duration.TotalSeconds;
+        return session is null
+            ? 0
+            : (session.ExpiresAt - session.CreatedAt).TotalSeconds;
     }
 
     /// <summary>
@@ -153,8 +149,8 @@ public static class SessionManagementTestsExtensions
     /// <param name="userId">The user identifier.</param>
     /// <param name="clientId">The client identifier.</param>
     /// <returns>A session that will expire shortly.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if userId is null.</exception>
-    /// <exception cref="ArgumentException">Thrown if clientId is empty.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="userId"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="clientId"/> is null or empty.</exception>
     public static UserSession CreateExpiringSession(
         this SessionManagementTests test,
         string userId,
@@ -185,8 +181,8 @@ public static class SessionManagementTestsExtensions
     /// <param name="clientId">The client identifier.</param>
     /// <param name="expirationSeconds">Expiration time in seconds from now.</param>
     /// <returns>A session with custom expiration.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if userId is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if expirationSeconds is not positive.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="userId"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="expirationSeconds"/> is not positive.</exception>
     public static UserSession CreateSessionWithExpiration(
         this SessionManagementTests test,
         string userId,
