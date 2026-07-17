@@ -50,14 +50,9 @@ public static class TotpServiceJsonExtensions
     /// <returns>The deserialized TotpService instance, or null if the JSON is empty or whitespace.</returns>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static TotpService? FromJson(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<TotpService>(json, _jsonOptions);
-    }
+        => string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<TotpService>(json, _jsonOptions);
 
     /// <summary>
     /// Attempts to deserialize a JSON string to a <see cref="TotpService"/> instance.
