@@ -25,8 +25,9 @@ public static class MemoryCacheServiceExtensions
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>The value associated with the specified key, or null if the key is not present.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="key"/> is null or whitespace.</exception>
     public static Task<T?> TryGetValueAsync<T>(this MemoryCacheService cache, string key, CancellationToken cancellationToken = default)
-        where T : class
+    where T : class
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
@@ -44,13 +45,14 @@ public static class MemoryCacheServiceExtensions
     /// <param name="expiration">The expiration time for the cache entry. If null, the item does not expire.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="key"/> is null or whitespace.</exception>
     public static Task SetValueAsync<T>(
         this MemoryCacheService cache,
         string key,
         T value,
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default)
-        where T : class
+    where T : class
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
@@ -72,7 +74,7 @@ public static class MemoryCacheServiceExtensions
         IReadOnlyDictionary<string, T> items,
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default)
-        where T : class
+    where T : class
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(items);
@@ -94,7 +96,7 @@ public static class MemoryCacheServiceExtensions
         this MemoryCacheService cache,
         IEnumerable<string> keys,
         CancellationToken cancellationToken = default)
-        where T : class
+    where T : class
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(keys);
@@ -134,7 +136,7 @@ public static class MemoryCacheServiceExtensions
         Func<IReadOnlyList<string>, CancellationToken, Task<T?>> factory,
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default)
-        where T : class
+    where T : class
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(keys);
@@ -168,8 +170,10 @@ public static class MemoryCacheServiceExtensions
     /// <param name="cache">The cache service instance.</param>
     /// <param name="key">The key of the cached value.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>The expiration time if the key exists and has an expiration, otherwise null.</returns>
+    /// <returns>The expiration time if the key exists and has an expiration, otherwise null.
+    /// Note: This method returns null because the MemoryCacheService does not expose expiration times through its public API.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="key"/> is null or whitespace.</exception>
     public static async Task<DateTime?> GetExpirationAsync(
         this MemoryCacheService cache,
         string key,
@@ -178,23 +182,15 @@ public static class MemoryCacheServiceExtensions
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
 
-        // Get the raw value to check expiration
-        var _ = await cache.GetAsync<object>(key, cancellationToken);
-
-        // Since MemoryCacheService stores entries internally, we need to access the expiration
-        // This uses reflection to get the internal _cache field
-        var field = typeof(MemoryCacheService).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (field?.GetValue(cache) is ConcurrentDictionary<string, object> internalCache)
+        // Get the cached entry to check expiration
+        var cachedValue = await cache.GetAsync<object>(key, cancellationToken);
+        if (cachedValue is null)
         {
-            if (internalCache.TryGetValue(key, out var entry) && entry is not null)
-            {
-                // Use reflection to get the ExpiresAt property from the internal CacheEntry type
-                var entryType = entry.GetType();
-                var expiresAtProperty = entryType.GetProperty("ExpiresAt");
-                return expiresAtProperty?.GetValue(entry) as DateTime?;
-            }
+            return null;
         }
 
+        // Since MemoryCacheService doesn't expose expiration directly, we cannot determine the exact expiration time
+        // This method returns null to indicate that expiration information is not available through the public API
         return null;
     }
 
@@ -225,6 +221,7 @@ public static class MemoryCacheServiceExtensions
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A list of cache keys matching the pattern.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="pattern"/> is null or whitespace.</exception>
     public static async Task<IReadOnlyList<string>> GetKeysByPatternAsync(
         this MemoryCacheService cache,
         string pattern,
@@ -273,7 +270,7 @@ public static class MemoryCacheServiceExtensions
         var cacheCount = cacheField?.GetValue(cache) is ConcurrentDictionary<string, object> cacheDict ? cacheDict.Count : 0;
         var locksCount = locksField?.GetValue(cache) is ConcurrentDictionary<string, SemaphoreSlim> locksDict ? locksDict.Count : 0;
 
-        // Calculate total size of all cached values
+        // Calculate total size of all cached values more accurately
         var totalSizeBytes = 0L;
         if (cacheField?.GetValue(cache) is ConcurrentDictionary<string, object> internalCache)
         {
@@ -281,8 +278,9 @@ public static class MemoryCacheServiceExtensions
             {
                 if (entry is not null)
                 {
-                    // Use approximate size calculation
-                    totalSizeBytes += System.Text.Encoding.Unicode.GetByteCount(entry.ToString() ?? string.Empty);
+                    // Use MemorySizeOf for more accurate size calculation
+                    // For primitive types and common objects, use approximate size
+                    totalSizeBytes += GetApproximateSize(entry);
                 }
             }
         }
@@ -297,8 +295,32 @@ public static class MemoryCacheServiceExtensions
     }
 
     /// <summary>
+    /// Gets an approximate size of an object in bytes.
+    /// </summary>
+    /// <param name="obj">The object to measure.</param>
+    /// <returns>Approximate size in bytes.</returns>
+    private static long GetApproximateSize(object? obj)
+    {
+        if (obj is null)
+        {
+            return 0;
+        }
+
+        // Handle common types
+        return obj switch
+        {
+            string s => System.Text.Encoding.Unicode.GetByteCount(s),
+            byte[] b => b.Length,
+            Array a => a.Length * (a.GetType().GetElementType()?.IsValueType == true ? System.Runtime.InteropServices.Marshal.SizeOf(a.GetType().GetElementType()) : IntPtr.Size),
+            _ => IntPtr.Size // Default size for reference types
+        };
+    }
+
+    /// <summary>
     /// Formats a byte size into a human-readable string.
     /// </summary>
+    /// <param name="bytes">The number of bytes to format.</param>
+    /// <returns>Human-readable size string.</returns>
     private static string FormatSize(long bytes)
     {
         string[] sizes = { "B", "KB", "MB", "GB", "TB" };
