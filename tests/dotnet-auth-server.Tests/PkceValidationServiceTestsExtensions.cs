@@ -9,13 +9,19 @@ using FluentAssertions;
 /// <summary>
 /// Extension methods for <see cref="PkceValidationServiceTests"/> that provide additional utility and verification capabilities.
 /// </summary>
+/// <remarks>
+/// This static class contains extension methods for test scenarios involving PKCE (Proof Key for Code Exchange) validation.
+/// All methods include proper argument validation and follow .NET design guidelines.
+/// </remarks>
 public static class PkceValidationServiceTestsExtensions
 {
     /// <summary>
-    /// Creates a new instance of <see cref="PkceValidationServiceTests"/> with custom configuration.
+    /// Creates a new instance of <see cref="PkceValidationServiceTests"/> with custom PKCE requirement configuration.
     /// </summary>
+    /// <param name="tests">The test instance to extend.</param>
     /// <param name="pkceRequirement">Whether PKCE should be required for all clients.</param>
-    /// <returns>A new <see cref="PkceValidationServiceTests"/> instance.</returns>
+    /// <returns>A new <see cref="PkceValidationServiceTests"/> instance with updated service configuration.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is <see langword="null"/>.</exception>
     public static PkceValidationServiceTests WithPkceRequirement(this PkceValidationServiceTests tests, bool pkceRequirement)
     {
         ArgumentNullException.ThrowIfNull(tests);
@@ -40,8 +46,11 @@ public static class PkceValidationServiceTestsExtensions
     /// <summary>
     /// Creates a new instance of <see cref="PkceValidationServiceTests"/> with custom issuer URL.
     /// </summary>
+    /// <param name="tests">The test instance to extend.</param>
     /// <param name="issuerUrl">The issuer URL to use for testing.</param>
-    /// <returns>A new <see cref="PkceValidationServiceTests"/> instance.</returns>
+    /// <returns>A new <see cref="PkceValidationServiceTests"/> instance with updated service configuration.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="issuerUrl"/> is null or empty.</exception>
     public static PkceValidationServiceTests WithIssuerUrl(this PkceValidationServiceTests tests, string issuerUrl)
     {
         ArgumentNullException.ThrowIfNull(tests);
@@ -141,6 +150,7 @@ public static class PkceValidationServiceTestsExtensions
     /// </summary>
     /// <param name="serviceTests">The test instance.</param>
     /// <returns>The <see cref="PkceValidationService"/> instance.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="serviceTests"/> is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when the service field cannot be accessed.</exception>
     public static PkceValidationService GetService(this PkceValidationServiceTests serviceTests)
     {
@@ -151,7 +161,7 @@ public static class PkceValidationServiceTestsExtensions
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance);
 
         return serviceField?.GetValue(serviceTests) as PkceValidationService
-            ?? throw new global::System.InvalidOperationException("Could not access _service field");
+        ?? throw new global::System.InvalidOperationException("Could not access _service field");
     }
 
     /// <summary>
