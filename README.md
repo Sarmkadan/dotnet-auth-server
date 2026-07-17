@@ -1467,6 +1467,38 @@ var provisioningUri = TotpService.BuildProvisioningUri(
 Console.WriteLine($"Provisioning URI: {provisioningUri}");
 ```
 
+## StringExtensionsJsonExtensions
+
+The `StringExtensionsJsonExtensions` class provides System.Text.Json serialization extensions for string operations from the `StringExtensions` class. It enables JSON serialization and deserialization of string collections and sensitive data masking, making it useful for OAuth 2.0 scope handling, configuration storage, and API response formatting.
+
+```csharp
+using DotnetAuthServer.Extensions;
+using System.Text.Json;
+
+// Serialize a collection of scopes to JSON for storage or transmission
+var scopes = new List<string> { "openid", "profile", "email", "api:read", "api:write" };
+var json = scopes.ToJson(); // Compact JSON
+var prettyJson = scopes.ToJson(indented: true); // Formatted JSON
+
+// Deserialize JSON scopes back to a collection
+var deserializedScopes = json.FromJsonToScopes();
+if (deserializedScopes is not null)
+{
+    Console.WriteLine($"Deserialized scopes: {string.Join(", ", deserializedScopes)}");
+}
+
+// Try to deserialize with error handling
+if (json.TryFromJsonToScopes(out var safeScopes))
+{
+    Console.WriteLine($"Successfully parsed {safeScopes?.Count() ?? 0} scopes");
+}
+
+// Serialize sensitive data with masking for logging or API responses
+var sensitiveValue = "super-secret-token-1234567890";
+var maskedJson = sensitiveValue.ToJson(); // {"masked":"super-****7890"}
+var truncatedJson = sensitiveValue.ToJson(maxLength: 10); // {"truncated":"super-secre"}
+```
+
 ## HttpClientFactoryJsonExtensions
 
 The `HttpClientFactoryJsonExtensions` class provides extension methods for configuring and serializing `HttpClient` factories with JSON-based configuration. It includes methods for converting between JSON strings and `HttpClientFactoryConfig` objects, setting default timeout values, and configuring user agent strings for HTTP clients. This is particularly useful for external webhook calls and API integrations where JSON configuration needs to be persisted or transmitted.
