@@ -13,6 +13,11 @@ public static class AuditLoggingServiceTestsJsonExtensions
     };
 
     /// <summary>
+    /// Gets the JSON serialization options for AuditLoggingServiceTests instances.
+    /// </summary>
+    public static JsonSerializerOptions JsonOptions => _jsonOptions;
+
+    /// <summary>
     /// Serializes the <see cref="AuditLoggingServiceTests"/> instance to a JSON string.
     /// </summary>
     /// <param name="value">The instance to serialize.</param>
@@ -20,15 +25,7 @@ public static class AuditLoggingServiceTestsJsonExtensions
     /// <returns>A JSON string representation of the instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static string ToJson(this AuditLoggingServiceTests value, bool indented = false)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+        => JsonSerializer.Serialize(value, indented ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true } : _jsonOptions);
 
     /// <summary>
     /// Deserializes a JSON string to an <see cref="AuditLoggingServiceTests"/> instance.
