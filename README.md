@@ -529,6 +529,74 @@ await _cache.ClearAsync();
 }
 ```
 
+## MemoryCacheServiceExtensions
+
+The `MemoryCacheServiceExtensions` class provides extension methods for the `MemoryCacheService` that add convenience methods for common caching scenarios. It includes methods for getting/setting multiple values, pattern-based operations, and cache statistics collection, making it easier to work with the cache service in real-world applications.
+
+```csharp
+using DotnetAuthServer.Caching;
+using Microsoft.Extensions.DependencyInjection;
+
+// Register in Program.cs
+builder.Services.AddSingleton<MemoryCacheService>();
+
+// Example usage in a service
+public class ProductCatalogService
+{
+private readonly MemoryCacheService _cache;
+
+public ProductCatalogService(MemoryCacheService cache)
+{
+_cache = cache;
+}
+
+public async Task CacheMultipleProductsAsync()
+{
+// Set multiple values at once
+var products = new Dictionary<string, Product>
+{
+{ "product:1", new Product { Id = 1, Name = "Laptop", Price = 999.99m } },
+{ "product:2", new Product { Id = 2, Name = "Phone", Price = 699.99m } },
+{ "product:3", new Product { Id = 3, Name = "Tablet", Price = 399.99m } }
+};
+
+await _cache.SetMultipleAsync(products, TimeSpan.FromHours(1));
+
+// Get multiple values at once
+var keys = new[] { "product:1", "product:2", "product:4" };
+var cachedProducts = await _cache.GetMultipleAsync<Product>(keys);
+
+foreach (var kvp in cachedProducts)
+{
+Console.WriteLine($"Key: {kvp.Key}, Value: {kvp.Value?.Name ?? "null"}");
+}
+
+// Try to get a value (returns null if not found)
+var product1 = await _cache.TryGetValueAsync<Product>("product:1");
+if (product1 is not null)
+{
+Console.WriteLine($"Found product: {product1.Name}");
+}
+
+// Get or set with multiple keys
+var featuredProducts = await _cache.GetOrSetMultipleAsync<Product>(
+keys: new[] { "featured:electronics", "featured:computers" },
+factory: async (keys, ct) => await _productRepository.GetFeaturedProductsAsync(keys),
+TimeSpan.FromHours(2)
+);
+
+// Remove by pattern
+await _cache.RemoveByPatternsAsync(new[] { "product:temp:*" });
+
+// Get keys by pattern
+var tempKeys = await _cache.GetKeysByPatternAsync("product:temp:*");
+
+// Get cache statistics
+var stats = await _cache.GetStatisticsAsync();
+Console.WriteLine($"Cache entries: {stats.EntryCount}, Size: {stats.ApproximateSize}");
+}
+```
+
 ## LoggingOptions
 
 The `LoggingOptions` class provides configuration for the authorization server's logging system. It controls log verbosity, formatting, and what information is included in logs, making it essential for debugging, security auditing, and performance monitoring while protecting sensitive data.
