@@ -4207,6 +4207,50 @@ public class SecretManagementController
 }
 ```
 
+## ScopeValidationBenchmarks
+
+The `ScopeValidationBenchmarks` class provides performance benchmarks for OAuth 2.0 scope validation operations, measuring the efficiency of validating requested scopes against registered client scopes and checking for required scopes in OpenID Connect requests. It benchmarks various scope validation scenarios including valid scopes, invalid scopes, empty scopes, single scopes, and multiple scopes to ensure optimal performance of the authorization server's scope validation logic.
+
+```csharp
+using DotnetAuthServer.Benchmarks;
+using BenchmarkDotNet.Running;
+
+// Run all benchmarks
+var summary = BenchmarkRunner.Run<ScopeValidationBenchmarks>();
+
+// Example benchmark configuration
+public class ScopeValidationBenchmarksConfig
+{
+    public void RunBenchmarks()
+    {
+        var benchmarks = new ScopeValidationBenchmarks();
+
+        // Setup benchmark environment
+        benchmarks.Setup();
+
+        // Benchmark validation of valid scopes
+        var validResult = benchmarks.ValidateScopes_Valid();
+        Console.WriteLine($"Valid scopes validation: {validResult}");
+
+        // Benchmark validation with an invalid scope
+        var invalidResult = benchmarks.ValidateScopes_InvalidScope();
+        Console.WriteLine($"Invalid scope validation: {invalidResult}");
+
+        // Benchmark validation with empty scope
+        var emptyResult = benchmarks.ValidateScopes_EmptyScope();
+        Console.WriteLine($"Empty scope validation: {emptyResult}");
+
+        // Benchmark validation with a single scope
+        var singleResult = benchmarks.ValidateScopes_SingleScope();
+        Console.WriteLine($"Single scope validation: {singleResult}");
+
+        // Benchmark validation with multiple scopes
+        var multipleResult = benchmarks.ValidateScopes_MultipleScopes();
+        Console.WriteLine($"Multiple scopes validation: {multipleResult}");
+    }
+}
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).
