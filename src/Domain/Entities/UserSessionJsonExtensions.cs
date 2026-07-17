@@ -44,8 +44,8 @@ public static class UserSessionJsonExtensions
     /// Deserializes a JSON string to a <see cref="UserSession"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized session, or null if the JSON is null or empty.</returns>
-    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+    /// <returns>The deserialized session if successful; otherwise, null if <paramref name="json"/> is null, empty, or whitespace.</returns>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized into a <see cref="UserSession"/>.</exception>
     public static UserSession? FromJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
