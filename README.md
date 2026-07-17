@@ -1626,6 +1626,69 @@ if (policyName.IsValid())
 policyName.EnsureValid();
 ```
 
+## DotnetAuthServerOptionsExtensions
+
+The `DotnetAuthServerOptionsExtensions` class provides extension methods for the `DotnetAuthServerOptions` type, offering convenient access to configuration values and runtime decisions without requiring direct property access. It includes methods for checking cache backends, JWT algorithms, scope and grant type support, logging levels, OPA policy paths, token lifetimes, and sensitive data logging configuration.
+
+This extension class simplifies configuration access throughout the authorization server by providing strongly-typed methods that encapsulate common configuration patterns and validation logic.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup in Program.cs
+builder.Services.AddAuthServer(builder.Configuration.GetSection("DotnetAuthServer"));
+
+// Example usage in a service or controller
+public class ConfigurationService
+{
+    private readonly DotnetAuthServerOptions _options;
+    
+    public ConfigurationService(IOptions<DotnetAuthServerOptions> options)
+    {
+        _options = options.Value;
+    }
+    
+    public void DisplayConfiguration()
+    {
+        // Check if Redis cache is configured
+        bool usesRedis = _options.UsesRedisCache();
+        string cacheBackend = _options.GetEffectiveCacheBackend();
+        
+        // Check JWT algorithm configuration
+        string jwtAlgorithm = _options.GetEffectiveJwtAlgorithm();
+        
+        // Check supported scopes and grant types
+        var supportedScopes = _options.GetSupportedScopes();
+        var supportedGrantTypes = _options.GetSupportedGrantTypes();
+        
+        bool supportsReadScope = _options.SupportsScope("api:read");
+        bool supportsRefreshTokenGrant = _options.SupportsGrantType("refresh_token");
+        
+        // Check logging configuration
+        string logLevel = _options.GetEffectiveMinimumLogLevel();
+        bool sensitiveLogging = _options.IsSensitiveDataLoggingEnabled();
+        
+        // Check OPA policy configuration
+        string opaPolicyPath = _options.GetEffectiveOpaPolicyPath();
+        string opaPolicyUrl = _options.GetOpaPolicyUrl();
+        
+        // Display token lifetimes
+        Console.WriteLine($"Cache Backend: {cacheBackend}");
+        Console.WriteLine($"JWT Algorithm: {jwtAlgorithm}");
+        Console.WriteLine($"Redis Cache: {usesRedis}");
+        Console.WriteLine($"Supported Scopes: {string.Join(", ", supportedScopes)}");
+        Console.WriteLine($"Supported Grant Types: {string.Join(", ", supportedGrantTypes)}");
+        Console.WriteLine($"Log Level: {logLevel}");
+        Console.WriteLine($"Sensitive Logging: {sensitiveLogging}");
+        Console.WriteLine($"Token Lifetime: {_options.GetAccessTokenLifetimeDisplay()}");
+        Console.WriteLine($"Refresh Token Lifetime: {_options.GetRefreshTokenLifetimeDisplay()}");
+    }
+}
+```
+
 ## HttpClientFactoryJsonExtensions
 
 The `HttpClientFactoryJsonExtensions` class provides extension methods for configuring and serializing `HttpClient` factories with JSON-based configuration. It includes methods for converting between JSON strings and `HttpClientFactoryConfig` objects, setting default timeout values, and configuring user agent strings for HTTP clients. This is particularly useful for external webhook calls and API integrations where JSON configuration needs to be persisted or transmitted.
