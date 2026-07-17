@@ -63,20 +63,12 @@ public static class ScopeJsonExtensions
     /// <param name="value">Receives the deserialized scope if successful; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if deserialization succeeds; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static bool TryFromJson(string json, out Scope? value)
     {
-        ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrEmpty(json);
 
-        value = null;
-
-        try
-        {
-            value = JsonSerializer.Deserialize<Scope>(json, _jsonSerializerOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
+        value = JsonSerializer.Deserialize<Scope>(json, _jsonSerializerOptions);
+        return value is not null;
     }
 }
