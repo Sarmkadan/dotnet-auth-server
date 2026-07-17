@@ -5,8 +5,6 @@
 // CTO & Software Architect
 // =============================================================================
 
-using System.Globalization;
-
 namespace DotnetAuthServer.Domain.Entities;
 
 /// <summary>
@@ -19,7 +17,7 @@ public static class ScopeValidation
     /// </summary>
     /// <param name="value">The scope to validate</param>
     /// <returns>An empty list if valid, otherwise a list of human-readable problems</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static IReadOnlyList<string> Validate(this Scope value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -35,7 +33,7 @@ public static class ScopeValidation
         {
             problems.Add("ScopeId exceeds maximum length of 128 characters");
         }
-        else if (value.ScopeId.Any(c => char.IsWhiteSpace(c)))
+        else if (value.ScopeId.Any(static c => char.IsWhiteSpace(c)))
         {
             problems.Add("ScopeId cannot contain whitespace characters");
         }
@@ -80,29 +78,29 @@ public static class ScopeValidation
         }
 
         // Validate claims collections
-        if (value.IdTokenClaims == null)
+        if (value.IdTokenClaims is null)
         {
             problems.Add("IdTokenClaims collection cannot be null");
         }
-        else if (value.IdTokenClaims.Any(claim => string.IsNullOrWhiteSpace(claim)))
+        else if (value.IdTokenClaims.Any(static claim => string.IsNullOrWhiteSpace(claim)))
         {
             problems.Add("IdTokenClaims collection contains null or whitespace entries");
         }
 
-        if (value.AccessTokenClaims == null)
+        if (value.AccessTokenClaims is null)
         {
             problems.Add("AccessTokenClaims collection cannot be null");
         }
-        else if (value.AccessTokenClaims.Any(claim => string.IsNullOrWhiteSpace(claim)))
+        else if (value.AccessTokenClaims.Any(static claim => string.IsNullOrWhiteSpace(claim)))
         {
             problems.Add("AccessTokenClaims collection contains null or whitespace entries");
         }
 
-        if (value.AllowedRoles == null)
+        if (value.AllowedRoles is null)
         {
             problems.Add("AllowedRoles collection cannot be null");
         }
-        else if (value.AllowedRoles.Any(role => string.IsNullOrWhiteSpace(role)))
+        else if (value.AllowedRoles.Any(static role => string.IsNullOrWhiteSpace(role)))
         {
             problems.Add("AllowedRoles collection contains null or whitespace entries");
         }
@@ -115,7 +113,7 @@ public static class ScopeValidation
     /// </summary>
     /// <param name="value">The scope to check</param>
     /// <returns>True if the scope is valid; otherwise, false</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static bool IsValid(this Scope value)
     {
         return value.Validate().Count == 0;
@@ -125,7 +123,7 @@ public static class ScopeValidation
     /// Ensures that a Scope entity is valid, throwing an exception if it is not
     /// </summary>
     /// <param name="value">The scope to validate</param>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     /// <exception cref="ArgumentException">Thrown when the scope is invalid, containing a list of problems</exception>
     public static void EnsureValid(this Scope value)
     {

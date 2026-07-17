@@ -74,6 +74,7 @@ public sealed class Scope
     /// <summary>
     /// Validates the scope has all required properties
     /// </summary>
+    /// <returns>True if the scope is valid; otherwise, false</returns>
     public bool IsValid()
     {
         return !string.IsNullOrWhiteSpace(ScopeId) &&
