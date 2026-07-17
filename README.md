@@ -320,6 +320,55 @@ var fallbackResult = await resilient.RefreshWithFallbackAsync(
 );
 ```
 
+## TokenBenchmarks
+
+The `TokenBenchmarks` class provides performance benchmarks for critical token-related operations in the DotnetAuthServer. It measures the execution time and memory allocation of key authentication and authorization workflows including token introspection, PKCE validation, client credential validation, and client credentials grant handling. These benchmarks are essential for performance monitoring, capacity planning, and identifying performance regressions in the authorization server.
+
+
+The benchmark suite includes:
+
+- Token introspection for validating access tokens
+- PKCE code verifier validation for authorization code flow
+- Client credential validation for confidential clients
+- Client credentials grant handling for service-to-service authentication
+
+
+```csharp
+using DotnetAuthServer.Benchmarks;
+using BenchmarkDotNet.Running;
+
+// Run all benchmarks
+var summary = BenchmarkRunner.Run<TokenBenchmarks>();
+
+// Example benchmark configuration
+public class TokenBenchmarksConfig
+{
+    public void RunBenchmarks()
+    {
+        var benchmarks = new TokenBenchmarks();
+        
+        // Setup benchmark environment
+        benchmarks.Setup();
+        
+        // Benchmark token introspection
+        var introspectionResult = benchmarks.IntrospectToken();
+        Console.WriteLine($"Introspection: {introspectionResult.IsActive}");
+        
+        // Benchmark PKCE validation
+        var pkceValid = benchmarks.ValidatePkce();
+        Console.WriteLine($"PKCE valid: {pkceValid}");
+        
+        // Benchmark client credential validation
+        var client = await benchmarks.ValidateClientCredentials();
+        Console.WriteLine($"Client validated: {client.ClientId}");
+        
+        // Benchmark client credentials grant
+        var tokenResponse = await benchmarks.HandleClientCredentialsGrant();
+        Console.WriteLine($"Token issued: {tokenResponse.AccessToken[..10]}...");
+    }
+}
+```
+
 ## MemoryCacheService
 
 The `MemoryCacheService` provides an in-memory caching implementation using `ConcurrentDictionary` for thread-safe operations. It's designed for single-server deployments and offers automatic expiration checking, pattern-based cache removal, and atomic get-or-set operations to prevent thundering herd problems.
