@@ -1032,6 +1032,40 @@ The `DomainEntityTests` class provides unit tests for domain entity classes in t
 
 The `SessionManagementTests` class provides unit tests for user session management functionality in the authorization server. It verifies session creation, revocation, status checks, and statistics, ensuring that session lifecycle operations work correctly according to the domain model's invariants.
 
+## SecretsServiceTests
+
+The `SecretsServiceTests` class provides unit tests for the `SecretsService` class, which handles secure secret generation, hashing, verification, and masking operations. It verifies that secrets are generated with the correct length, hashing produces valid results, verification correctly identifies valid and invalid secrets, and masking properly obfuscates secret values for display purposes.
+
+```csharp
+using DotnetAuthServer.Services;
+using FluentAssertions;
+using Xunit;
+
+// Create a test instance of SecretsServiceTests
+var secretsTests = new SecretsServiceTests();
+
+// Test generating a secure secret of correct length
+var secret = secretsTests.GenerateSecureSecret_ReturnsSecretOfCorrectLength();
+secret.Should().NotBeNullOrEmpty();
+
+// Test generating a secret with invalid length (should throw)
+Action act = () => secretsTests.GenerateSecureSecret_InvalidLength_ThrowsArgumentException();
+act.Should().Throw<ArgumentException>();
+
+// Test hashing and verification with valid secret
+var hash = SecretsService.HashSecret("my-secret-key");
+var isValid = SecretsService.VerifySecret("my-secret-key", hash);
+isValid.Should().BeTrue();
+
+// Test hashing and verification with invalid secret
+var invalid = SecretsService.VerifySecret("wrong-secret", hash);
+invalid.Should().BeFalse();
+
+// Test masking a secret for display
+var masked = SecretsService.MaskSecret("1234567890");
+masked.Should().Be("123****7890");
+```
+
 ```csharp
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Services;
