@@ -46,9 +46,11 @@ public static class AuthorizationGrantJsonExtensions
     /// <param name="json">The JSON string to parse.</param>
     /// <returns>The deserialized authorization grant, or null if parsing fails.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static AuthorizationGrant? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
         try
         {
@@ -67,9 +69,11 @@ public static class AuthorizationGrantJsonExtensions
     /// <param name="value">Receives the deserialized authorization grant if successful.</param>
     /// <returns>True if parsing succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static bool TryFromJson(string json, out AuthorizationGrant? value)
     {
         ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
         try
         {
