@@ -1089,6 +1089,103 @@ Assert.Equal(originalVersion + 1, token.Version);
 Assert.Equal("original-hash", token.PreviousTokenHash);
 ```
 
+## ClientValidationServiceTests
+
+The `ClientValidationServiceTests` class provides unit tests for the `ClientValidationService` class, which validates OAuth 2.0 client credentials, redirect URIs, and requested scopes. It ensures that client authentication, authorization, and token management operations work correctly by testing various validation scenarios including valid/invalid client credentials, redirect URIs, and scope validation.
+
+```csharp
+using DotnetAuthServer.Services;
+using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Exceptions;
+using Moq;
+using Xunit;
+
+// Create mock dependencies
+var clientRepositoryMock = new Mock<IClientRepository>();
+var cacheServiceMock = new Mock<ICacheService>();
+var loggerMock = new Mock<ILogger<ClientValidationService>>();
+
+// Create the service with mocked dependencies
+var validationService = new ClientValidationService(
+    clientRepositoryMock.Object,
+    cacheServiceMock.Object,
+    loggerMock.Object
+);
+
+// Test valid confidential client credentials
+var validClient = new Client
+{
+    ClientId = "web-client",
+    IsActive = true,
+    IsConfidential = true,
+    ClientSecretHash = "correct-secret-hash"
+};
+
+clientRepositoryMock.Setup(r => r.GetByIdAsync("web-client", It.IsAny<CancellationToken>()))
+    .ReturnsAsync(validClient);
+
+var validatedClient = await validationService.ValidateClientCredentialsAsync(
+    "web-client", 
+    "correct-secret-hash"
+);
+Assert.Equal(validClient, validatedClient);
+
+// Test invalid client ID
+clientRepositoryMock.Setup(r => r.GetByIdAsync("unknown-client", It.IsAny<CancellationToken>()))
+    .ReturnsAsync((Client?)null);
+
+await Assert.ThrowsAsync<InvalidClientException>(
+    () => validationService.ValidateClientCredentialsAsync("unknown-client", "secret")
+);
+
+// Test valid redirect URI
+var clientWithRedirects = new Client
+{
+    ClientId = "web-client",
+    RedirectUris = new List<string> { "https://app.example.com/callback" }
+};
+
+clientRepositoryMock.Setup(r => r.GetByIdAsync("web-client", It.IsAny<CancellationToken>()))
+    .ReturnsAsync(clientWithRedirects);
+
+await validationService.ValidateRedirectUriAsync(
+    "web-client", 
+    "https://app.example.com/callback"
+);
+
+// Test invalid redirect URI
+await Assert.ThrowsAsync<InvalidClientException>(
+    () => validationService.ValidateRedirectUriAsync(
+        "web-client", 
+        "https://wrong.example.com/callback"
+    )
+);
+
+// Test scope validation
+var clientWithScopes = new Client
+{
+    ClientId = "web-client",
+    AllowedScopes = new List<string> { "openid", "profile", "email" }
+};
+
+clientRepositoryMock.Setup(r => r.GetByIdAsync("web-client", It.IsAny<CancellationToken>()))
+    .ReturnsAsync(clientWithScopes);
+
+await validationService.ValidateScopesAsync(
+    "web-client", 
+    new List<string> { "openid", "profile" }
+);
+
+// Test invalid scopes
+await Assert.ThrowsAsync<InvalidScopeException>(
+    () => validationService.ValidateScopesAsync(
+        "web-client", 
+        new List<string> { "openid", "invalid-scope" }
+    )
+);
+```
+
 ## AuditLoggingService
 
 The AuditLoggingService class provides methods for logging various security-related events, such as token issuance, authentication, authorization decisions, suspicious activity, and administrative actions.
