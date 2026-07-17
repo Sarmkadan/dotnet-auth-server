@@ -4800,3 +4800,44 @@ public class TokenController
     }
 }
 ```
+
+## PkceValidationServiceTestsExtensions
+
+The `PkceValidationServiceTestsExtensions` class provides extension methods for testing PKCE (Proof Key for Code Exchange) validation functionality in the authorization server's test suite. It offers fluent assertion methods for validating code verifiers, generating test data, and verifying PKCE service behavior in unit tests.
+
+```csharp
+using DotnetAuthServer.Tests;
+
+// Example usage in test classes
+public class PkceValidationServiceTests
+{
+    [Fact]
+    public void PkceValidationTests()
+    {
+        // Arrange
+        var testInstance = new PkceValidationServiceTests();
+        
+        // Act & Assert using extension methods
+        testInstance.WithPkceRequirement()
+                   .WithIssuerUrl("https://auth.example.com");
+                   
+        // Generate and validate code verifiers
+        var verifier = testInstance.GetService().GenerateCodeVerifier();
+        verifier.ShouldHaveValidLength();
+        verifier.ShouldContainOnlyUrlSafeCharacters();
+        
+        // Generate multiple verifiers and verify uniqueness
+        var verifiers = testInstance.GenerateCodeVerifiers(5);
+        verifiers.ShouldAllBeUnique();
+        
+        // Generate deterministic S256 challenge
+        var (challenge, isDeterministic) = testInstance.GenerateDeterministicS256Challenge(verifier);
+        isDeterministic.Should().BeTrue();
+        
+        // Get the service instance for direct testing
+        var service = testInstance.GetService();
+        var isValid = service.ValidateCodeVerifier(verifier, challenge, "S256");
+        isValid.Should().BeTrue();
+    }
+}
+```
