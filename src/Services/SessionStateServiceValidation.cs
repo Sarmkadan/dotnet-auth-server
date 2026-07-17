@@ -7,7 +7,6 @@
 namespace DotnetAuthServer.Services;
 
 using System.Collections.Frozen;
-using System.Globalization;
 using DotnetAuthServer.Extensions;
 
 /// <summary>
@@ -16,9 +15,6 @@ using DotnetAuthServer.Extensions;
 /// </summary>
 public static class SessionStateServiceValidation
 {
-    private static readonly FrozenSet<string> _requiredNonEmptyFields =
-        new[] { "StateId", "ClientId", "RedirectUri", "RequestedScopes" }.ToFrozenSet(StringComparer.Ordinal);
-
     private const int MaxScopeLength = 1024;
     private const int MaxClientIdLength = 256;
     private const int MaxRedirectUriLength = 2048;
@@ -114,10 +110,7 @@ public static class SessionStateServiceValidation
     /// </summary>
     /// <param name="value">The session state instance to check.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValid(this SessionState? value)
-    {
-        return value is not null && Validate(value).Count == 0;
-    }
+    public static bool IsValid(this SessionState? value) => value is not null && Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="SessionState"/> instance is valid.
@@ -133,11 +126,16 @@ public static class SessionStateServiceValidation
         var errors = Validate(value);
         if (errors.Count > 0)
         {
-            throw new ArgumentException(
-                $"SessionState validation failed:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
+            throw new ArgumentException($"SessionState validation failed:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
         }
     }
 
+    /// <summary>
+    /// Validates that a string field is non-empty and not whitespace.
+    /// </summary>
+    /// <param name="fieldName">Name of the field being validated.</param>
+    /// <param name="fieldValue">Value of the field.</param>
+    /// <param name="errors">List to accumulate validation error messages.</param>
     private static void ValidateNonEmptyString(string fieldName, string fieldValue, List<string> errors)
     {
         if (string.IsNullOrWhiteSpace(fieldValue))
@@ -146,8 +144,21 @@ public static class SessionStateServiceValidation
         }
     }
 
-    private static void ValidateStringLength(string fieldName, string fieldValue, int maxLength, List<string> errors)
+    /// <summary>
+    /// Validates that a string field does not exceed maximum length.
+    /// </summary>
+    /// <param name="fieldName">Name of the field being validated.</param>
+    /// <param name="fieldValue">Value of the field.</param>
+    /// <param name="maxLength">Maximum allowed length.</param>
+    /// <param name="errors">List to accumulate validation error messages.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="fieldValue"/> is null.</exception>
+    private static void ValidateStringLength(string fieldName, string? fieldValue, int maxLength, List<string> errors)
     {
+        if (fieldValue is null)
+        {
+            return;
+        }
+
         if (fieldValue.Length > maxLength)
         {
             errors.Add($"{fieldName} length must not exceed {maxLength} characters, but was {fieldValue.Length}.");
