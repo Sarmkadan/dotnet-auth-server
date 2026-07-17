@@ -1467,6 +1467,46 @@ var provisioningUri = TotpService.BuildProvisioningUri(
 Console.WriteLine($"Provisioning URI: {provisioningUri}");
 ```
 
+## HttpClientFactoryJsonExtensions
+
+The `HttpClientFactoryJsonExtensions` class provides extension methods for configuring and serializing `HttpClient` factories with JSON-based configuration. It includes methods for converting between JSON strings and `HttpClientFactoryConfig` objects, setting default timeout values, and configuring user agent strings for HTTP clients. This is particularly useful for external webhook calls and API integrations where JSON configuration needs to be persisted or transmitted.
+
+```csharp
+using DotnetAuthServer.Integration;
+using System.Net.Http;
+using System.Text.Json;
+
+// Create a configuration for an external webhook client
+var config = new HttpClientFactoryConfig
+{
+    DefaultTimeout = TimeSpan.FromSeconds(30),
+    WebhookTimeout = TimeSpan.FromSeconds(10),
+    UserAgent = "MyAuthServer-Webhook/1.0",
+    ExternalLookupTimeout = TimeSpan.FromSeconds(5)
+};
+
+// Serialize configuration to JSON for storage or transmission
+var json = config.ToJson();
+
+// Deserialize configuration from JSON
+var deserializedConfig = HttpClientFactoryJsonExtensions.FromJson(json);
+
+// Alternatively, use the safe parsing method
+if (HttpClientFactoryJsonExtensions.TryFromJson(json, out var safeConfig))
+{
+    // Use the safely parsed configuration
+    var httpClientFactory = new HttpClientFactory(config);
+    var client = httpClientFactory.CreateClient("webhook");
+    
+    // Make requests with configured timeouts
+    var response = await client.GetAsync("https://external-api.example.com/webhook");
+}
+
+// Configure HttpClient with default settings
+var factory = new HttpClientFactory(config);
+var httpClient = factory.CreateClient("default");
+```
+
 ## DomainEntityTests
 
 The `DomainEntityTests` class provides unit tests for domain entity classes in the authorization server. It verifies core domain logic and behavior for entities like `User`, `Client`, and `RefreshToken`, ensuring that authentication, authorization, and token management operations work correctly according to the domain model's invariants.
