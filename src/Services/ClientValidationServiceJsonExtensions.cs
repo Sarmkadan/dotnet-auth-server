@@ -12,19 +12,13 @@ using System.Text.Json.Serialization;
 
 /// <summary>
 /// Provides System.Text.Json serialization/deserialization extensions for <see cref="ClientValidationService"/>.
-/// Enables round-trip serialization of the service's dependencies and state.
 /// </summary>
+/// <remarks>
+/// Service instances with injected dependencies cannot be meaningfully serialized.
+/// These methods throw <see cref="NotSupportedException"/> to prevent misuse.
+/// </remarks>
 public static class ClientValidationServiceJsonExtensions
 {
-    private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        ReferenceHandler = ReferenceHandler.IgnoreCycles,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
-    };
-
     /// <summary>
     /// Serializes the <see cref="ClientValidationService"/> instance to a JSON string.
     /// </summary>
@@ -32,18 +26,14 @@ public static class ClientValidationServiceJsonExtensions
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the service.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="NotSupportedException">Thrown when attempting to serialize a service with injected dependencies.</exception>
     public static string ToJson(this ClientValidationService value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var options = indented
-            ? new JsonSerializerOptions(_jsonSerializerOptions)
-            {
-                WriteIndented = true
-            }
-            : _jsonSerializerOptions;
-
-        return JsonSerializer.Serialize(value, options);
+        throw new NotSupportedException(
+            "ClientValidationService instances with injected dependencies cannot be serialized. " +
+            "This service should not be persisted or transmitted.");
     }
 
     /// <summary>
@@ -51,12 +41,15 @@ public static class ClientValidationServiceJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized service instance, or null if the JSON represents a null value.</returns>
-    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <exception cref="NotSupportedException">Thrown when attempting to deserialize a service with injected dependencies.</exception>
     public static ClientValidationService? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
-        return JsonSerializer.Deserialize<ClientValidationService>(json, _jsonSerializerOptions);
+        throw new NotSupportedException(
+            "ClientValidationService instances with injected dependencies cannot be deserialized. " +
+            "This service should not be persisted or transmitted.");
     }
 
     /// <summary>
@@ -65,19 +58,12 @@ public static class ClientValidationServiceJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized service instance if successful, otherwise null.</param>
     /// <returns>True if deserialization succeeded; otherwise false.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out ClientValidationService? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
-        try
-        {
-            value = JsonSerializer.Deserialize<ClientValidationService>(json, _jsonSerializerOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            value = null;
-            return false;
-        }
+        value = null;
+        return false;
     }
 }
