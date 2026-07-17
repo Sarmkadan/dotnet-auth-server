@@ -912,6 +912,159 @@ var publicClientResponse = new ClientRegistrationResponse
 };
 ```
 
+## ResourceServerStartupExample
+
+The `ResourceServerStartupExample` class demonstrates how to integrate an OAuth 2.0 resource server (API) with the dotnet-auth-server authorization server. It shows how to configure JWT Bearer authentication, protect API endpoints with authorization attributes, validate tokens from the auth server, and implement role-based and scope-based access control.
+
+This example is useful when you want to:
+
+- Protect your APIs using tokens issued by dotnet-auth-server
+- Validate JWT tokens from an external OAuth 2.0 authorization server
+- Implement role-based access control (RBAC) in your API
+- Implement scope-based authorization policies
+- Use custom authorization requirements and handlers
+
+### Realistic Usage Example
+
+```csharp
+using DotnetAuthServer.Examples;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
+
+// Initialize the resource server configuration
+var startup = new ResourceServerStartupExample();
+
+// Configure services in your ASP.NET Core application
+var services = new ServiceCollection();
+startup.ConfigureServices(services);
+
+// Build the application
+var builder = WebApplication.CreateBuilder();
+builder.Services.AddControllers();
+
+// Apply the configuration
+startup.ConfigureServices(builder.Services);
+
+var app = builder.Build();
+startup.Configure(app);
+
+app.Run();
+
+// Example API controller protected by the auth server
+[ApiController]
+[Route("api/[controller]")]
+[Authorize] // Requires valid token from auth server
+public class ProtectedController : ControllerBase
+{
+    private readonly IAuthorizationService _authService;
+    
+    public ProtectedController(IAuthorizationService authService)
+    {
+        _authService = authService;
+    }
+    
+    [HttpGet("profile")]
+    public IActionResult GetProfile()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+        
+        return Ok(new { userId, email, roles });
+    }
+    
+    [HttpGet("admin/users")]
+    [Authorize(Roles = "admin")] // Only admins can access
+    public IActionResult GetAllUsers()
+    {
+        return Ok(new { users = new[] { "user1", "user2" } });
+    }
+    
+    [HttpPost("content")]
+    [Authorize("EditorPolicy")] // Custom policy
+    public IActionResult CreateContent([FromBody] CreateContentRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Created("", new { id = Guid.NewGuid(), title = request.Title });
+    }
+}
+
+// Custom authorization requirement
+public class TokenAgeRequirement : IAuthorizationRequirement
+{
+    public long MaxAgeSeconds { get; set; }
+    
+    public TokenAgeRequirement(long maxAgeSeconds)
+    {
+        MaxAgeSeconds = maxAgeSeconds;
+    }
+}
+
+// Custom authorization handler
+public class TokenAgeAuthorizationHandler : AuthorizationHandler<TokenAgeRequirement>
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        TokenAgeRequirement requirement)
+    {
+        var issuedAtClaim = context.User.FindFirst("iat");
+        
+        if (issuedAtClaim is not null &&
+            long.TryParse(issuedAtClaim.Value, out long iat))
+        {
+            var tokenAge = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - iat;
+            
+            if (tokenAge < requirement.MaxAgeSeconds)
+            {
+                context.Succeed(requirement);
+            }
+        }
+        
+        return Task.CompletedTask;
+    }
+}
+
+// Custom token validation middleware
+public class TokenValidationMiddleware
+{
+    private readonly RequestDelegate _next;
+    
+    public TokenValidationMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
+    
+    public async Task InvokeAsync(HttpContext context)
+    {
+        var token = ExtractToken(context);
+        
+        if (!string.IsNullOrEmpty(token))
+        {
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var roles = context.User.FindAll(ClaimTypes.Role);
+            
+            // Audit logging
+            Console.WriteLine($"Request: {context.Request.Method} {context.Request.Path} | User: {userId}");
+        }
+        
+        await _next(context);
+    }
+    
+    private string ExtractToken(HttpContext context)
+    {
+        var auth = context.Request.Headers["Authorization"].ToString();
+        
+        if (auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return auth["Bearer ".Length..];
+        }
+        
+        return string.Empty;
+    }
+}
+```
+
 ## TokenResponse
 
 The `TokenResponse` class represents the OAuth 2.0 token response returned from the token endpoint (`POST /oauth/token`). It contains the access token, token type, expiration information, optional refresh token, and any additional claims or custom properties. This type is used throughout the authorization flow to return tokens to clients after successful authentication and authorization.
