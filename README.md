@@ -1077,6 +1077,63 @@ var timestamp = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).ToUnixTimest
 // Returns: 0
 ```
 
+## UserManagementTests
+
+The `UserManagementTests` class provides unit tests for the `UserManagementService`, which handles administrative user management operations including user creation, updates, deletion, role assignment, account locking/unlocking, and user search functionality. It verifies that user operations work correctly according to the domain model's invariants and that all CRUD operations properly persist changes to the repository.
+
+```csharp
+using DotnetAuthServer.Domain.Models;
+using DotnetAuthServer.Services;
+
+// Create a UserManagementService instance (typically injected in production)
+var userManagementService = new UserManagementService(
+    userRepository,
+    refreshTokenRepository,
+    sessionRepository,
+    logger,
+    loggerFactory,
+    authServerOptions
+);
+
+// Create a new user with required fields
+var newUser = await userManagementService.CreateUserAsync(new CreateUserRequest
+{
+    Username = "johndoe",
+    Email = "john.doe@example.com",
+    Password = "SecurePassword123!",
+    FullName = "John Doe",
+    Roles = new[] { "user", "premium" }
+});
+
+// Update user information
+var updatedUser = await userManagementService.UpdateUserAsync(
+    newUser.UserId,
+    new UpdateUserRequest
+    {
+        FullName = "John Doe Updated",
+        IsActive = true
+    }
+);
+
+// Assign a role to a user
+await userManagementService.AssignRoleAsync(newUser.UserId, "admin");
+
+// Lock a user account for security reasons
+await userManagementService.LockUserAsync(newUser.UserId, TimeSpan.FromHours(1));
+
+// Unlock a user account
+await userManagementService.UnlockUserAsync(newUser.UserId);
+
+// Search for users by username
+var matchingUsers = await userManagementService.SearchUsersAsync("john");
+
+// Get user by ID
+var retrievedUser = await userManagementService.GetUserByIdAsync(newUser.UserId);
+
+// Delete a user account
+await userManagementService.DeleteUserAsync(newUser.UserId);
+```
+
 ## SecretsServiceTests
 
 The `SecretsServiceTests` class provides unit tests for the `SecretsService` class, which handles secure secret generation, hashing, verification, and masking operations. It verifies that secrets are generated with the correct length, hashing produces valid results, verification correctly identifies valid and invalid secrets, and masking properly obfuscates secret values for display purposes.
