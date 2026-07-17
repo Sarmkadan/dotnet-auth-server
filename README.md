@@ -1024,6 +1024,52 @@ var notFoundResponse = ApiResponse.ErrorResponse(
 );
 ```
 
+## MfaTotpTests
+
+The `MfaTotpTests` class provides comprehensive unit tests for the Time-based One-Time Password (TOTP) multi-factor authentication functionality in the authorization server. It verifies Base32 encoding/decoding, TOTP code generation and validation, MFA enrollment flow (initiation and confirmation), backup code usage and consumption, MFA disabling, and provisioning URI generation. These tests ensure that the TOTP MFA implementation works correctly for user authentication scenarios.
+
+```csharp
+using DotnetAuthServer.Services;
+using Microsoft.Extensions.Logging;
+using Moq;
+
+// Setup the TOTP service for testing
+var credentialRepository = new TotpCredentialRepository();
+var logger = new Mock<ILogger<TotpService>>().Object;
+var options = new AuthServerOptions
+{
+    IssuerUrl = "https://auth.example.com",
+    JwtSigningKey = new string('x', 32),
+    DatabaseConnectionString = ""
+};
+var totpService = new TotpService(credentialRepository, logger, options);
+
+// Test Base32 encoding/decoding
+var originalBytes = new byte[] { 0x00, 0x1A, 0x2B, 0x3C };
+var encoded = TotpService.EncodeBase32(originalBytes);
+var decoded = TotpService.DecodeBase32(encoded);
+Console.WriteLine($"Encoded: {encoded}");
+Console.WriteLine($"Decoded matches original: {decoded.SequenceEqual(originalBytes)}");
+
+// Test MFA enrollment flow
+var setup = await totpService.InitiateSetupAsync("user-123", "john.doe@example.com");
+Console.WriteLine($"Secret Key: {setup.SecretKey}");
+Console.WriteLine($"Provisioning URI: {setup.ProvisioningUri}");
+Console.WriteLine($"Backup Codes: {string.Join(", ", setup.BackupCodes)}");
+
+// Verify a TOTP code (would normally use current time-based code)
+var isValid = totpService.VerifyTotpCode(setup.SecretKey, "123456");
+Console.WriteLine($"Code validation result: {isValid}");
+
+// Build a provisioning URI for QR code generation
+var provisioningUri = TotpService.BuildProvisioningUri(
+    setup.SecretKey, 
+    "john.doe@example.com", 
+    "My Auth Server"
+);
+Console.WriteLine($"Provisioning URI: {provisioningUri}");
+```
+
 ## DomainEntityTests
 
 The `DomainEntityTests` class provides unit tests for domain entity classes in the authorization server. It verifies core domain logic and behavior for entities like `User`, `Client`, and `RefreshToken`, ensuring that authentication, authorization, and token management operations work correctly according to the domain model's invariants.
