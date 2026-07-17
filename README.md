@@ -1028,6 +1028,55 @@ var notFoundResponse = ApiResponse.ErrorResponse(
 
 The `DomainEntityTests` class provides unit tests for domain entity classes in the authorization server. It verifies core domain logic and behavior for entities like `User`, `Client`, and `RefreshToken`, ensuring that authentication, authorization, and token management operations work correctly according to the domain model's invariants.
 
+## SessionManagementTests
+
+The `SessionManagementTests` class provides unit tests for user session management functionality in the authorization server. It verifies session creation, revocation, status checks, and statistics, ensuring that session lifecycle operations work correctly according to the domain model's invariants.
+
+```csharp
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Services;
+using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+
+// Create a test instance of SessionManagementTests
+var sessionTests = new SessionManagementTests();
+
+// Test creating a session with valid parameters
+var session = await sessionTests.CreateSession_WithValidParams_ReturnsActiveSession();
+
+// Verify session properties
+session.Should().NotBeNull();
+session.UserId.Should().Be("user1");
+session.ClientId.Should().Be("client1");
+session.GrantedScopes.Should().Be("openid profile");
+session.IsActive().Should().BeTrue();
+session.IsRevoked.Should().BeFalse();
+
+// Test revoking a session
+await sessionTests.RevokeSession_ExistingSession_MarksAsRevoked();
+
+// Test getting active sessions after revocation
+var activeSessions = await sessionTests.GetActiveSessions_AfterRevoke_ExcludesRevokedSession();
+activeSessions.Should().HaveCount(1);
+
+// Test revoking all sessions for a user
+var revokedCount = await sessionTests.RevokeAllUserSessions_RevokesOnlyThatUsersActiveSessions();
+revokedCount.Should().Be(2);
+
+// Test session statistics
+var stats = await sessionTests.GetStats_ReflectsSessionCounts();
+stats.TotalSessions.Should().BeGreaterThanOrEqualTo(2);
+stats.ActiveSessions.Should().BeGreaterThanOrEqualTo(1);
+stats.RevokedSessions.Should().BeGreaterThanOrEqualTo(1);
+
+// Test session expiration
+sessionTests.UserSession_IsActive_WhenExpired_ReturnsFalse();
+
+// Test session revocation
+sessionTests.UserSession_Revoke_SetsRevocationFieldsCorrectly();
+```
 
 ```csharp
 using DotnetAuthServer.Domain.Entities;
