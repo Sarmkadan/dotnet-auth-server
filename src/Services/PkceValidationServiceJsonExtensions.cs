@@ -60,6 +60,7 @@ public static class PkceValidationServiceJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized service instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out PkceValidationService? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -69,7 +70,7 @@ public static class PkceValidationServiceJsonExtensions
             value = JsonSerializer.Deserialize<PkceValidationService>(json, _jsonOptions);
             return true;
         }
-        catch (JsonException)
+        catch
         {
             value = null;
             return false;
