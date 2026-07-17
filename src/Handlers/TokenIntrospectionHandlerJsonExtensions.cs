@@ -44,7 +44,7 @@ public static class TokenIntrospectionHandlerJsonExtensions
     /// Deserializes a JSON string into an <see cref="IntrospectionResponse"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized introspection response, or null if deserialization fails.</returns>
+    /// <returns>The deserialized introspection response if successful; otherwise, null.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static IntrospectionResponse? FromJson(string json)
@@ -62,9 +62,11 @@ public static class TokenIntrospectionHandlerJsonExtensions
     /// <param name="value">Receives the deserialized introspection response if successful.</param>
     /// <returns>True if deserialization succeeds; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static bool TryFromJson(string json, out IntrospectionResponse? value)
     {
         ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
         try
         {
