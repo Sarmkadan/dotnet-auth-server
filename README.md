@@ -421,6 +421,42 @@ public class PkceBenchmarksConfig
 }
 ```
 
+## ClientValidationBenchmarks
+
+The `ClientValidationBenchmarks` class provides performance benchmarks for OAuth 2.0 client validation operations, measuring the efficiency of validating confidential and public OAuth clients against different client types and grant flows. It benchmarks validation performance for confidential clients with secrets, public clients without secrets (PKCE required), and inactive clients to ensure proper rejection. These benchmarks are essential for performance monitoring and identifying bottlenecks in client authentication workflows.
+
+```csharp
+using DotnetAuthServer.Benchmarks;
+using BenchmarkDotNet.Running;
+
+// Run all benchmarks
+var summary = BenchmarkRunner.Run<ClientValidationBenchmarks>();
+
+// Example benchmark configuration
+public class ClientValidationBenchmarksConfig
+{
+    public void RunBenchmarks()
+    {
+        var benchmarks = new ClientValidationBenchmarks();
+
+        // Setup benchmark environment
+        benchmarks.Setup();
+
+        // Benchmark validation of confidential client with client credentials
+        var confidentialValid = await benchmarks.ValidateConfidentialClient();
+        Console.WriteLine($"Confidential client validation: {confidentialValid}");
+
+        // Benchmark validation of public client with authorization code
+        var publicValid = await benchmarks.ValidatePublicClient();
+        Console.WriteLine($"Public client validation: {publicValid}");
+
+        // Benchmark validation of inactive client (should return false)
+        var inactiveValid = await benchmarks.ValidateInactiveClient();
+        Console.WriteLine($"Inactive client validation (should be false): {inactiveValid}");
+    }
+}
+```
+
 ## MemoryCacheService
 
 The `MemoryCacheService` provides an in-memory caching implementation using `ConcurrentDictionary` for thread-safe operations. It's designed for single-server deployments and offers automatic expiration checking, pattern-based cache removal, and atomic get-or-set operations to prevent thundering herd problems.
