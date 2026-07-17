@@ -131,7 +131,7 @@ public static class ClientServiceExtensions
     /// <param name="termsOfServiceUri">New terms of service URI</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The updated client</returns>
-    /// <exception cref="ArgumentNullException">Thrown when client is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientService"/> or <paramref name="client"/> is null</exception>
     /// <exception cref="AuthServerException">Thrown when update fails</exception>
     public static async Task<Client> UpdateClientMetadataAsync(
         this ClientService clientService,
@@ -163,18 +163,16 @@ public static class ClientServiceExtensions
     /// <param name="client">The client to check</param>
     /// <param name="grantType">The grant type to check for</param>
     /// <returns>True if the grant type is allowed, false otherwise</returns>
-    /// <exception cref="ArgumentNullException">Thrown when client is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientService"/> or <paramref name="client"/> is null</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="grantType"/> is null or empty</exception>
     public static bool HasGrantType(
         this ClientService clientService,
         Client client,
-        string grantType)
-    {
-        ArgumentNullException.ThrowIfNull(clientService);
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentException.ThrowIfNullOrEmpty(grantType);
-
-        return client.IsGrantTypeAllowed(grantType);
-    }
+        string grantType) =>
+        clientService is not null
+        && client is not null
+        && !string.IsNullOrEmpty(grantType)
+        && client.IsGrantTypeAllowed(grantType);
 
     /// <summary>
     /// Checks if a client has a specific scope enabled
@@ -183,18 +181,16 @@ public static class ClientServiceExtensions
     /// <param name="client">The client to check</param>
     /// <param name="scope">The scope to check for</param>
     /// <returns>True if the scope is allowed, false otherwise</returns>
-    /// <exception cref="ArgumentNullException">Thrown when client is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientService"/> or <paramref name="client"/> is null</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="scope"/> is null or empty</exception>
     public static bool HasScope(
         this ClientService clientService,
         Client client,
-        string scope)
-    {
-        ArgumentNullException.ThrowIfNull(clientService);
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentException.ThrowIfNullOrEmpty(scope);
-
-        return client.IsScopeAllowed(scope);
-    }
+        string scope) =>
+        clientService is not null
+        && client is not null
+        && !string.IsNullOrEmpty(scope)
+        && client.IsScopeAllowed(scope);
 
     /// <summary>
     /// Checks if a redirect URI is valid for the given client
@@ -203,17 +199,12 @@ public static class ClientServiceExtensions
     /// <param name="client">The client to check</param>
     /// <param name="redirectUri">The redirect URI to validate</param>
     /// <returns>True if the redirect URI is valid, false otherwise</returns>
-    /// <exception cref="ArgumentNullException">Thrown when client is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="clientService"/> or <paramref name="client"/> is null</exception>
     public static bool IsValidRedirectUri(
         this ClientService clientService,
         Client client,
-        string? redirectUri)
-    {
-        ArgumentNullException.ThrowIfNull(clientService);
-        ArgumentNullException.ThrowIfNull(client);
-
-        return client.IsRedirectUriValid(redirectUri);
-    }
-
-
+        string? redirectUri) =>
+        clientService is not null
+        && client is not null
+        && client.IsRedirectUriValid(redirectUri);
 }
