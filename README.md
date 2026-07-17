@@ -1036,6 +1036,62 @@ The `SessionManagementTests` class provides unit tests for user session manageme
 
 The `SecretsServiceTests` class provides unit tests for the `SecretsService` class, which handles secure secret generation, hashing, verification, and masking operations. It verifies that secrets are generated with the correct length, hashing produces valid results, verification correctly identifies valid and invalid secrets, and masking properly obfuscates secret values for display purposes.
 
+## AuditLoggingServiceTests
+
+The `AuditLoggingServiceTests` class provides unit tests for the `AuditLoggingService` class, which logs security-related events such as token issuance, authentication attempts, authorization decisions, and administrative actions. It verifies that audit log entries are correctly created, stored, retrieved, and cleared, ensuring comprehensive security auditing capabilities.
+
+```csharp
+using DotnetAuthServer.Services;
+using FluentAssertions;
+using Xunit;
+
+// Create a test instance of AuditLoggingServiceTests
+var auditTests = new AuditLoggingServiceTests();
+
+// Test logging a token issuance
+auditTests.LogTokenIssuance_AddsEntryToLog();
+
+// Test logging an authentication
+auditTests.LogAuthentication_AddsEntryToLog();
+
+// Test getting recent entries with limit
+auditTests.GetRecentEntries_LimitsResults();
+
+// Test clearing all entries
+auditTests.Clear_RemovesAllEntries();
+
+// Example usage with real service
+var auditService = new AuditLoggingService(logger);
+
+// Log token issuance
+auditService.LogTokenIssuance(
+    userId: "user-123",
+    clientId: "web-client",
+    grantType: "authorization_code",
+    scopes: "openid profile email"
+);
+
+// Log authentication attempt
+auditService.LogAuthentication(
+    userId: "user-123",
+    username: "johndoe",
+    success: true
+);
+
+// Log failed authentication
+auditService.LogAuthentication(
+    userId: "user-123",
+    username: "johndoe",
+    success: false
+);
+
+// Get recent audit log entries
+var recentEntries = auditService.GetRecentEntries(limit: 50);
+
+// Clear all audit log entries
+auditService.Clear();
+```
+
 ```csharp
 using DotnetAuthServer.Services;
 using FluentAssertions;
