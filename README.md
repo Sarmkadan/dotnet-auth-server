@@ -1562,6 +1562,70 @@ var maskedJson = sensitiveValue.ToJson(); // {"masked":"super-****7890"}
 var truncatedJson = sensitiveValue.ToJson(maxLength: 10); // {"truncated":"super-secre"}
 ```
 
+## PolicyEnforcementServiceValidation
+
+The `PolicyEnforcementServiceValidation` class provides validation helpers for `PolicyEnforcementService` instances and related policy objects (`Policy`, `PolicyRule`, and policy names). It offers three validation methods for each type: `Validate()` returns a list of validation errors, `IsValid()` checks if the instance is valid, and `EnsureValid()` throws an exception if the instance is invalid. These methods ensure that policy enforcement services and their configuration are properly validated before use.
+
+```csharp
+using DotnetAuthServer.Services;
+using DotnetAuthServer.Domain.Entities;
+
+// Create a PolicyEnforcementService instance
+var policyEnforcementService = new PolicyEnforcementService(...);
+
+// Validate a PolicyEnforcementService instance
+var validationErrors = policyEnforcementService.Validate();
+if (policyEnforcementService.IsValid())
+{
+    Console.WriteLine("PolicyEnforcementService is valid");
+}
+
+// Ensure a PolicyEnforcementService instance is valid (throws if invalid)
+policyEnforcementService.EnsureValid();
+
+// Validate a Policy instance
+var policy = new Policy
+{
+    Rules = new List<PolicyRule> { /* rules */ },
+    CombineWith = PolicyCombineMode.AllowAll
+};
+
+var policyErrors = policy.Validate();
+if (policy.IsValid())
+{
+    Console.WriteLine("Policy is valid");
+}
+
+policy.EnsureValid();
+
+// Validate a PolicyRule instance
+var rule = new PolicyRule
+{
+    Type = PolicyRuleType.Attribute,
+    Match = PolicyMatchMode.Equals,
+    Attribute = "department",
+    Values = new List<string> { "engineering", "sales" }
+};
+
+var ruleErrors = rule.Validate();
+if (rule.IsValid())
+{
+    Console.WriteLine("PolicyRule is valid");
+}
+
+rule.EnsureValid();
+
+// Validate a policy name string
+var policyName = "department-restriction";
+var nameErrors = policyName.Validate();
+if (policyName.IsValid())
+{
+    Console.WriteLine("Policy name is valid");
+}
+
+policyName.EnsureValid();
+```
+
 ## HttpClientFactoryJsonExtensions
 
 The `HttpClientFactoryJsonExtensions` class provides extension methods for configuring and serializing `HttpClient` factories with JSON-based configuration. It includes methods for converting between JSON strings and `HttpClientFactoryConfig` objects, setting default timeout values, and configuring user agent strings for HTTP clients. This is particularly useful for external webhook calls and API integrations where JSON configuration needs to be persisted or transmitted.
