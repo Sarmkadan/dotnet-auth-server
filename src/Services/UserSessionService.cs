@@ -182,6 +182,99 @@ public sealed class UserSessionService
     }
 
     /// <summary>
+    /// Returns a list of active sessions for a user with device and activity information.
+    /// </summary>
+    /// <param name="userId">User ID to query sessions for.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of active sessions with device and activity metadata.</returns>
+    public async Task<IEnumerable<UserSessionInfo>> GetActiveSessionsWithDetailsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+
+        try
+        {
+            var sessions = await _sessionRepository.GetActiveByUserIdAsync(userId, cancellationToken);
+            return sessions.Select(s => new UserSessionInfo
+            {
+                SessionId = s.SessionId,
+                UserId = s.UserId,
+                ClientId = s.ClientId,
+                IpAddress = s.IpAddress,
+                UserAgent = s.UserAgent,
+                CreatedAt = s.CreatedAt,
+                LastActivityAt = s.LastActivityAt,
+                ExpiresAt = s.ExpiresAt,
+                IsRevoked = s.IsRevoked
+            });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error retrieving active sessions with details for user {UserId}", userId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Failed to retrieve active sessions",
+                500,
+                null,
+                null,
+                ex);
+        }
+    }
+
+    /// <summary>
+    /// Revokes all sessions for a user except the specified session ID.
+    /// Returns the number of sessions revoked.
+    /// </summary>
+    /// <param name="userId">User ID whose sessions to revoke.</param>
+    /// <param name="keepSessionId">Session ID to keep active.</param>
+    /// <param name="reason">Optional reason for revocation.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Number of sessions revoked.</returns>
+    public async Task<int> RevokeAllOtherUserSessionsAsync(
+        string userId,
+        string keepSessionId,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+
+        if (string.IsNullOrWhiteSpace(keepSessionId))
+            throw new ArgumentException("Session ID to keep cannot be null or whitespace", nameof(keepSessionId));
+
+        try
+        {
+            var count = await _sessionRepository.RevokeAllOtherUserSessionsAsync(
+                userId,
+                keepSessionId,
+                reason,
+                cancellationToken);
+
+            _logger.LogInformation(
+                "Revoked {Count} other session(s) for user {UserId}. Kept session {KeepSessionId}. Reason: {Reason}",
+                count,
+                userId,
+                keepSessionId,
+                reason ?? "none");
+
+            return count;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error revoking all other sessions for user {UserId}", userId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Session revocation failed",
+                500,
+                null,
+                null,
+                ex);
+        }
+    }
+
+    /// <summary>
     /// Revokes a single session by ID.
     /// </summary>
     /// <exception cref="AuthServerException">Thrown when the session is not found.</exception>
@@ -257,6 +350,39 @@ public sealed class UserSessionService
                 null,
                 ex);
         }
+    }
+
+    /// <summary>
+    /// DTO containing detailed information about a user session including device and activity metadata.
+    /// </summary>
+    public sealed class UserSessionInfo
+    {
+        /// <summary>Unique identifier for the session.</summary>
+        public string SessionId { get; set; } = string.Empty;
+
+        /// <summary>User ID associated with this session.</summary>
+        public string UserId { get; set; } = string.Empty;
+
+        /// <summary>OAuth2 client that obtained the tokens.</summary>
+        public string ClientId { get; set; } = string.Empty;
+
+        /// <summary>Client IP address (optional).</summary>
+        public string? IpAddress { get; set; }
+
+        /// <summary>Client user-agent string (optional).</summary>
+        public string? UserAgent { get; set; }
+
+        /// <summary>When the session was created (UTC).</summary>
+        public DateTime CreatedAt { get; set; }
+
+        /// <summary>When the session was last active (UTC).</summary>
+        public DateTime? LastActivityAt { get; set; }
+
+        /// <summary>When the session expires (UTC).</summary>
+        public DateTime ExpiresAt { get; set; }
+
+        /// <summary>Whether the session has been explicitly revoked.</summary>
+        public bool IsRevoked { get; set; }
     }
 
     /// <summary>

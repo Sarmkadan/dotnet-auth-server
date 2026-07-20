@@ -34,6 +34,12 @@ public interface IUserSessionRepository : IRepository<UserSession, string>
     /// </summary>
     Task<int> RevokeAllUserSessionsAsync(string userId, string? reason = null, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Revokes all active sessions for a given user except the specified session ID.
+        /// Returns the number of sessions revoked.
+        /// </summary>
+        Task<int> RevokeAllOtherUserSessionsAsync(string userId, string keepSessionId, string? reason = null, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Deletes sessions that have expired beyond the given threshold.
     /// </summary>
@@ -120,6 +126,21 @@ public sealed class UserSessionRepository : IUserSessionRepository
     {
         var toRevoke = _sessions.Values
             .Where(s => s.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase) && s.IsActive())
+            .ToList();
+
+        foreach (var session in toRevoke)
+            session.Revoke(reason);
+
+        return Task.FromResult(toRevoke.Count);
+    }
+
+    /// <inheritdoc />
+    public Task<int> RevokeAllOtherUserSessionsAsync(string userId, string keepSessionId, string? reason = null, CancellationToken cancellationToken = default)
+    {
+        var toRevoke = _sessions.Values
+            .Where(s => s.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)
+                        && s.IsActive()
+                        && !s.SessionId.Equals(keepSessionId, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         foreach (var session in toRevoke)
