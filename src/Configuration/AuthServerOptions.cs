@@ -1,5 +1,6 @@
 #nullable enable
 using System.ComponentModel.DataAnnotations;
+using DotnetAuthServer.Services;
 
 namespace DotnetAuthServer.Configuration;
 
@@ -48,6 +49,9 @@ public sealed class AuthServerOptions
     public int AccountLockoutDurationMinutes { get; set; } = 15;
 
     public bool RequireUserConsent { get; set; } = true;
+
+[Required]
+public PasswordPolicyOptions PasswordPolicy { get; set; } = new PasswordPolicyOptions();
 
     public ICollection<string> SupportedScopes { get; set; } =
     [

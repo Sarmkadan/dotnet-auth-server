@@ -11,6 +11,7 @@ using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Exceptions;
+using DotnetAuthServer.Services;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
@@ -22,6 +23,7 @@ public sealed class UserService
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly AuthServerOptions _options;
     private readonly ILogger<UserService> _logger;
+    private readonly PasswordValidationService _passwordValidator;
 
     public UserService(
         IUserRepository userRepository,
@@ -33,6 +35,7 @@ public sealed class UserService
         _refreshTokenRepository = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _passwordValidator = new PasswordValidationService(_options, _options.PasswordPolicy);
     }
 
     /// <summary>
@@ -149,12 +152,8 @@ public sealed class UserService
                     "Invalid email format",
                     400);
 
-            // Validate password strength
-            if (!IsStrongPassword(password))
-                throw new AuthServerException(
-                    Constants.ErrorCodes.InvalidRequest,
-                    $"Password must be at least {Constants.Validation.MinPasswordLength} characters",
-                    400);
+        // Validate password against policy
+        _passwordValidator.ValidateAndThrow(password, username);
 
             // Check if user already exists
             var existingUser = await _userRepository.GetByUsernameAsync(username, cancellationToken);
@@ -276,11 +275,7 @@ public sealed class UserService
                     "Current password is incorrect",
                     401);
 
-            if (!IsStrongPassword(newPassword))
-                throw new AuthServerException(
-                    Constants.ErrorCodes.InvalidRequest,
-                    $"New password must be at least {Constants.Validation.MinPasswordLength} characters",
-                    400);
+            _passwordValidator.ValidateAndThrow(newPassword, user.Username);
 
             user.PasswordHash = HashPassword(newPassword);
             user.FailedLoginAttempts = 0;
@@ -412,13 +407,6 @@ public sealed class UserService
     }
 
     /// <summary>
-    /// Validates password strength
-    /// </summary>
-    private static bool IsStrongPassword(string password)
-    {
-        return !string.IsNullOrWhiteSpace(password) &&
-               password.Length >= Constants.Validation.MinPasswordLength;
-    }
 
     /// <summary>
     /// Hashes a password using bcrypt with a per-password salt.

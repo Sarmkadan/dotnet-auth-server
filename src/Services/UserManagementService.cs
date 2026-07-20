@@ -11,6 +11,7 @@ using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
+using DotnetAuthServer.Services;
 
 /// <summary>
 /// Provides administrative CRUD operations over user accounts.
@@ -25,6 +26,7 @@ public sealed class UserManagementService
     private readonly ILogger<UserManagementService> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly AuthServerOptions _options;
+    private readonly PasswordValidationService _passwordValidator;
 
     /// <summary>
     /// Initializes a new instance of <see cref="UserManagementService"/>.
@@ -43,6 +45,7 @@ public sealed class UserManagementService
         _logger = logger;
         _loggerFactory = loggerFactory;
         _options = options;
+        _passwordValidator = new PasswordValidationService(_options, _options.PasswordPolicy);
     }
 
     /// <summary>
