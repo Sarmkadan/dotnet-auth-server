@@ -59,7 +59,7 @@ builder.Services.AddSingleton<LoginRateLimiter>();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 builder.Services.AddScoped<ClientValidationService>();
 builder.Services.AddScoped<ScopeValidationService>();
-builder.Services.AddScoped<AuditLoggingService>();
+builder.Services.AddScoped<IAuditLoggingService, AuditLoggingService>();
 builder.Services.AddScoped<PolicyEnforcementService>();
 builder.Services.AddScoped<PkceValidationService>();
 builder.Services.AddScoped<SessionStateService>();

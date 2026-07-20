@@ -14,7 +14,7 @@ using DotnetAuthServer.Middleware;
 /// Records authentication attempts, authorization decisions, token issuance, etc.
 /// Critical for compliance (GDPR, SOC 2, etc.) and security incident investigation.
 /// </summary>
-public sealed class AuditLoggingService
+public sealed class AuditLoggingService : IAuditLoggingService
 {
     private readonly ILogger<AuditLoggingService> _logger;
     private readonly ConcurrentQueue<AuditLogEntry> _auditLog = new();
@@ -152,6 +152,30 @@ public sealed class AuditLoggingService
     public IEnumerable<AuditLogEntry> GetRecentEntries(int count = 100)
     {
         return _auditLog.TakeLast(count);
+    }
+
+    /// <summary>
+    /// Filters audit log entries by event type and time range.
+    /// Returns entries matching the specified event type within the time range,
+    /// ordered by timestamp (newest first), limited by max count.
+    /// </summary>
+    /// <param name="eventType">The event type to filter by (e.g., "TOKEN_ISSUED", "AUTH_SUCCESS")</param>
+    /// <param name="startTime">The start of the time range (inclusive)</param>
+    /// <param name="endTime">The end of the time range (inclusive)</param>
+    /// <param name="maxCount">Maximum number of entries to return</param>
+    /// <returns>Filtered and ordered audit log entries</returns>
+    public IEnumerable<AuditLogEntry> GetEntriesByEventTypeAndTimeRange(
+        string eventType,
+        DateTime startTime,
+        DateTime endTime,
+        int maxCount = 100)
+    {
+        return _auditLog
+            .Where(entry => entry.EventType == eventType
+                        && entry.Timestamp >= startTime
+                        && entry.Timestamp <= endTime)
+            .OrderByDescending(entry => entry.Timestamp)
+            .Take(maxCount);
     }
 
     /// <summary>
