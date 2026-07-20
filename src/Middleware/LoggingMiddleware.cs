@@ -52,13 +52,21 @@ public sealed class LoggingMiddleware
                     var statusCode = context.Response.StatusCode;
                     var logLevel = statusCode >= 500 ? LogLevel.Error : LogLevel.Information;
 
-                    _logger.Log(
-                        logLevel,
-                        "HTTP {Method} {Path} completed with {StatusCode} in {Elapsed}ms",
-                        context.Request.Method,
-                        context.Request.Path,
-                        statusCode,
-                        stopwatch.ElapsedMilliseconds);
+                    // Retrieve the request id from the logical context (set by RequestContextMiddleware)
+                    var requestId = LogicalContext.RequestId ?? "unknown";
+
+                    // Create a logging scope that includes the request id for any additional logs emitted downstream.
+                    using (_logger.BeginScope(new Dictionary<string, object?> { ["RequestId"] = requestId }))
+                    {
+                        _logger.Log(
+                            logLevel,
+                            "HTTP {Method} {Path} [{RequestId}] completed with {StatusCode} in {Elapsed}ms",
+                            context.Request.Method,
+                            context.Request.Path,
+                            requestId,
+                            statusCode,
+                            stopwatch.ElapsedMilliseconds);
+                    }
 
                     await memoryStream.CopyToAsync(originalBodyStream);
                 }

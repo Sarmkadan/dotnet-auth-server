@@ -22,12 +22,16 @@ public sealed class RequestContextMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var requestId = context.Request.Headers.ContainsKey("X-Request-ID")
-            ? context.Request.Headers["X-Request-ID"].ToString()
+        // Reuse incoming header if present, otherwise generate a new GUID.
+        var requestId = context.Request.Headers.ContainsKey("X-Request-Id")
+            ? context.Request.Headers["X-Request-Id"].ToString()
             : Guid.NewGuid().ToString("N");
 
+        // Store request id in HttpContext for downstream components.
         context.Items["RequestId"] = requestId;
-        context.Response.Headers.Add("X-Request-ID", requestId);
+
+        // Ensure the response always contains the header.
+        context.Response.Headers["X-Request-Id"] = requestId;
 
         // Include request ID in logs via logging scope
         using (var scope = new LoggingScope(requestId))
