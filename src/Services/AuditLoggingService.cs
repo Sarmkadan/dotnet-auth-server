@@ -7,6 +7,8 @@
 namespace DotnetAuthServer.Services;
 
 using System.Collections.Concurrent;
+using System.Globalization;
+using System.Text;
 using DotnetAuthServer.Middleware;
 
 /// <summary>
@@ -172,8 +174,8 @@ public sealed class AuditLoggingService : IAuditLoggingService
     {
         return _auditLog
             .Where(entry => entry.EventType == eventType
-                        && entry.Timestamp >= startTime
-                        && entry.Timestamp <= endTime)
+                && entry.Timestamp >= startTime
+                && entry.Timestamp <= endTime)
             .OrderByDescending(entry => entry.Timestamp)
             .Take(maxCount);
     }
@@ -188,6 +190,82 @@ public sealed class AuditLoggingService : IAuditLoggingService
         {
             _auditLog.TryDequeue(out _);
         }
+    }
+
+    /// <summary>
+    /// Exports audit log entries to CSV format with date range filtering.
+    /// </summary>
+    /// <param name="startTime">The start of the time range (inclusive)</param>
+    /// <param name="endTime">The end of the time range (inclusive)</param>
+    /// <param name="maxCount">Maximum number of entries to return</param>
+    /// <returns>CSV-formatted string with proper escaping</returns>
+    public string ExportToCsv(DateTime startTime, DateTime endTime, int maxCount = 1000)
+    {
+        var filteredEntries = _auditLog
+            .Where(entry => entry.Timestamp >= startTime && entry.Timestamp <= endTime)
+            .OrderByDescending(entry => entry.Timestamp)
+            .Take(maxCount);
+
+        return ExportToCsv(filteredEntries);
+    }
+
+    /// <summary>
+    /// Exports audit log entries to CSV format.
+    /// </summary>
+    /// <param name="entries">The audit log entries to export</param>
+    /// <returns>CSV-formatted string with proper escaping</returns>
+    public static string ExportToCsv(IEnumerable<AuditLogEntry> entries)
+    {
+        var sb = new StringBuilder();
+        var writer = new StringWriter(sb);
+
+        // Write CSV header
+        writer.WriteLine("Timestamp,EventType,UserId,ClientId,RequestId,Severity,Details");
+
+        // Write each entry
+        foreach (var entry in entries.OrderByDescending(e => e.Timestamp))
+        {
+            writer.Write(CsvEscape(entry.Timestamp.ToString("o", CultureInfo.InvariantCulture)));
+            writer.Write(",");
+            writer.Write(CsvEscape(entry.EventType));
+            writer.Write(",");
+            writer.Write(CsvEscape(entry.UserId ?? string.Empty));
+            writer.Write(",");
+            writer.Write(CsvEscape(entry.ClientId ?? string.Empty));
+            writer.Write(",");
+            writer.Write(CsvEscape(entry.RequestId ?? string.Empty));
+            writer.Write(",");
+            writer.Write(CsvEscape(entry.Severity.ToString()));
+            writer.Write(",");
+
+            // Serialize details as JSON string
+            var detailsJson = System.Text.Json.JsonSerializer.Serialize(entry.Details);
+            writer.Write(CsvEscape(detailsJson));
+            writer.WriteLine();
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Escapes a string value for CSV format according to RFC 4180 standards.
+    /// </summary>
+    /// <param name="value">The value to escape</param>
+    /// <returns>Escaped CSV value</returns>
+    private static string CsvEscape(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
+        // If the value contains comma, quote, or newline, wrap in quotes and escape quotes
+        if (value.Contains('\"') || value.Contains(',') || value.Contains('\n') || value.Contains('\r'))
+        {
+            return '"' + value.Replace("\"", "\"\"") + '"';
+        }
+
+        return value;
     }
 
     private void LogAuditEvent(AuditLogEntry entry)

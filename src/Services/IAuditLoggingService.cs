@@ -81,4 +81,13 @@ public interface IAuditLoggingService
     /// In production, audit logs should be persisted to a database or external system.
     /// </summary>
     void Clear();
+
+    /// <summary>
+    /// Exports audit log entries to CSV format with date range filtering.
+    /// </summary>
+    /// <param name="startTime">The start of the time range (inclusive)</param>
+    /// <param name="endTime">The end of the time range (inclusive)</param>
+    /// <param name="maxCount">Maximum number of entries to return</param>
+    /// <returns>CSV-formatted string with proper escaping</returns>
+    string ExportToCsv(DateTime startTime, DateTime endTime, int maxCount = 1000);
 }
