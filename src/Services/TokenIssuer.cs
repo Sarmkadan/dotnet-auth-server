@@ -16,12 +16,13 @@ using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
+using DotnetAuthServer.Handlers;
 using DotnetAuthServer.Security;
 
 /// <summary>
 /// Service for issuing and managing OAuth2/OIDC tokens
 /// </summary>
-public sealed class TokenService
+public sealed class TokenIssuer : ITokenIssuer
 {
     private readonly AuthServerOptions _options;
     private readonly IUserRepository _userRepository;
@@ -29,16 +30,16 @@ public sealed class TokenService
     private readonly IAuthorizationGrantRepository _grantRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly LoginRateLimiter _loginRateLimiter;
-    private readonly ILogger<TokenService> _logger;
+    private readonly ILogger<TokenIssuer> _logger;
 
-    public TokenService(
+    public TokenIssuer(
         AuthServerOptions options,
         IUserRepository userRepository,
         IClientRepository clientRepository,
         IAuthorizationGrantRepository grantRepository,
         IRefreshTokenRepository refreshTokenRepository,
         LoginRateLimiter loginRateLimiter,
-        ILogger<TokenService> logger)
+        ILogger<TokenIssuer> logger)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
@@ -619,7 +620,7 @@ public sealed class TokenService
     /// <summary>
     /// Validates client secret
     /// </summary>
-    private bool ValidateClientSecret(Client client, string? providedSecret)
+    public bool ValidateClientSecret(Client client, string? providedSecret)
     {
         if (!client.IsConfidential)
             return true;
@@ -642,7 +643,7 @@ public sealed class TokenService
     /// <summary>
     /// Hashes a client secret using SHA256
     /// </summary>
-    private static string HashClientSecret(string secret)
+    public string HashClientSecret(string secret)
     {
         using (var sha256 = System.Security.Cryptography.SHA256.Create())
         {
@@ -650,4 +651,5 @@ public sealed class TokenService
             return Convert.ToBase64String(hash);
         }
     }
+
 }

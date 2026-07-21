@@ -47,7 +47,8 @@ builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddSingleton<ITotpCredentialRepository, TotpCredentialRepository>();
 
 // Phase 1 Services
-builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<ITokenIssuer, TokenIssuer>();
+builder.Services.AddScoped<ITokenValidator, TokenValidator>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<ConsentService>(sp =>
     new ConsentService(

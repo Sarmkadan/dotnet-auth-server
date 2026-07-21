@@ -20,18 +20,18 @@ using DotnetAuthServer.Services;
 [Route("oauth/token")]
 public sealed class TokenController : ControllerBase
 {
-    private readonly TokenService _tokenService;
+    private readonly ITokenIssuer _tokenIssuer;
     private readonly TokenIntrospectionHandler _introspectionHandler;
     private readonly TokenRevocationHandler _revocationHandler;
     private readonly ILogger<TokenController> _logger;
 
     public TokenController(
-        TokenService tokenService,
+        ITokenIssuer tokenIssuer,
         TokenIntrospectionHandler introspectionHandler,
         TokenRevocationHandler revocationHandler,
         ILogger<TokenController> logger)
     {
-        _tokenService = tokenService;
+        _tokenIssuer = tokenIssuer;
         _introspectionHandler = introspectionHandler;
         _revocationHandler = revocationHandler;
         _logger = logger;
@@ -73,7 +73,7 @@ public sealed class TokenController : ControllerBase
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
             };
 
-            var response = await _tokenService.HandleTokenRequestAsync(tokenRequest, cancellationToken);
+            var response = await _tokenIssuer.HandleTokenRequestAsync(tokenRequest, cancellationToken);
             return Ok(response);
         }
         catch (AuthServerException ex)
