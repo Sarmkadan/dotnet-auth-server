@@ -50,6 +50,12 @@ public sealed class AuthServerOptions
 
     public bool RequireUserConsent { get; set; } = true;
 
+[Range(1, int.MaxValue)]
+public int ConsentExpirationDays { get; set; } = 30;
+
+[Range(1, int.MaxValue)]
+public int SessionConsentExpirationHours { get; set; } = 1;
+
 [Required]
 public PasswordPolicyOptions PasswordPolicy { get; set; } = new PasswordPolicyOptions();
 

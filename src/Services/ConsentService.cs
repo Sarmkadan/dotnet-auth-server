@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Domain.Enums;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
 
@@ -134,10 +135,12 @@ public sealed class ConsentRepository : IConsentRepository
 public sealed class ConsentService
 {
     private readonly IConsentRepository _consentRepository;
+    private readonly AuthServerOptions _authServerOptions;
 
-    public ConsentService(IConsentRepository consentRepository)
+    public ConsentService(IConsentRepository consentRepository, AuthServerOptions authServerOptions)
     {
         _consentRepository = consentRepository;
+        _authServerOptions = authServerOptions;
     }
 
     /// <summary>
@@ -187,16 +190,25 @@ public sealed class ConsentService
         if (request.Approved)
         {
             consent.Grant(request.GetScopesString(), request.IpAddress, request.UserAgent);
+
+            // Set expiration based on remember consent flag
+            if (!request.RememberConsent)
+            {
+                // Session-based consent expires in configured hours
+                consent.ExpiresAt = DateTime.UtcNow.AddHours(_authServerOptions.SessionConsentExpirationHours);
+            }
+            else
+            {
+                // Offline consent expires in configured days
+                consent.ExpiresAt = DateTime.UtcNow.AddDays(_authServerOptions.ConsentExpirationDays);
+                consent.IsOfflineConsent = true;
+            }
         }
         else
         {
             consent.Deny(request.DenialReason);
-        }
-
-        // If remembering consent, set it to not expire
-        if (!request.RememberConsent)
-        {
-            consent.ExpiresAt = DateTime.UtcNow.AddHours(1); // Session-based consent
+            // Denied consents don't expire
+            consent.ExpiresAt = null;
         }
 
         await _consentRepository.CreateAsync(consent, cancellationToken);
@@ -245,5 +257,63 @@ public sealed class ConsentService
             consent.Revoke("User revoked consent");
             await _consentRepository.UpdateAsync(consent, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Checks if a consent requires re-consent due to expiration
+    /// </summary>
+    /// <param name="consent">The consent to check</param>
+    /// <returns>True if consent has expired or is about to expire and needs renewal</returns>
+    public bool RequiresReconsent(Consent consent)
+    {
+        if (consent.Status != ConsentStatus.Approved)
+            return true;
+
+        if (consent.ExpiresAt is null)
+            return false;
+
+        // Check if consent has expired
+        if (DateTime.UtcNow >= consent.ExpiresAt)
+            return true;
+
+        // Check if consent is within renewal window (20% of validity period remaining)
+        var totalValidity = consent.ExpiresAt.Value - consent.CreatedAt;
+        var remainingValidity = consent.ExpiresAt.Value - DateTime.UtcNow;
+        var renewalThreshold = totalValidity.TotalSeconds * 0.2;
+
+        return remainingValidity.TotalSeconds <= renewalThreshold;
+    }
+
+    /// <summary>
+    /// Gets the remaining validity period for a consent
+    /// </summary>
+    /// <param name="consent">The consent to check</param>
+    /// <returns>TimeSpan representing remaining validity, or null if consent doesn't expire</returns>
+    public TimeSpan? GetConsentRemainingValidity(Consent consent)
+    {
+        if (consent.ExpiresAt is null)
+            return null;
+
+        var remaining = consent.ExpiresAt.Value - DateTime.UtcNow;
+        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// Gets the percentage of consent validity remaining
+    /// </summary>
+    /// <param name="consent">The consent to check</param>
+    /// <returns>Percentage (0-100) of validity remaining, or null if consent doesn't expire</returns>
+    public double? GetConsentValidityPercentage(Consent consent)
+    {
+        if (consent.ExpiresAt is null)
+            return null;
+
+        var totalValidity = consent.ExpiresAt.Value - consent.CreatedAt;
+        var remainingValidity = consent.ExpiresAt.Value - DateTime.UtcNow;
+
+        if (totalValidity.TotalSeconds <= 0)
+            return 0;
+
+        return Math.Min(100, Math.Max(0, (remainingValidity.TotalSeconds / totalValidity.TotalSeconds) * 100));
     }
 }

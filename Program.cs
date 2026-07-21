@@ -49,7 +49,11 @@ builder.Services.AddSingleton<ITotpCredentialRepository, TotpCredentialRepositor
 // Phase 1 Services
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthorizationService>();
-builder.Services.AddScoped<ConsentService>();
+builder.Services.AddScoped<ConsentService>(sp =>
+    new ConsentService(
+        sp.GetRequiredService<DotnetAuthServer.Services.IConsentRepository>(),
+        sp.GetRequiredService<AuthServerOptions>()
+    ));
 
 // Security
 builder.Services.AddSingleton<RevokedTokenStore>();
