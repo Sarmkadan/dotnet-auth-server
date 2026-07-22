@@ -161,8 +161,7 @@ public sealed class UserSessionService
     /// Returns a global view of all currently active sessions across all users.
     /// Intended for admin dashboards only.
     /// </summary>
-    public async Task<IEnumerable<UserSession>> GetAllActiveSessionsAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<UserSession>> GetAllActiveSessionsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -345,6 +344,86 @@ public sealed class UserSessionService
             throw new AuthServerException(
                 Constants.ErrorCodes.ServerError,
                 "Session revocation failed",
+                500,
+                null,
+                null,
+                ex);
+        }
+    }
+
+    /// <summary>
+    /// Regenerates a user session after privilege changes (login, MFA passed).
+    /// Revokes all existing sessions for the user and creates a new session with a fresh session ID.
+    /// The old session ID becomes invalid.
+    /// </summary>
+    /// <param name="userId">User ID whose sessions to regenerate.</param>
+    /// <param name="clientId">OAuth2 client that obtained the new tokens.</param>
+    /// <param name="grantedScopes">Space-delimited scopes granted in this session.</param>
+    /// <param name="ipAddress">Client IP address (optional).</param>
+    /// <param name="userAgent">Client user-agent string (optional).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The newly created <see cref="UserSession"/>.</returns>
+    public async Task<UserSession> RegenerateSessionAsync(
+        string userId,
+        string clientId,
+        string grantedScopes,
+        string? ipAddress = null,
+        string? userAgent = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User ID cannot be null or whitespace", nameof(userId));
+
+        if (string.IsNullOrWhiteSpace(clientId))
+            throw new ArgumentException("Client ID cannot be null or whitespace", nameof(clientId));
+
+        if (string.IsNullOrWhiteSpace(grantedScopes))
+            throw new ArgumentException("Granted scopes cannot be null or whitespace", nameof(grantedScopes));
+
+        try
+        {
+            // Revoke all existing sessions for this user
+            var revokedCount = await _sessionRepository.RevokeAllUserSessionsAsync(userId, "Session regenerated due to privilege change", cancellationToken);
+
+            if (revokedCount > 0)
+            {
+                _logger.LogInformation(
+                    "Revoked {RevokedCount} existing session(s) for user {UserId} due to privilege change",
+                    revokedCount,
+                    userId);
+            }
+
+            // Create a new session with a fresh session ID
+            var newSession = new UserSession
+            {
+                UserId = userId,
+                ClientId = clientId,
+                GrantedScopes = grantedScopes,
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds),
+                LastActivityAt = DateTime.UtcNow
+            };
+
+            await _sessionRepository.CreateAsync(newSession, cancellationToken);
+
+            _logger.LogInformation(
+                "New session {SessionId} created for user {UserId} via client {ClientId} after privilege change",
+                newSession.SessionId,
+                userId,
+                clientId);
+
+            return newSession;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(
+                ex,
+                "Error regenerating session for user {UserId}",
+                userId);
+            throw new AuthServerException(
+                Constants.ErrorCodes.ServerError,
+                "Session regeneration failed",
                 500,
                 null,
                 null,
