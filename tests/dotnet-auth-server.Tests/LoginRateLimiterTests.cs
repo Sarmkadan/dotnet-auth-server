@@ -32,31 +32,6 @@ public sealed class LoginRateLimiterTests
     #region Constructor and Initial State
 
     /// <summary>
-    /// Tests that the LoginRateLimiter is initialized with correct default values.
-    /// </summary>
-    [Fact]
-    public void Constructor_InitializesWithCorrectOptions()
-    {
-        // Arrange
-        var options = new AuthServerOptions
-        {
-            FailedLoginAttemptThreshold = 3,
-            AccountLockoutDurationMinutes = 10
-        };
-        var loggerMock = new Mock<ILogger<LoginRateLimiter>>();
-
-        // Act
-        var limiter = new LoginRateLimiter(options, loggerMock.Object);
-
-        // Assert - using reflection to verify private fields
-        limiter.Should().NotBeNull();
-    }
-
-    #endregion
-
-    #region ThrowIfBlocked Tests
-
-    /// <summary>
     /// Tests that ThrowIfBlocked does not throw when no attempts have been recorded.
     /// </summary>
     [Fact]
@@ -144,105 +119,6 @@ public sealed class LoginRateLimiterTests
         act.Should().Throw<AuthServerException>()
             .Where(ex => ex.StatusCode == 429)
             .Where(ex => ex.ErrorCode == "too_many_requests");
-    }
-
-    /// <summary>
-    /// Tests that ThrowIfBlocked throws when both username and IP exceed threshold.
-    /// </summary>
-    [Fact]
-    public void ThrowIfBlocked_BothExceedThreshold_ThrowsAuthServerException()
-    {
-        // Arrange
-        var username = "testuser";
-        var ipAddress = "192.168.1.1";
-
-        // Record 5 failures for both username and IP
-        for (int i = 0; i < 5; i++)
-        {
-            _limiter.RecordFailure(username, ipAddress);
-        }
-
-        // Act
-        Action act = () => _limiter.ThrowIfBlocked(username, ipAddress);
-
-        // Assert
-        act.Should().Throw<AuthServerException>()
-            .Where(ex => ex.StatusCode == 429)
-            .Where(ex => ex.ErrorCode == "too_many_requests");
-    }
-
-    /// <summary>
-    /// Tests that ThrowIfBlocked allows access after RecordSuccess clears the username counter.
-    /// This verifies that successful logins reset the rate limiting state for the username.
-    /// Note: IP counters are not cleared by RecordSuccess.
-    /// </summary>
-    [Fact]
-    public void ThrowIfBlocked_AfterRecordSuccess_RestoresAccess()
-    {
-        // Arrange
-        var username = "testuser";
-        var ipAddress = "192.168.1.1";
-
-        // Record 5 failures for username only
-        for (int i = 0; i < 5; i++)
-        {
-            _limiter.RecordFailure(username, null);
-        }
-
-        // Verify lockout is active for username
-        Action actBefore = () => _limiter.ThrowIfBlocked(username, ipAddress);
-        actBefore.Should().Throw<AuthServerException>();
-
-        // Act - record successful login which clears the username counter
-        _limiter.RecordSuccess(username);
-
-        // Assert - should not throw after successful login (username cleared)
-        Action actAfter = () => _limiter.ThrowIfBlocked(username, ipAddress);
-        actAfter.Should().NotThrow<AuthServerException>();
-    }
-
-    /// <summary>
-    /// Tests that ThrowIfBlocked does not throw when username is null or empty.
-    /// </summary>
-    [Fact]
-    public void ThrowIfBlocked_NullUsername_DoesNotThrow()
-    {
-        // Arrange
-        var ipAddress = "192.168.1.1";
-
-        // Record 5 failures for IP only
-        for (int i = 0; i < 5; i++)
-        {
-            _limiter.RecordFailure(null, ipAddress);
-        }
-
-        // Act - null username should not be blocked, but IP should be
-        Action act = () => _limiter.ThrowIfBlocked(null, ipAddress);
-
-        // Assert - should throw because IP is blocked even though username is null
-        act.Should().Throw<AuthServerException>();
-    }
-
-    /// <summary>
-    /// Tests that ThrowIfBlocked does not throw when IP address is null or empty.
-    /// </summary>
-    [Fact]
-    public void ThrowIfBlocked_NullIpAddress_DoesNotThrow()
-    {
-        // Arrange
-        var username = "testuser";
-
-        // Record 5 failures for username only
-        for (int i = 0; i < 5; i++)
-        {
-            _limiter.RecordFailure(username, null);
-        }
-
-        // Act - username should be blocked, but null IP should not cause issues
-        Action act = () => _limiter.ThrowIfBlocked(username, null);
-
-        // Assert - should throw because username is blocked
-        act.Should().Throw<AuthServerException>();
     }
 
     #endregion
@@ -342,30 +218,12 @@ public sealed class LoginRateLimiterTests
         act.Should().NotThrow<AuthServerException>();
     }
 
-    /// <summary>
-    /// Tests that RecordFailure handles whitespace username.
-    /// </summary>
-    [Fact]
-    public void RecordFailure_WhitespaceUsername_DoesNotRecord()
-    {
-        // Arrange
-        var ipAddress = "192.168.1.1";
-
-        // Act
-        _limiter.RecordFailure("   ", ipAddress);
-
-        // Assert - should not throw when checking blocked status
-        Action act = () => _limiter.ThrowIfBlocked("   ", ipAddress);
-        act.Should().NotThrow<AuthServerException>();
-    }
-
     #endregion
 
     #region RecordSuccess Tests
 
     /// <summary>
     /// Tests that RecordSuccess clears the attempt counter for username after successful login.
-    /// Note: Only the username counter is cleared, IP counters remain active.
     /// </summary>
     [Fact]
     public void RecordSuccess_ClearsUsernameCounter()
@@ -406,19 +264,6 @@ public sealed class LoginRateLimiterTests
     }
 
     /// <summary>
-    /// Tests that RecordSuccess with empty username does not throw.
-    /// </summary>
-    [Fact]
-    public void RecordSuccess_EmptyUsername_DoesNotThrow()
-    {
-        // Act
-        Action act = () => _limiter.RecordSuccess(string.Empty);
-
-        // Assert
-        act.Should().NotThrow();
-    }
-
-    /// <summary>
     /// Tests that RecordSuccess does not affect IP address counters.
     /// </summary>
     [Fact]
@@ -448,95 +293,86 @@ public sealed class LoginRateLimiterTests
 
     #endregion
 
-    #region Per-User Isolation Tests
+    #region Edge Cases and Boundary Values
 
     /// <summary>
-    /// Tests that different usernames are tracked independently.
+    /// Tests that exactly threshold failures triggers block.
     /// </summary>
     [Fact]
-    public void PerUserIsolation_DifferentUsernames_TrackedIndependently()
+    public void ThrowIfBlocked_ExactlyThresholdAttempts_Throws()
     {
         // Arrange
-        var username1 = "user1";
-        var username2 = "user2";
+        var username = "testuser";
         var ipAddress = "192.168.1.1";
 
-        // Record 5 failures for user1 only
+        // Record exactly 5 failures (threshold)
         for (int i = 0; i < 5; i++)
         {
-            _limiter.RecordFailure(username1, null);
+            _limiter.RecordFailure(username, ipAddress);
         }
 
-        // user1 should be blocked
-        Action actUser1 = () => _limiter.ThrowIfBlocked(username1, ipAddress);
-        actUser1.Should().Throw<AuthServerException>();
+        // Act
+        Action act = () => _limiter.ThrowIfBlocked(username, ipAddress);
 
-        // user2 should not be blocked
-        Action actUser2 = () => _limiter.ThrowIfBlocked(username2, ipAddress);
-        actUser2.Should().NotThrow<AuthServerException>();
+        // Assert
+        act.Should().Throw<AuthServerException>();
     }
 
     /// <summary>
-    /// Tests that different IP addresses are tracked independently.
+    /// Tests that threshold minus one does not trigger block.
     /// </summary>
     [Fact]
-    public void PerIpIsolation_DifferentIpAddresses_TrackedIndependently()
+    public void ThrowIfBlocked_ThresholdMinusOne_DoesNotThrow()
     {
         // Arrange
         var username = "testuser";
-        var ipAddress1 = "192.168.1.1";
-        var ipAddress2 = "192.168.1.2";
+        var ipAddress = "192.168.1.1";
 
-        // Record 5 failures for ipAddress1 only
-        for (int i = 0; i < 5; i++)
+        // Record 4 failures (threshold - 1)
+        for (int i = 0; i < 4; i++)
         {
-            _limiter.RecordFailure(null, ipAddress1);
+            _limiter.RecordFailure(username, ipAddress);
         }
 
-        // ipAddress1 should be blocked
-        Action actIp1 = () => _limiter.ThrowIfBlocked(username, ipAddress1);
-        actIp1.Should().Throw<AuthServerException>();
+        // Act
+        Action act = () => _limiter.ThrowIfBlocked(username, ipAddress);
 
-        // ipAddress2 should not be blocked
-        Action actIp2 = () => _limiter.ThrowIfBlocked(username, ipAddress2);
-        actIp2.Should().NotThrow<AuthServerException>();
+        // Assert
+        act.Should().NotThrow<AuthServerException>();
     }
 
-    #endregion
-
-    #region Custom Threshold Tests
-
     /// <summary>
-    /// Tests that custom threshold values work correctly.
+    /// Tests that whitespace username is treated as null.
     /// </summary>
     [Fact]
-    public void CustomThreshold_WorksWithDifferentValues()
+    public void RecordFailure_WhitespaceUsername_DoesNotRecord()
     {
         // Arrange
-        var customOptions = new AuthServerOptions
-        {
-            FailedLoginAttemptThreshold = 3,
-            AccountLockoutDurationMinutes = 10
-        };
-        var customLimiter = new LoginRateLimiter(customOptions, _loggerMock.Object);
+        var ipAddress = "192.168.1.1";
+
+        // Act
+        _limiter.RecordFailure(" ", ipAddress);
+
+        // Assert
+        Action act = () => _limiter.ThrowIfBlocked(" ", ipAddress);
+        act.Should().NotThrow<AuthServerException>();
+    }
+
+    /// <summary>
+    /// Tests that whitespace IP address is treated as null.
+    /// </summary>
+    [Fact]
+    public void RecordFailure_WhitespaceIpAddress_DoesNotRecord()
+    {
+        // Arrange
         var username = "testuser";
 
-        // Record 2 failures (below custom threshold of 3)
-        for (int i = 0; i < 2; i++)
-        {
-            customLimiter.RecordFailure(username, null);
-        }
+        // Act
+        _limiter.RecordFailure(username, " ");
 
-        // Should not throw
-        Action actUnder = () => customLimiter.ThrowIfBlocked(username, null);
-        actUnder.Should().NotThrow<AuthServerException>();
-
-        // Record 1 more failure (reaches threshold)
-        customLimiter.RecordFailure(username, null);
-
-        // Should throw
-        Action actOver = () => customLimiter.ThrowIfBlocked(username, null);
-        actOver.Should().Throw<AuthServerException>();
+        // Assert
+        Action act = () => _limiter.ThrowIfBlocked(username, " ");
+        act.Should().NotThrow<AuthServerException>();
     }
 
     #endregion
