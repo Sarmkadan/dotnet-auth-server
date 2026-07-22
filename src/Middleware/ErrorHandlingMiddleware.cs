@@ -50,7 +50,7 @@ public sealed class ErrorHandlingMiddleware
         {
             context.Response.StatusCode = authException.StatusCode;
             response.Error = authException.ErrorCode;
-            response.ErrorDescription = authException.Message;
+            response.ErrorDescription = authException.ErrorDescription;
             response.ErrorUri = authException.ErrorUri;
         }
         else if (exception is InvalidOperationException)
