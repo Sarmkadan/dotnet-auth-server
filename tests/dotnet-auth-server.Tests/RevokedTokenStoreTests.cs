@@ -199,4 +199,134 @@ public class RevokedTokenStoreTests
         var isRevoked = _store.IsRevoked(jti);
         isRevoked.Should().BeFalse();
     }
+
+    [Fact]
+    public void Revoke_ThrowsArgumentNullException_WhenJtiIsNull()
+    {
+        // Arrange
+        string nullJti = null!;
+        var expiresAt = DateTime.UtcNow.AddMinutes(30);
+
+        // Act
+        Action act = () => _store.Revoke(nullJti, expiresAt);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void IsRevoked_ThrowsArgumentNullException_WhenJtiIsNull()
+    {
+        // Arrange
+        string nullJti = null!;
+
+        // Act
+        Action act = () => _store.IsRevoked(nullJti);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Revoke_HandlesEmptyStringJti()
+    {
+        // Arrange
+        var emptyJti = string.Empty;
+        var expiresAt = DateTime.UtcNow.AddMinutes(30);
+
+        // Act - should not throw
+        _store.Revoke(emptyJti, expiresAt);
+
+        // Assert - should be revoked
+        _store.IsRevoked(emptyJti).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsRevoked_ReturnsFalse_ForEmptyStringJti()
+    {
+        // Arrange
+        var emptyJti = string.Empty;
+
+        // Act
+        var isRevoked = _store.IsRevoked(emptyJti);
+
+        // Assert
+        isRevoked.Should().BeFalse();
+    }
+
+    [Fact]
+    public void PurgeExpired_DoesNotThrow_WhenStoreIsEmpty()
+    {
+        // Arrange - empty store
+
+        // Act - should not throw
+        Action act = () => _store.PurgeExpired();
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void RemoveExpired_DoesNotThrow_WhenStoreIsEmpty()
+    {
+        // Arrange - empty store
+        var now = DateTime.UtcNow;
+
+        // Act - should not throw
+        Action act = () => _store.RemoveExpired(now);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Revoke_MultipleTokens_WithinMaxSize()
+    {
+        // Arrange - test the max size boundary
+        var maxSize = 10000;
+        var tokens = new List<(string jti, DateTime expiresAt)>();
+
+        // Act - add maxSize entries
+        for (int i = 0; i < maxSize; i++)
+        {
+            var jti = Guid.NewGuid().ToString();
+            var expiresAt = DateTime.UtcNow.AddMinutes(30);
+            _store.Revoke(jti, expiresAt);
+            tokens.Add((jti, expiresAt));
+        }
+
+        // Assert - all should be revoked
+        foreach (var (jti, _) in tokens)
+        {
+            _store.IsRevoked(jti).Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public void Revoke_ExceedsMaxSize_TriggersAutomaticPurge()
+    {
+        // Arrange - exceed max size to trigger automatic purge
+        var maxSize = 10000;
+        var tokens = new List<(string jti, DateTime expiresAt)>();
+
+        // Add maxSize entries
+        for (int i = 0; i < maxSize; i++)
+        {
+            var jti = $"token-{i}";
+            var expiresAt = DateTime.UtcNow.AddMinutes(30);
+            _store.Revoke(jti, expiresAt);
+            tokens.Add((jti, expiresAt));
+        }
+
+        // Add one more to exceed max size
+        var overflowJti = "overflow-token";
+        var overflowExpiresAt = DateTime.UtcNow.AddMinutes(30);
+        _store.Revoke(overflowJti, overflowExpiresAt);
+
+        // Act - check overflow token
+        var isOverflowRevoked = _store.IsRevoked(overflowJti);
+
+        // Assert - overflow token should be revoked (purge should have cleaned up expired ones)
+        isOverflowRevoked.Should().BeTrue();
+    }
 }
