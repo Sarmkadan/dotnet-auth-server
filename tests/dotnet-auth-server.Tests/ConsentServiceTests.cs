@@ -355,6 +355,151 @@ public sealed class ConsentServiceTests
         Assert.Null(percentage);
     }
 
+        [Fact]
+        public async Task GrantConsent_ThenQuery_ReturnsConsent()
+        {
+            // Arrange
+            var userId = "user_grant_query";
+            var clientId = "client_grant_query";
+            var scopes = new[] { "openid", "profile", "email" };
+            var request = new ConsentRequest
+            {
+                UserId = userId,
+                ClientId = clientId,
+                GrantedScopes = scopes.ToList(),
+                Approved = true,
+                RememberConsent = false,
+                IpAddress = "127.0.0.1",
+                UserAgent = "Test Agent"
+            };
+
+            // Act - Grant consent
+            var consent = await _consentService.RecordConsentAsync(request);
+
+            // Assert - Query consent
+            Assert.NotNull(consent);
+            Assert.Equal(userId, consent.UserId);
+            Assert.Equal(clientId, consent.ClientId);
+            Assert.Equal(ConsentStatus.Approved, consent.Status);
+            Assert.True(consent.IsValidAndApproved());
+            Assert.NotNull(consent.ExpiresAt);
+        }
+
+        [Fact]
+        public async Task RevokeConsent_ThenQuery_ReturnsNoConsent()
+        {
+            // Arrange
+            var userId = "user_revoke_query";
+            var clientId = "client_revoke_query";
+            var scopes = new[] { "openid", "profile" };
+            var request = new ConsentRequest
+            {
+                UserId = userId,
+                ClientId = clientId,
+                GrantedScopes = scopes.ToList(),
+                Approved = true,
+                RememberConsent = false,
+                IpAddress = "127.0.0.1",
+                UserAgent = "Test Agent"
+            };
+            await _consentService.RecordConsentAsync(request);
+
+            // Act - Revoke consent
+            await _consentService.RevokeConsentAsync(userId, clientId);
+
+            // Assert - Query should show no consent
+            var hasConsent = await _consentService.HasConsentAsync(userId, clientId, scopes);
+            Assert.False(hasConsent);
+
+            var effectiveScopes = await _consentService.GetEffectiveScopesAsync(userId, clientId, scopes);
+            Assert.Empty(effectiveScopes);
+        }
+
+        [Fact]
+        public async Task GrantConsent_Revoke_ThenReGrant_ReturnsNewConsent()
+        {
+            // Arrange
+            var userId = "user_regrant";
+            var clientId = "client_regrant";
+            var scopes = new[] { "openid", "profile", "email" };
+            var request = new ConsentRequest
+            {
+                UserId = userId,
+                ClientId = clientId,
+                GrantedScopes = scopes.ToList(),
+                Approved = true,
+                RememberConsent = false,
+                IpAddress = "127.0.0.1",
+                UserAgent = "Test Agent"
+            };
+
+            // Act - Grant initial consent
+            var initialConsent = await _consentService.RecordConsentAsync(request);
+            Assert.True(initialConsent.IsValidAndApproved());
+
+            // Act - Revoke consent
+            await _consentService.RevokeConsentAsync(userId, clientId);
+
+            // Assert - Should not have consent after revocation
+            var hasConsentAfterRevoke = await _consentService.HasConsentAsync(userId, clientId, scopes);
+            Assert.False(hasConsentAfterRevoke);
+
+            // Act - Grant consent again
+            var newRequest = new ConsentRequest
+            {
+                UserId = userId,
+                ClientId = clientId,
+                GrantedScopes = scopes.ToList(),
+                Approved = true,
+                RememberConsent = true,
+                IpAddress = "127.0.0.1",
+                UserAgent = "Test Agent"
+            };
+            var reGrantedConsent = await _consentService.RecordConsentAsync(newRequest);
+
+            // Assert - Should have new consent after re-granting
+            Assert.NotNull(reGrantedConsent);
+            Assert.Equal(userId, reGrantedConsent.UserId);
+            Assert.Equal(clientId, reGrantedConsent.ClientId);
+            Assert.Equal(ConsentStatus.Approved, reGrantedConsent.Status);
+            Assert.True(reGrantedConsent.IsValidAndApproved());
+            Assert.True(reGrantedConsent.IsOfflineConsent);
+            Assert.NotNull(reGrantedConsent.ExpiresAt);
+            Assert.True(reGrantedConsent.ExpiresAt > DateTime.UtcNow);
+        }
+
+        [Fact]
+        public async Task GrantConsent_WithDifferentScopes_QueryReturnsCorrectScopes()
+        {
+            // Arrange
+            var userId = "user_scopes";
+            var clientId = "client_scopes";
+            var grantedScopes = new[] { "openid", "profile", "email" };
+            var requestedScopes = new[] { "openid", "profile", "email", "phone" };
+
+            var request = new ConsentRequest
+            {
+                UserId = userId,
+                ClientId = clientId,
+                GrantedScopes = grantedScopes.ToList(),
+                Approved = true,
+                RememberConsent = false,
+                IpAddress = "127.0.0.1",
+                UserAgent = "Test Agent"
+            };
+
+            // Act - Grant consent for subset of scopes
+            await _consentService.RecordConsentAsync(request);
+
+            // Assert - Query should return only granted scopes
+            var effectiveScopes = await _consentService.GetEffectiveScopesAsync(userId, clientId, requestedScopes);
+            Assert.Equal(3, effectiveScopes.Count());
+            Assert.Contains("openid", effectiveScopes);
+            Assert.Contains("profile", effectiveScopes);
+            Assert.Contains("email", effectiveScopes);
+            Assert.DoesNotContain("phone", effectiveScopes);
+        }
+
     [Fact]
     public async Task HasConsentAsync_ExpiredConsent_ReturnsFalse()
     {
