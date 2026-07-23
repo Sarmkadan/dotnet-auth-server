@@ -1,8 +1,9 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ====================================================================
 
 using System.Text.Json;
 
@@ -84,23 +85,5 @@ public static class HttpClientFactoryJsonExtensions
         {
             return false;
         }
-    }
-
-    /// <summary>
-    /// Configuration data transfer object for HTTP client factory.
-    /// </summary>
-    public sealed class HttpClientFactoryConfig
-    {
-        /// <summary>Gets or sets the default timeout for HTTP clients.</summary>
-        public TimeSpan DefaultTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
-        /// <summary>Gets or sets the timeout for webhook HTTP clients.</summary>
-        public TimeSpan WebhookTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
-        /// <summary>Gets or sets the user agent string for HTTP requests.</summary>
-        public string UserAgent { get; set; } = "DotnetAuthServer/1.0";
-
-        /// <summary>Gets or sets the timeout for external lookup HTTP clients.</summary>
-        public TimeSpan ExternalLookupTimeout { get; set; } = TimeSpan.FromSeconds(10);
     }
 }
