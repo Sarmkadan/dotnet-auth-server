@@ -5474,16 +5474,27 @@
             is pruned on the next access so the store stays bounded.
             </summary>
         </member>
+        <member name="M:DotnetAuthServer.Security.RevokedTokenStore.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:DotnetAuthServer.Security.RevokedTokenStore"/> class.
+            </summary>
+        </member>
         <member name="M:DotnetAuthServer.Security.RevokedTokenStore.Revoke(System.String,System.DateTime)">
             <summary>
             Adds a jti to the revocation list.
             <paramref name="tokenExpiresAt"/> is used to automatically expire the entry.
             </summary>
+            <param name="jti">The JWT ID to revoke.</param>
+            <param name="tokenExpiresAt">The UTC expiry time of the original token.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="jti"/> is null.</exception>
         </member>
         <member name="M:DotnetAuthServer.Security.RevokedTokenStore.IsRevoked(System.String)">
             <summary>
             Returns true if the given jti has been explicitly revoked and has not yet expired.
             </summary>
+            <param name="jti">The JWT ID to check.</param>
+            <returns>True if the token is revoked and not expired; otherwise false.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="jti"/> is null.</exception>
         </member>
         <member name="M:DotnetAuthServer.Security.RevokedTokenStore.PurgeExpired">
             <summary>
@@ -5495,6 +5506,13 @@
             <summary>
             Removes all entries whose original tokens have already expired.
             </summary>
+            <param name="now">The current UTC time to use for comparison.</param>
+        </member>
+        <member name="M:DotnetAuthServer.Security.RevokedTokenStore.Count">
+            <summary>
+            Gets the current number of revoked tokens in the store.
+            </summary>
+            <returns>The count of revoked tokens.</returns>
         </member>
         <member name="T:DotnetAuthServer.Services.AuditLoggingService">
             <summary>
@@ -7297,6 +7315,20 @@
             <summary>
             Revokes all active sessions for a user. Returns the number of sessions revoked.
             </summary>
+        </member>
+        <member name="M:DotnetAuthServer.Services.UserSessionService.RegenerateSessionAsync(System.String,System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Regenerates a user session after privilege changes (login, MFA passed).
+            Revokes all existing sessions for the user and creates a new session with a fresh session ID.
+            The old session ID becomes invalid.
+            </summary>
+            <param name="userId">User ID whose sessions to regenerate.</param>
+            <param name="clientId">OAuth2 client that obtained the new tokens.</param>
+            <param name="grantedScopes">Space-delimited scopes granted in this session.</param>
+            <param name="ipAddress">Client IP address (optional).</param>
+            <param name="userAgent">Client user-agent string (optional).</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The newly created <see cref="T:DotnetAuthServer.Domain.Entities.UserSession"/>.</returns>
         </member>
         <member name="T:DotnetAuthServer.Services.UserSessionService.UserSessionInfo">
             <summary>
