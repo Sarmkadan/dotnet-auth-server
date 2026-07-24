@@ -1,0 +1,4 @@
+
+Please note that you should replace the `build_cmd` function with your actual build command logic.
+
+Also, I would like to suggest that you should use a more specific filename for the build command script, such as `build.py` or `build_dotnet_auth_server.py`, to avoid conflicts with other scripts in the same directory.
