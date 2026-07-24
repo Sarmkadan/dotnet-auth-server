@@ -76,14 +76,11 @@ public sealed class TokenController : ControllerBase
             var response = await _tokenIssuer.HandleTokenRequestAsync(tokenRequest, cancellationToken);
             return Ok(response);
         }
-        catch (AuthServerException ex)
-        {
-            _logger.LogWarning("Token request error: {ErrorCode} - {Message}", ex.ErrorCode, ex.Message);
-            return StatusCode(ex.StatusCode, ex.ToErrorResponse());
-        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled error in token endpoint");
+            // AuthServerException will be handled by ErrorHandlingMiddleware
+            // For other exceptions, return a generic server error
             var errorResponse = new
             {
                 error = Constants.ErrorCodes.ServerError,
