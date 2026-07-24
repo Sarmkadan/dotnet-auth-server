@@ -46,6 +46,22 @@ public sealed class WebhookClientTests
         return new HttpClient(handlerMock.Object);
     }
 
+    private static HttpClient CreateHttpClientThrowing(Exception exception, Action<HttpRequestMessage>? requestAssert = null)
+    {
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => requestAssert?.Invoke(req))
+            .ThrowsAsync(exception)
+            .Verifiable();
+
+        return new HttpClient(handlerMock.Object);
+    }
+
     [Fact]
     public async Task SendEventWebhookAsync_HappyPath_ReturnsSuccess()
     {
@@ -81,7 +97,8 @@ public sealed class WebhookClientTests
 
         // Assert
         Assert.False(result.Success);
-        Assert.Contains("HTTP 400", result.Error);
+        // The implementation returns the enum name (e.g., "BadRequest") in the error string.
+        Assert.Equal("HTTP BadRequest", result.Error);
     }
 
     [Fact]
@@ -135,13 +152,7 @@ public sealed class WebhookClientTests
     public async Task SendEventWebhookAsync_Timeout_ResultsInFailure()
     {
         // Arrange
-        var response = new HttpResponseMessage(HttpStatusCode.OK);
-        var httpClient = CreateHttpClient(response, req =>
-        {
-            // Simulate a delay longer than the timeout by not completing the request.
-            // The mock will just return the response immediately, but we can trigger
-            // a timeout by setting a very short timeout on the options.
-        });
+        var httpClient = CreateHttpClientThrowing(new OperationCanceledException("timeout"));
         var loggerMock = new Mock<ILogger<WebhookClient>>();
         var options = new WebhookOptions { Enabled = true, Timeout = TimeSpan.FromMilliseconds(1) };
         var client = new WebhookClient(httpClient, loggerMock.Object, options);
