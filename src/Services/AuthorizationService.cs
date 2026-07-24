@@ -78,6 +78,25 @@ public sealed class AuthorizationService
                 400);
         }
 
+        // Validate parameter lengths to prevent abuse per OAuth 2.1 BCP
+        if ((request.Scope?.Length ?? 0) > 500)
+        {
+        _logger.LogWarning("Authorization request failed: scope exceeds maximum length, client={ClientId}", request.ClientId);
+        throw new AuthServerException(
+        Constants.ErrorCodes.InvalidRequest,
+        "Scope parameter exceeds maximum length",
+        400);
+        }
+
+        if ((request.State?.Length ?? 0) > 500)
+        {
+        _logger.LogWarning("Authorization request failed: state exceeds maximum length, client={ClientId}", request.ClientId);
+        throw new AuthServerException(
+        Constants.ErrorCodes.InvalidRequest,
+        "State parameter exceeds maximum length",
+        400);
+        }
+
         // Validate scopes
         var requestedScopes = request.GetRequestedScopes();
         foreach (var scope in requestedScopes)
@@ -89,14 +108,41 @@ public sealed class AuthorizationService
             }
         }
 
+        // Validate response_type against client's allowed grant types per OAuth 2.1 BCP
+        if (!client.IsGrantTypeAllowed(request.ResponseType))
+        {
+        _logger.LogWarning("Authorization request failed: response_type={ResponseType} not allowed for client={ClientId}", request.ResponseType, request.ClientId);
+        throw new UnauthorizedClientException("The response_type is not allowed for this client");
+        }
+
+        // Reject code_challenge_method=plain per OAuth 2.1 BCP requirement
+        if (request.CodeChallengeMethod == Constants.PkceChallengeMethods.Plain)
+        {
+        _logger.LogWarning("Authorization request failed: plain code_challenge_method not allowed, client={ClientId}", request.ClientId);
+        throw new AuthServerException(
+        Constants.ErrorCodes.InvalidRequest,
+        "code_challenge_method=plain is not supported, use S256",
+        400);
+        }
+
         // Validate PKCE
         if (request.HasPkce() && !IsValidCodeChallenge(request.CodeChallenge!))
         {
-            _logger.LogWarning("Authorization request failed: invalid code challenge, client={ClientId}", request.ClientId);
-            throw new AuthServerException(
-                Constants.ErrorCodes.InvalidRequest,
-                "Invalid code_challenge format",
-                400);
+        _logger.LogWarning("Authorization request failed: invalid code challenge, client={ClientId}", request.ClientId);
+        throw new AuthServerException(
+        Constants.ErrorCodes.InvalidRequest,
+        "Invalid code_challenge format",
+        400);
+        }
+
+        // Enforce PKCE for public clients per OAuth 2.1 BCP
+        if (client.IsConfidential == false && !request.HasPkce())
+        {
+        _logger.LogWarning("Authorization request failed: PKCE required for public client, client={ClientId}", request.ClientId);
+        throw new AuthServerException(
+        Constants.ErrorCodes.InvalidRequest,
+        "PKCE is required for public clients",
+        400);
         }
 
         if (_options.RequirePkceForAllClients && !request.HasPkce() && client.RequirePkce)
