@@ -134,6 +134,7 @@ public static class Constants
         public const string InvalidClient = "invalid_client";
         public const string InvalidGrant = "invalid_grant";
         public const string InvalidScope = "invalid_scope";
+    public const string InvalidToken = "invalid_token";
         public const string UnauthorizedClient = "unauthorized_client";
         public const string UnsupportedGrantType = "unsupported_grant_type";
         public const string UnsupportedResponseType = "unsupported_response_type";
