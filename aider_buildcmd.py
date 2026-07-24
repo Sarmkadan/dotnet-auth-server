@@ -1,67 +1,75 @@
 #!/usr/bin/env python3
 """
-Build command script for the dotnet-auth-server repository.
+Utility script to build and test the DotnetAuthServer solution.
 
-The script is placed at /home/redrocket/task-factory/aider_buildcmd.py (outside the
-repository). It locates the repository root (which lives under
-`workdir/dotnet-auth-server`) and runs `dotnet test` from there.
-
-This allows the command `python3 /home/redrocket/task-factory/aider_buildcmd.py`
-to work regardless of where the script is invoked.
+Running this script executes `dotnet test` in the repository root,
+captures the output, and returns the exit code of the test runner.
+It includes logic to locate the repository root even when the script
+resides outside the repository (e.g., in /home/redrocket/task-factory/).
 """
 
 import subprocess
 import sys
 from pathlib import Path
 
+def find_repo_root(start_dir: Path) -> Path:
+    """
+    Walks up the directory tree from ``start_dir`` looking for a folder that
+    contains a *.sln file or a ``src`` directory, which we treat as the repo root.
+
+    Returns:
+        Path: The repository root directory.
+
+    Raises:
+        FileNotFoundError: If no suitable directory is found.
+    """
+    candidate = start_dir
+    while candidate != candidate.parent:
+        # Look for a solution file (*.sln) or a src folder
+        has_sln = any(p.suffix.lower() == ".sln" for p in candidate.iterdir())
+        has_src = (candidate / "src").is_dir()
+        if has_sln or has_src:
+            return candidate
+        candidate = candidate.parent
+    raise FileNotFoundError("Could not locate repository root containing a .sln file or a 'src' folder.")
+
 def main() -> int:
-    # Directory where this script resides
+    """
+    Executes `dotnet test` and streams its output.
+
+    Returns:
+        int: The exit code returned by the `dotnet test` command.
+    """
+    # The directory where this script resides
     script_dir = Path(__file__).resolve().parent
 
-    # Expected location of the repository root
-    repo_root = script_dir / "workdir" / "dotnet-auth-server"
-
-    # Fallback: if the expected layout is not present, try to locate a folder
-    # that contains a *.sln file or a `src` directory.
-    if not (repo_root / "src").is_dir():
-        # Search upward from script_dir for a directory containing a .sln file
-        candidate = script_dir
-        while candidate != candidate.parent:
-            if any(p.suffix == ".sln" for p in candidate.iterdir()):
-                repo_root = candidate
-                break
-            candidate = candidate.parent
-
-    # Final sanity check – ensure we have a `src` folder
-    if not (repo_root / "src").is_dir():
-        print(
-            f"Error: Could not locate repository root containing a 'src' folder. "
-            f"Tried {repo_root}",
-            file=sys.stderr,
-        )
+    try:
+        repo_root = find_repo_root(script_dir)
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    # Run `dotnet test` in the determined repository root
     try:
         result = subprocess.run(
             ["dotnet", "test", "--no-build", "--verbosity", "minimal"],
             cwd=repo_root,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            capture_output=True,
             text=True,
+            check=False,
         )
-        print(result.stdout)
-        return result.returncode
     except FileNotFoundError:
-        print(
-            "Error: 'dotnet' executable not found. Ensure the .NET SDK is installed.",
-            file=sys.stderr,
-        )
+        print("Error: 'dotnet' CLI not found. Please install .NET SDK.", file=sys.stderr)
         return 1
     except Exception as exc:
         print(f"Unexpected error while running tests: {exc}", file=sys.stderr)
         return 1
+
+    # Print the test runner output
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr, file=sys.stderr)
+
+    return result.returncode
 
 if __name__ == "__main__":
     sys.exit(main())
