@@ -18,12 +18,32 @@ public sealed class DeviceFlowHandler
     private readonly ConcurrentDictionary<string, DeviceFlowSession> _sessions = new();
     private readonly ILogger<DeviceFlowHandler> _logger;
 
-    private const int DeviceCodeLength = 8;
-    private const int UserCodeLength = 6;
+    private const int DeviceCodeLength = 16;
+
+    /// <summary>
+    /// Minimum length of generated user codes. RFC 8628 recommends enough entropy
+    /// to resist guessing; 8 characters from a base-20 alphabet yields ~34.6 bits.
+    /// </summary>
+    private const int UserCodeLength = 8;
+
     private const int ExpirationSeconds = 600; // 10 minutes
+
+    /// <summary>
+    /// Minimum interval, in seconds, the client must wait between polls. Polling
+    /// faster than this results in a <c>slow_down</c> error per RFC 8628 section 3.5.
+    /// </summary>
+    private const int MinPollIntervalSeconds = 5;
+
+    /// <summary>
+    /// Unambiguous base-20 alphabet used for user codes: excludes visually confusable
+    /// characters (0/O, 1/I, and other easily-mistaken letters) so codes are easy to
+    /// transcribe by hand.
+    /// </summary>
+    private const string UserCodeAlphabet = "ABCDEFGHJKLMNPQRTUVW";
 
     public DeviceFlowHandler(ILogger<DeviceFlowHandler> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -31,12 +51,17 @@ public sealed class DeviceFlowHandler
     /// Initiates a device flow authorization request.
     /// Returns device code and user code to display to user.
     /// </summary>
+    /// <param name="clientId">Identifier of the client initiating the flow.</param>
+    /// <param name="scope">Optional space-delimited list of requested scopes.</param>
+    /// <exception cref="ArgumentException"><paramref name="clientId"/> is null or empty.</exception>
     public DeviceFlowInitiation InitiateFlow(
         string clientId,
         string? scope = null)
     {
-        var deviceCode = GenerateCode(DeviceCodeLength);
-        var userCode = GenerateCode(UserCodeLength);
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
+
+        var deviceCode = GenerateDeviceCode();
+        var userCode = GenerateUserCode();
 
         var session = new DeviceFlowSession
         {
@@ -46,7 +71,8 @@ public sealed class DeviceFlowHandler
             Scope = scope,
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddSeconds(ExpirationSeconds),
-            Status = DeviceFlowStatus.Pending
+            Status = DeviceFlowStatus.Pending,
+            LastPolledAt = null
         };
 
         _sessions.TryAdd(deviceCode, session);
@@ -62,15 +88,21 @@ public sealed class DeviceFlowHandler
             DeviceCode = deviceCode,
             UserCode = userCode,
             ExpiresIn = ExpirationSeconds,
-            Interval = 5 // Poll interval in seconds
+            Interval = MinPollIntervalSeconds
         };
     }
 
     /// <summary>
     /// Completes a device flow by authorizing it after user verification.
     /// </summary>
+    /// <param name="userCode">The user-facing code the user entered.</param>
+    /// <param name="userId">Identifier of the user granting authorization.</param>
+    /// <exception cref="ArgumentException"><paramref name="userCode"/> or <paramref name="userId"/> is null or empty.</exception>
     public bool ApproveDeviceFlow(string userCode, string userId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userCode);
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+
         var session = _sessions.Values.FirstOrDefault(s => s.UserCode == userCode);
         if (session is null)
         {
@@ -99,8 +131,12 @@ public sealed class DeviceFlowHandler
     /// <summary>
     /// Denies a device flow authorization.
     /// </summary>
+    /// <param name="userCode">The user-facing code the user entered.</param>
+    /// <exception cref="ArgumentException"><paramref name="userCode"/> is null or empty.</exception>
     public bool DenyDeviceFlow(string userCode)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userCode);
+
         var session = _sessions.Values.FirstOrDefault(s => s.UserCode == userCode);
         if (session is null)
             return false;
@@ -116,8 +152,17 @@ public sealed class DeviceFlowHandler
     /// Polls the status of a device flow authorization.
     /// Used by the device to check if user has authorized it.
     /// </summary>
+    /// <remarks>
+    /// When the session has been approved, this call issues the result and atomically
+    /// removes the session so the device code cannot be redeemed a second time by a
+    /// concurrent poll (RFC 8628 single-use device code semantics).
+    /// </remarks>
+    /// <param name="deviceCode">The device code returned by <see cref="InitiateFlow"/>.</param>
+    /// <exception cref="ArgumentException"><paramref name="deviceCode"/> is null or empty.</exception>
     public DeviceFlowPollResult PollDeviceFlow(string deviceCode)
     {
+        ArgumentException.ThrowIfNullOrEmpty(deviceCode);
+
         if (!_sessions.TryGetValue(deviceCode, out var session))
         {
             return new DeviceFlowPollResult
@@ -127,7 +172,9 @@ public sealed class DeviceFlowHandler
             };
         }
 
-        if (session.ExpiresAt < DateTime.UtcNow)
+        var now = DateTime.UtcNow;
+
+        if (session.ExpiresAt < now)
         {
             _sessions.TryRemove(deviceCode, out _);
             return new DeviceFlowPollResult
@@ -135,6 +182,48 @@ public sealed class DeviceFlowHandler
                 Status = DeviceFlowStatus.Expired,
                 Error = "expired_token"
             };
+        }
+
+        var previousPoll = Interlocked.Exchange(ref session.LastPolledAtTicks, now.Ticks);
+        if (previousPoll != 0)
+        {
+            var elapsed = now - new DateTime(previousPoll, DateTimeKind.Utc);
+            if (elapsed.TotalSeconds < MinPollIntervalSeconds)
+            {
+                return new DeviceFlowPollResult
+                {
+                    Status = session.Status,
+                    Error = "slow_down"
+                };
+            }
+        }
+
+        if (session.Status == DeviceFlowStatus.Approved)
+        {
+            // Single-use redemption: only the poll that wins this race removes the
+            // session and returns the tokens; any concurrent poll sees it as gone.
+            if (!_sessions.TryRemove(deviceCode, out var removedSession))
+            {
+                return new DeviceFlowPollResult
+                {
+                    Status = DeviceFlowStatus.Unknown,
+                    Error = "invalid_device_code"
+                };
+            }
+
+            _logger.LogInformation("Device flow redeemed: device_code={DeviceCode}", deviceCode);
+
+            return new DeviceFlowPollResult
+            {
+                Status = removedSession.Status,
+                UserId = removedSession.UserId,
+                Scope = removedSession.Scope
+            };
+        }
+
+        if (session.Status is DeviceFlowStatus.Denied)
+        {
+            _sessions.TryRemove(deviceCode, out _);
         }
 
         return new DeviceFlowPollResult
@@ -146,20 +235,39 @@ public sealed class DeviceFlowHandler
     }
 
     /// <summary>
-    /// Removes a completed device flow session.
+    /// Removes a device flow session, e.g. after a client abandons the flow.
     /// </summary>
+    /// <param name="deviceCode">The device code identifying the session to remove.</param>
+    /// <exception cref="ArgumentException"><paramref name="deviceCode"/> is null or empty.</exception>
     public void CompleteDeviceFlow(string deviceCode)
     {
+        ArgumentException.ThrowIfNullOrEmpty(deviceCode);
         _sessions.TryRemove(deviceCode, out _);
     }
 
-    private static string GenerateCode(int length)
+    /// <summary>
+    /// Generates a cryptographically random device code using an unreserved URL-safe
+    /// alphabet, opaque to the end user.
+    /// </summary>
+    private static string GenerateDeviceCode() =>
+        GenerateCode(DeviceCodeLength, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+
+    /// <summary>
+    /// Generates a user-facing code from the unambiguous alphabet, sized for manual
+    /// transcription and sufficient entropy against brute-force guessing.
+    /// </summary>
+    private static string GenerateUserCode() =>
+        GenerateCode(UserCodeLength, UserCodeAlphabet);
+
+    private static string GenerateCode(int length, string alphabet)
     {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        return new string(Enumerable.Range(0, length)
-            .Select(_ => chars[random.Next(chars.Length)])
-            .ToArray());
+        Span<char> buffer = length <= 64 ? stackalloc char[length] : new char[length];
+        for (var i = 0; i < length; i++)
+        {
+            buffer[i] = alphabet[System.Security.Cryptography.RandomNumberGenerator.GetInt32(alphabet.Length)];
+        }
+
+        return new string(buffer);
     }
 }
 
@@ -200,6 +308,23 @@ public sealed class DeviceFlowSession
     public DateTime ExpiresAt { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DeviceFlowStatus Status { get; set; }
+
+    /// <summary>
+    /// Timestamp of the last poll for this session, as UTC ticks, used to enforce the
+    /// minimum polling interval. Stored as ticks (rather than <see cref="DateTime"/>) so
+    /// it can be updated atomically via <see cref="Interlocked.Exchange(ref long, long)"/>.
+    /// </summary>
+    public long LastPolledAtTicks;
+
+    /// <summary>
+    /// Convenience accessor for the last poll time, or <see langword="null"/> if the
+    /// session has not yet been polled.
+    /// </summary>
+    public DateTime? LastPolledAt
+    {
+        get => LastPolledAtTicks == 0 ? null : new DateTime(LastPolledAtTicks, DateTimeKind.Utc);
+        set => LastPolledAtTicks = value?.Ticks ?? 0;
+    }
 }
 
 /// <summary>
