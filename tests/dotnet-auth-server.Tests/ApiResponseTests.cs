@@ -39,6 +39,7 @@ public class ApiResponseTests
         Assert.Null(response.Data);
         Assert.Null(response.Message);
         Assert.Null(response.Error);
+        Assert.Null(response.TraceId);
     }
 
     [Fact]
@@ -58,7 +59,18 @@ public class ApiResponseTests
         Assert.Equal(message, response.Message);
         Assert.Equal(code, response.Code);
         Assert.Null(response.Data);
+        Assert.Null(response.TraceId);
         Assert.InRange(response.Timestamp, DateTime.UtcNow.AddSeconds(-1), DateTime.UtcNow);
+    }
+
+    [Fact]
+    public void Generic_SuccessResponse_TraceId_IsNullByDefault()
+    {
+        // Act
+        var response = ApiResponse<string>.SuccessResponse("data");
+
+        // Assert
+        Assert.Null(response.TraceId);
     }
 
     [Fact]
@@ -75,6 +87,7 @@ public class ApiResponseTests
         Assert.Equal(message, response.Message);
         Assert.Null(response.Error);
         Assert.Null(response.Code);
+        Assert.Null(response.TraceId);
         Assert.InRange(response.Timestamp, DateTime.UtcNow.AddSeconds(-1), DateTime.UtcNow);
     }
 
@@ -94,7 +107,18 @@ public class ApiResponseTests
         Assert.Equal(error, response.Error);
         Assert.Equal(message, response.Message);
         Assert.Equal(code, response.Code);
+        Assert.Null(response.TraceId);
         Assert.InRange(response.Timestamp, DateTime.UtcNow.AddSeconds(-1), DateTime.UtcNow);
+    }
+
+    [Fact]
+    public void NonGeneric_ErrorResponse_TraceId_IsNullByDefault()
+    {
+        // Act
+        var response = ApiResponse.ErrorResponse("error");
+
+        // Assert
+        Assert.Null(response.TraceId);
     }
 
     [Fact]
