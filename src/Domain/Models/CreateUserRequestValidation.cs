@@ -9,6 +9,7 @@ namespace DotnetAuthServer.Domain.Models;
 
 using System;
 using System.Collections.Generic;
+using System.Linq; // Added to provide LINQ extension methods
 using System.Text.RegularExpressions;
 
 /// <summary>
