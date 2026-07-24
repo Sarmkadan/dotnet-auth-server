@@ -64,13 +64,19 @@ public static class CreateUserRequestValidation
         {
             errors.Add("Password is required.");
         }
-        else if (value.Password.Length < 8)
+        else
         {
-            errors.Add("Password must be at least 8 characters long.");
-        }
-        else if (!PasswordRegex.IsMatch(value.Password))
-        {
-            errors.Add("Password must contain at least one uppercase letter, one lowercase letter, and one digit.");
+            // Length check
+            if (value.Password.Length < 8)
+            {
+                errors.Add("Password must be at least 8 characters long.");
+            }
+
+            // Pattern check – performed regardless of length so that both errors can be reported
+            if (!PasswordRegex.IsMatch(value.Password))
+            {
+                errors.Add("Password must contain at least one uppercase letter, one lowercase letter, and one digit.");
+            }
         }
 
         // Validate Roles collection (if not null)
