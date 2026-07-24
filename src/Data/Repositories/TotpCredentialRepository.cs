@@ -7,6 +7,7 @@
 namespace DotnetAuthServer.Data.Repositories;
 
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using DotnetAuthServer.Domain.Entities;
 
 /// <summary>

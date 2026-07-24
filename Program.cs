@@ -59,6 +59,7 @@ builder.Services.AddScoped<ConsentService>(sp =>
 // Security
 builder.Services.AddSingleton<RevokedTokenStore>();
 builder.Services.AddSingleton<LoginRateLimiter>();
+builder.Services.AddSingleton<TotpRateLimiter>();
 
 // Phase 2 Services
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();

@@ -11,6 +11,7 @@ using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
+using DotnetAuthServer.Security;
 using DotnetAuthServer.Services;
 
 /// <summary>
@@ -24,6 +25,7 @@ using DotnetAuthServer.Services;
 public sealed class MfaController : ControllerBase
 {
     private readonly TotpService _totpService;
+    private readonly TotpRateLimiter _totpRateLimiter;
     private readonly IUserRepository? _userRepository;
     private readonly ILogger<MfaController> _logger;
 
@@ -32,10 +34,12 @@ public sealed class MfaController : ControllerBase
     /// </summary>
     public MfaController(
         TotpService totpService,
+        TotpRateLimiter totpRateLimiter,
         ILogger<MfaController> logger,
         Data.Repositories.IUserRepository? userRepository = null)
     {
         _totpService = totpService;
+        _totpRateLimiter = totpRateLimiter;
         _logger = logger;
         _userRepository = userRepository;
     }
@@ -163,14 +167,19 @@ public sealed class MfaController : ControllerBase
 
         try
         {
+            // Rate limit TOTP attempts before processing
+            _totpRateLimiter.ThrowIfBlocked(userId);
+
             var valid = await _totpService.VerifyAsync(userId, request.Code, cancellationToken);
             if (!valid)
             {
+                _totpRateLimiter.RecordFailure(userId);
                 return Unauthorized(ApiResponse.ErrorResponse(
                     Constants.ErrorCodes.InvalidGrant,
                     "Invalid or expired MFA code"));
             }
 
+            _totpRateLimiter.RecordSuccess(userId);
             return Ok(ApiResponse.SuccessResponse("MFA verification successful"));
         }
         catch (Exception ex)
