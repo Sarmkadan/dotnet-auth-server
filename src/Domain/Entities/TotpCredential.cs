@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// ===================================
 
 namespace DotnetAuthServer.Domain.Entities;
 
@@ -17,12 +17,14 @@ public sealed class TotpCredential
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>User that owns this credential.</summary>
+    /// <exception cref="ArgumentException"><paramref name="value"/> is null or empty.</exception>
     public string UserId { get; set; } = null!;
 
     /// <summary>
     /// Base32-encoded TOTP shared secret (RFC 4648 alphabet, no padding).
     /// Store this value encrypted at rest in production.
     /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="value"/> is null or empty.</exception>
     public string SecretKey { get; set; } = null!;
 
     /// <summary>
@@ -34,11 +36,24 @@ public sealed class TotpCredential
     /// <summary>Timestamp when the credential record was first created (UTC).</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Timestamp when MFA was confirmed and enabled (UTC).</summary>
+    /// <summary>
+    /// Timestamp when MFA was confirmed and enabled (UTC).
+    /// Null when the credential has not been confirmed yet.
+    /// </summary>
     public DateTime? EnabledAt { get; set; }
 
-    /// <summary>Timestamp of the last successful TOTP verification (UTC).</summary>
+    /// <summary>
+    /// Timestamp of the last successful TOTP verification (UTC).
+    /// Null when no successful verification has occurred.
+    /// </summary>
     public DateTime? LastUsedAt { get; set; }
+
+    /// <summary>
+    /// The last accepted TOTP time-step (counter) to prevent replay attacks.
+    /// Null when no successful verification has occurred.
+    /// This property enables replay prevention by tracking the most recently accepted code's time-step.
+    /// </summary>
+    public long? LastAcceptedTimeStep { get; set; }
 
     /// <summary>
     /// One-time backup codes that can each be used once in place of a TOTP code.
@@ -48,6 +63,7 @@ public sealed class TotpCredential
 
     /// <summary>
     /// Marks the credential as enabled after a successful code verification.
+    /// Sets the <see cref="EnabledAt"/> timestamp to the current UTC time.
     /// </summary>
     public void Enable()
     {
@@ -57,6 +73,21 @@ public sealed class TotpCredential
 
     /// <summary>
     /// Records a successful TOTP verification.
+    /// Updates the <see cref="LastUsedAt"/> timestamp to the current UTC time.
     /// </summary>
     public void RecordVerification() => LastUsedAt = DateTime.UtcNow;
+
+    /// <summary>
+    /// Records a successful TOTP verification with the current time-step.
+    /// This prevents replay attacks by tracking the last accepted time-step.
+    /// Updates both <see cref="LastUsedAt"/> and <see cref="LastAcceptedTimeStep"/> to the current values.
+    /// </summary>
+    /// <param name="currentTimeStep">The current time-step (counter) to record for replay prevention.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="currentTimeStep"/> is negative.</exception>
+    public void RecordVerification(long currentTimeStep)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(currentTimeStep);
+        LastUsedAt = DateTime.UtcNow;
+        LastAcceptedTimeStep = currentTimeStep;
+    }
 }

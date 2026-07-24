@@ -48,16 +48,22 @@ public sealed class AuthServerOptions
     [Range(1, int.MaxValue)]
     public int AccountLockoutDurationMinutes { get; set; } = 15;
 
+    [Range(1, int.MaxValue)]
+    public int TotpAttemptsPerWindow { get; set; } = 5;
+
+    [Range(1, int.MaxValue)]
+    public int TotpRateLimitWindowSeconds { get; set; } = 30;
+
     public bool RequireUserConsent { get; set; } = true;
 
-[Range(1, int.MaxValue)]
-public int ConsentExpirationDays { get; set; } = 30;
+    [Range(1, int.MaxValue)]
+    public int ConsentExpirationDays { get; set; } = 30;
 
-[Range(1, int.MaxValue)]
-public int SessionConsentExpirationHours { get; set; } = 1;
+    [Range(1, int.MaxValue)]
+    public int SessionConsentExpirationHours { get; set; } = 1;
 
-[Required]
-public PasswordPolicyOptions PasswordPolicy { get; set; } = new PasswordPolicyOptions();
+    [Required]
+    public PasswordPolicyOptions PasswordPolicy { get; set; } = new PasswordPolicyOptions();
 
     public ICollection<string> SupportedScopes { get; set; } =
     [
