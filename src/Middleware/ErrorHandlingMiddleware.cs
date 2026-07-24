@@ -2,13 +2,12 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotnetAuthServer.Middleware;
 
 using System.Net;
 using System.Text.Json;
-using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
 
 /// <summary>
@@ -44,36 +43,44 @@ public sealed class ErrorHandlingMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        var response = new ErrorResponse();
-
         if (exception is AuthServerException authException)
         {
             context.Response.StatusCode = authException.StatusCode;
-            response.Error = authException.ErrorCode;
-            response.ErrorDescription = authException.ErrorDescription;
-            response.ErrorUri = authException.ErrorUri;
+
+            // RFC 6749 Section 5.2: Error Response
+            // The response body MUST be application/json
+            // For "invalid_client" error, the server MAY include the "WWW-Authenticate" header
+            // to indicate a challenge response (RFC 6749 Section 5.2)
+            if (string.Equals(authException.ErrorCode, "invalid_client", StringComparison.Ordinal))
+            {
+                context.Response.Headers.WWWAuthenticate = $"error, error=\"{authException.ErrorCode}\", error_description=\"{authException.ErrorDescription}\"{(authException.ErrorUri != null ? $", error_uri=\"{authException.ErrorUri}\"" : string.Empty)}";
+            }
+
+            var errorResponse = authException.ToErrorResponse();
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            return context.Response.WriteAsJsonAsync(errorResponse, options);
         }
         else if (exception is InvalidOperationException)
         {
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            response.Error = "invalid_request";
-            response.ErrorDescription = exception.Message;
+            var errorResponse = new Dictionary<string, object>
+            {
+                { "error", "invalid_request" },
+                { "error_description", exception.Message }
+            };
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            return context.Response.WriteAsJsonAsync(errorResponse, options);
         }
         else
         {
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-            response.Error = "server_error";
-            response.ErrorDescription = "An internal server error occurred";
+            var errorResponse = new Dictionary<string, object>
+            {
+                { "error", "server_error" },
+                { "error_description", "An internal server error occurred" }
+            };
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            return context.Response.WriteAsJsonAsync(errorResponse, options);
         }
-
-        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
-        return context.Response.WriteAsJsonAsync(response, options);
-    }
-
-    private class ErrorResponse
-    {
-        public string? Error { get; set; }
-        public string? ErrorDescription { get; set; }
-        public string? ErrorUri { get; set; }
     }
 }

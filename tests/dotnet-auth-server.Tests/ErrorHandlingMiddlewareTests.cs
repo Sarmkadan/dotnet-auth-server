@@ -2,11 +2,12 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotnetAuthServer.Tests;
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -55,9 +56,12 @@ public sealed class ErrorHandlingMiddlewareTests
         context.Response.StatusCode.Should().Be(400);
         var response = await ReadResponseAsync(context);
         response.Should().NotBeNull();
-        response.Error.Should().Be("invalid_request");
-        response.ErrorDescription.Should().Be("Invalid request parameters");
-        response.ErrorUri.Should().BeNull();
+        response.Should().ContainKey("error");
+        response!["error"].Should().Be("invalid_request");
+        response.Should().ContainKey("error_description");
+        response!["error_description"].Should().Be("Invalid request parameters");
+        response.Should().ContainKey("error_uri");
+        response!["error_uri"].Should().BeNull();
     }
 
     [Fact]
@@ -74,9 +78,12 @@ public sealed class ErrorHandlingMiddlewareTests
         context.Response.StatusCode.Should().Be(401);
         var response = await ReadResponseAsync(context);
         response.Should().NotBeNull();
-        response.Error.Should().Be("invalid_client");
-        response.ErrorDescription.Should().Be("Client credentials are invalid");
-        response.ErrorUri.Should().BeNull();
+        response.Should().ContainKey("error");
+        response!["error"].Should().Be("invalid_client");
+        response.Should().ContainKey("error_description");
+        response!["error_description"].Should().Be("Client credentials are invalid");
+        response.Should().ContainKey("error_uri");
+        response!["error_uri"].Should().BeNull();
     }
 
     [Fact]
@@ -93,9 +100,12 @@ public sealed class ErrorHandlingMiddlewareTests
         context.Response.StatusCode.Should().Be(500);
         var response = await ReadResponseAsync(context);
         response.Should().NotBeNull();
-        response.Error.Should().Be("server_error");
-        response.ErrorDescription.Should().Be("Server is misconfigured");
-        response.ErrorUri.Should().BeNull();
+        response.Should().ContainKey("error");
+        response!["error"].Should().Be("server_error");
+        response.Should().ContainKey("error_description");
+        response!["error_description"].Should().Be("Server is misconfigured");
+        response.Should().ContainKey("error_uri");
+        response!["error_uri"].Should().BeNull();
     }
 
     [Fact]
@@ -118,9 +128,12 @@ public sealed class ErrorHandlingMiddlewareTests
         context.Response.StatusCode.Should().Be(429);
         var response = await ReadResponseAsync(context);
         response.Should().NotBeNull();
-        response.Error.Should().Be("custom_error");
-        response.ErrorDescription.Should().Be("Too many requests");
-        response.ErrorUri.Should().Be("https://example.com/docs/rate-limiting");
+        response.Should().ContainKey("error");
+        response!["error"].Should().Be("custom_error");
+        response.Should().ContainKey("error_description");
+        response!["error_description"].Should().Be("Too many requests");
+        response.Should().ContainKey("error_uri");
+        response!["error_uri"].Should().Be("https://example.com/docs/rate-limiting");
     }
 
     [Fact]
@@ -137,9 +150,12 @@ public sealed class ErrorHandlingMiddlewareTests
         context.Response.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
         var response = await ReadResponseAsync(context);
         response.Should().NotBeNull();
-        response.Error.Should().Be("invalid_request");
-        response.ErrorDescription.Should().Be("Operation is not valid in the current state");
-        response.ErrorUri.Should().BeNull();
+        response.Should().ContainKey("error");
+        response!["error"].Should().Be("invalid_request");
+        response.Should().ContainKey("error_description");
+        response!["error_description"].Should().Be("Operation is not valid in the current state");
+        response.Should().ContainKey("error_uri");
+        response!["error_uri"].Should().BeNull();
     }
 
     [Fact]
@@ -156,12 +172,15 @@ public sealed class ErrorHandlingMiddlewareTests
         context.Response.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
         var response = await ReadResponseAsync(context);
         response.Should().NotBeNull();
-        response.Error.Should().Be("server_error");
-        response.ErrorDescription.Should().Be("An internal server error occurred");
-        response.ErrorUri.Should().BeNull();
+        response.Should().ContainKey("error");
+        response!["error"].Should().Be("server_error");
+        response.Should().ContainKey("error_description");
+        response!["error_description"].Should().Be("An internal server error occurred");
+        response.Should().ContainKey("error_uri");
+        response!["error_uri"].Should().BeNull();
 
         // Verify sensitive details are NOT leaked in error description
-        var errorDescription = response.ErrorDescription;
+        var errorDescription = response!["error_description"]?.ToString();
         errorDescription.Should().NotContain("password");
         errorDescription.Should().NotContain("secret123");
         errorDescription.Should().NotContain("api_key");
@@ -212,17 +231,10 @@ public sealed class ErrorHandlingMiddlewareTests
         return context;
     }
 
-    private static async Task<ErrorResponse?> ReadResponseAsync(HttpContext context)
+    private static async Task<Dictionary<string, object>?> ReadResponseAsync(HttpContext context)
     {
         context.Response.Body.Seek(0, System.IO.SeekOrigin.Begin);
         var json = await new System.IO.StreamReader(context.Response.Body).ReadToEndAsync();
-        return JsonSerializer.Deserialize<ErrorResponse>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-    }
-
-    private sealed class ErrorResponse
-    {
-        public string? Error { get; set; }
-        public string? ErrorDescription { get; set; }
-        public string? ErrorUri { get; set; }
+        return JsonSerializer.Deserialize<Dictionary<string, object>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
 }
