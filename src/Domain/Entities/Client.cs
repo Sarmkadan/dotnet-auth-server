@@ -144,7 +144,7 @@ public sealed class Client
     public bool IsRedirectUriValid(string? redirectUri)
     {
         if (string.IsNullOrWhiteSpace(redirectUri)) return false;
-        return RedirectUris.Contains(redirectUri, StringComparer.OrdinalIgnoreCase);
+        return RedirectUris.Contains(redirectUri, StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -154,7 +154,7 @@ public sealed class Client
     {
         if (string.IsNullOrWhiteSpace(logoutRedirectUri)) return true;
         return PostLogoutRedirectUris.Count == 0 ||
-               PostLogoutRedirectUris.Contains(logoutRedirectUri, StringComparer.OrdinalIgnoreCase);
+               PostLogoutRedirectUris.Contains(logoutRedirectUri, StringComparer.Ordinal);
     }
 
     /// <summary>
