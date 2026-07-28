@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Simple build script for the dotnet-auth-server repository.
-# It restores NuGet packages, builds the solution, and runs tests.
+# Build script for the dotnet-auth-server repository.
+# Restores NuGet packages, builds the solution, and runs tests.
 
 set -euo pipefail
 
-# Determine the repository root (directory of this script's parent)
+# Determine the repository root (the parent directory of this script)
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Repository root: $REPO_ROOT"
