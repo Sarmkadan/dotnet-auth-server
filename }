@@ -1,2 +1,2 @@
 
-This file includes 12 test methods covering the happy path, edge cases, and error paths for each major public method of the `ClientRegistrationRequest` class.
+This file includes 5 test methods covering the happy path, edge cases, and error paths for each major public method of the `SessionStateServiceValidation` class.
