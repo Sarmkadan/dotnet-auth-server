@@ -17,12 +17,12 @@ public sealed class RateLimitingOptions
     /// <summary>
     /// Gets or sets the number of requests allowed per minute per client.
     /// </summary>
-    public int RequestsPerMinute { get; set; } = 60;
+    public int RequestsPerMinute { get; set; } = 60; // default from RateLimitingOptions
 
     /// <summary>
     /// Gets or sets the burst size (maximum tokens in bucket).
     /// </summary>
-    public int BurstSize { get; set; } = 10;
+    public int BurstSize { get; set; } = 10; // default from RateLimitingOptions
 
     /// <summary>
     /// Gets or sets the endpoints that require stricter rate limiting.
