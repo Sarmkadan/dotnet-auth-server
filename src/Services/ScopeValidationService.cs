@@ -35,6 +35,12 @@ public sealed class ScopeValidationService
         "offline_access"
     };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ScopeValidationService"/> class.
+    /// </summary>
+    /// <param name="scopeService">The scope service.</param>
+    /// <param name="cacheService">The cache service.</param>
+    /// <param name="logger">The logger.</param>
     public ScopeValidationService(
         ScopeService scopeService,
         ICacheService cacheService,
@@ -49,6 +55,9 @@ public sealed class ScopeValidationService
     /// Validates a space-delimited scope string.
     /// Checks that all requested scopes are valid and known to the system.
     /// </summary>
+    /// <param name="scopeString">The space-delimited scope string to validate.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>An enumerable of valid scopes.</returns>
     public async Task<IEnumerable<string>> ValidateScopesAsync(
         string? scopeString,
         CancellationToken cancellationToken = default)
@@ -129,14 +138,16 @@ public sealed class ScopeValidationService
     }
 
     /// <summary>
-    /// Returns the minimum set of scopes required for a request to be valid.
-    /// The "openid" scope is required for OIDC requests.
-    /// </summary>
-    public IEnumerable<string> GetRequiredScopes(bool isOidc = true)
-    {
-        if (isOidc)
-            yield return "openid";
-    }
+/// Returns the minimum set of scopes required for a request to be valid.
+/// The "openid" scope is required for OIDC requests.
+/// </summary>
+/// <param name="isOidc">Whether the request is for OpenID Connect.</param>
+/// <returns>An enumerable of required scopes.</returns>
+public IEnumerable<string> GetRequiredScopes(bool isOidc = true)
+{
+    if (isOidc)
+        yield return "openid";
+}
 
     /// <summary>
     /// Checks if requested scopes include all required scopes.
