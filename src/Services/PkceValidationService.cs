@@ -23,6 +23,11 @@ public sealed class PkceValidationService
     private const int MinCodeVerifierLength = 43;
     private const int MaxCodeVerifierLength = 128;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PkceValidationService"/> class.
+    /// </summary>
+    /// <param name="options">The authentication server options.</param>
+    /// <param name="logger">The logger.</param>
     public PkceValidationService(AuthServerOptions options, ILogger<PkceValidationService> logger)
     {
         _options = options;
@@ -32,6 +37,7 @@ public sealed class PkceValidationService
     /// <summary>
     /// Generates a cryptographically secure code verifier for PKCE.
     /// </summary>
+    /// <returns>A cryptographically random code verifier suitable for PKCE.</returns>
     public string GenerateCodeVerifier()
     {
         var bytes = new byte[32];
@@ -60,6 +66,9 @@ public sealed class PkceValidationService
     /// Supports both S256 (SHA256) and plain methods.
     /// S256 is recommended and more secure.
     /// </summary>
+    /// <param name="codeVerifier">The code verifier to generate a challenge from.</param>
+    /// <param name="method">The challenge method to use (S256 or plain). Default is S256.</param>
+    /// <returns>A code challenge string.</returns>
     public string GenerateCodeChallenge(string codeVerifier, string method = "S256")
     {
         if (string.IsNullOrWhiteSpace(codeVerifier))
@@ -82,6 +91,10 @@ public sealed class PkceValidationService
     /// <summary>
     /// Validates that a code verifier matches the stored code challenge.
     /// </summary>
+    /// <param name="codeVerifier">The code verifier to validate.</param>
+    /// <param name="codeChallenge">The stored code challenge to="codeChallenge">The stored code challenge to compare against.</param>
+    /// <param name="method">The challenge method used (S256 or plain). Default is S256.</param>
+    /// <returns>True if the code verifier matches the challenge; otherwise false.</returns>
     public bool ValidateCodeVerifier(string? codeVerifier, string? codeChallenge, string method = "S256")
     {
         if (string.IsNullOrWhiteSpace(codeVerifier) || string.IsNullOrWhiteSpace(codeChallenge))
@@ -119,6 +132,8 @@ public sealed class PkceValidationService
     /// Checks if PKCE is required for a specific client or flow.
     /// Public clients should always use PKCE; confidential clients may optionally use it.
     /// </summary>
+    /// <param name="isConfidentialClient">True if the client is confidential (can keep secrets); false for public clients.</param>
+    /// <returns>True if PKCE is required; otherwise false.</returns>
     public bool IsPkceRequired(bool isConfidentialClient)
     {
         if (_options.RequirePkceForAllClients)
