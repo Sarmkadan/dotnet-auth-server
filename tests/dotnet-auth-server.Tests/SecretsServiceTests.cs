@@ -1,7 +1,9 @@
+using System;
 using Moq;
 using FluentAssertions;
 using DotnetAuthServer.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 /// <summary>
@@ -98,5 +100,40 @@ public sealed class SecretsServiceTests
 
         // Assert
         masked.Should().Be("123***789");
+    }
+
+    // -----------------------------------------------------------------
+    // Additional explicit tests for VerifySecret (added per new request)
+    // -----------------------------------------------------------------
+
+    private readonly SecretsService _serviceNoMock = new SecretsService(NullLogger<SecretsService>.Instance);
+
+    [Fact]
+    public void VerifySecret_ReturnsTrue_ForValidSecret()
+    {
+        // Arrange
+        var secret = "my-super-secret";
+        var hash = _serviceNoMock.HashSecret(secret);
+
+        // Act
+        var result = _serviceNoMock.VerifySecret(secret, hash);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void VerifySecret_ReturnsFalse_ForInvalidSecret()
+    {
+        // Arrange
+        var secret = "my-super-secret";
+        var wrongSecret = "not-the-secret";
+        var hash = _serviceNoMock.HashSecret(secret);
+
+        // Act
+        var result = _serviceNoMock.VerifySecret(wrongSecret, hash);
+
+        // Assert
+        Assert.False(result);
     }
 }
