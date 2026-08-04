@@ -1998,6 +1998,45 @@ public class TokenIntrospectionExample
         
         // Get individual token results
         TokenIntrospectionResult validResult = benchmarks.IntrospectValidTokenResult();
+    }
+}
+```
+
+## PasswordValidationTests
+
+The `PasswordValidationTests` class provides comprehensive unit tests for password validation, ensuring that password policies are correctly enforced, validation errors are accurately reported, and both standard and custom policies behave as expected. It covers scenarios including minimum/maximum length, character class requirements, username variations, common patterns, and password history checks.
+
+```csharp
+using DotnetAuthServer.Tests;
+using DotnetAuthServer.Configuration;
+using DotnetAuthServer.Services;
+using FluentAssertions;
+using Xunit;
+
+// Arrange: Set up password validation service with a specific policy
+var options = new AuthServerOptions();
+var policy = new PasswordPolicyOptions
+{
+    MinimumLength = 8,
+    RequireLowercase = true,
+    RequireDigit = true,
+    RequireSpecialChar = true
+};
+var validator = new PasswordValidationService(options, policy);
+
+// Act: Validate passwords
+var validErrors = validator.ValidatePassword("StrongPass123!");
+var invalidErrors = validator.ValidatePassword("weak");
+
+// Assert: Verify validation results
+validErrors.Should().BeEmpty();
+invalidErrors.Should().HaveCountGreaterThan(0);
+
+// ValidateAndThrow: Check exception handling
+Action act = () => validator.ValidateAndThrow("weak", "username");
+act.Should().Throw<AuthServerException>();
+```
+
         TokenIntrospectionResult invalidResult = benchmarks.IntrospectInvalidTokenResult();
         TokenIntrospectionResult expiredResult = benchmarks.IntrospectExpiredTokenResult();
         
