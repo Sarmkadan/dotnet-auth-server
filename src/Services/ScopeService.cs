@@ -16,18 +16,26 @@ using DotnetAuthServer.Exceptions;
 public interface IScopeRepository : IRepository<Scope, string>
 {
     /// <summary>
-    /// Gets a scope by scope ID
+    /// Gets a scope by scope ID.
     /// </summary>
+    /// <param name="scopeId">The scope ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The scope if found; otherwise null.</returns>
     Task<Scope?> GetByScopeIdAsync(string scopeId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets all active scopes
+    /// Gets all active scopes.
     /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>An enumerable of active scopes.</returns>
     Task<IEnumerable<Scope>> GetActiveScopesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Searches scopes by name or description
+    /// Searches scopes by name or description.
     /// </summary>
+    /// <param name="query">The search query.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>An enumerable of scopes matching the query.</returns>
     Task<IEnumerable<Scope>> SearchAsync(string query, CancellationToken cancellationToken = default);
 }
 
