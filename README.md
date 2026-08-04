@@ -4928,4 +4928,48 @@ public class PkceValidationServiceTests
         isValid.Should().BeTrue();
     }
 }
+
+## ConsentServiceTests
+
+The `ConsentServiceTests` class is the primary test suite for the `ConsentService`, designed to validate consent recording, expiration logic, and re-consent requirements. It ensures that the authorization server correctly handles consent lifecycles and provides accurate validity calculations for various consent scenarios, including offline access and expired sessions.
+
+```csharp
+using DotnetAuthServer.Tests;
+using DotnetAuthServer.Domain.Entities;
+using Xunit;
+
+// Instantiate the test suite
+var tests = new ConsentServiceTests();
+
+// 1. Consent Recording Tests
+await tests.RecordConsentAsync_SessionBasedConsent_SetsCorrectExpiration();
+await tests.RecordConsentAsync_OfflineConsent_SetsCorrectExpiration();
+await tests.RecordConsentAsync_DeniedConsent_NoExpiration();
+
+// 2. Re-consent Logic Tests
+await tests.RequiresReconsent_ExpiredConsent_ReturnsTrue();
+await tests.RequiresReconsent_ValidConsent_ReturnsFalse();
+await tests.RequiresReconsent_NearExpirationConsent_ReturnsTrue();
+await tests.RequiresReconsent_RejectedConsent_ReturnsTrue();
+
+// 3. Validity Calculation Tests
+await tests.GetConsentRemainingValidity_ActiveConsent_ReturnsRemainingTime();
+await tests.GetConsentRemainingValidity_ExpiredConsent_ReturnsZero();
+await tests.GetConsentRemainingValidity_NoExpiration_ReturnsNull();
+
+await tests.GetConsentValidityPercentage_ActiveConsent_ReturnsCorrectPercentage();
+await tests.GetConsentValidityPercentage_ExpiredConsent_ReturnsZero();
+await tests.GetConsentValidityPercentage_NoExpiration_ReturnsNull();
+
+// 4. Status Check Tests
+await tests.HasConsentAsync_ExpiredConsent_ReturnsFalse();
+await tests.HasConsentAsync_ValidConsent_ReturnsTrue();
+
+// Repository Methods (via FakeConsentRepository)
+// Task<Consent?> GetByIdAsync(string id);
+// Task<IEnumerable<Consent>> GetAllAsync();
+// Task<Consent> CreateAsync(Consent entity);
+// Task<Consent> UpdateAsync(Consent entity);
+```
+
 ```
