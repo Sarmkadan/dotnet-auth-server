@@ -66,8 +66,8 @@ public sealed class RevokedTokenStore
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="jti"/> or <paramref name="familyId"/> is <c>null</c>.</exception>
     public void RegisterToken(string jti, DateTime expiresAt, string familyId)
     {
-        ArgumentNullException.ThrowIfNull(jti);
-        ArgumentNullException.ThrowIfNull(familyId);
+        ArgumentException.ThrowIfNullOrEmpty(jti);
+        ArgumentException.ThrowIfNullOrEmpty(familyId);
 
         _semaphore.Wait();
         try
@@ -90,8 +90,8 @@ public sealed class RevokedTokenStore
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="jti"/> or <paramref name="familyId"/> is <c>null</c>.</exception>
     public void Revoke(string jti, DateTime tokenExpiresAt, string familyId)
     {
-        ArgumentNullException.ThrowIfNull(jti);
-        ArgumentNullException.ThrowIfNull(familyId);
+        ArgumentException.ThrowIfNullOrEmpty(jti);
+        ArgumentException.ThrowIfNullOrEmpty(familyId);
 
         _semaphore.Wait();
         try
