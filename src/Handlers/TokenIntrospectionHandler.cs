@@ -41,6 +41,7 @@ public sealed class TokenIntrospectionHandler
     /// </summary>
     public IntrospectionResponse IntrospectToken(string? token)
     {
+        _logger.LogInformation("IntrospectToken called with token length: {Length}", token?.Length ?? 0);
         if (string.IsNullOrWhiteSpace(token))
         {
             _logger.LogWarning("Introspection request with missing token");
@@ -71,11 +72,11 @@ public sealed class TokenIntrospectionHandler
                 var jti = jwtToken.Id;
                 if (!string.IsNullOrWhiteSpace(jti) && _revokedTokenStore.IsRevoked(jti))
                 {
-                    _logger.LogDebug("Introspection rejected revoked token jti={Jti}", jti);
+                    _logger.LogInformation("Introspection rejected revoked token jti={Jti}", jti);
                     return new IntrospectionResponse { Active = false };
                 }
 
-                return new IntrospectionResponse
+                var response = new IntrospectionResponse
                 {
                     Active = true,
                     Scope = jwtToken.Claims.FirstOrDefault(c => c.Type == "scope")?.Value,
@@ -88,14 +89,17 @@ public sealed class TokenIntrospectionHandler
                         new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds,
                     Sub = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 };
+                
+                _logger.LogInformation("IntrospectToken finished successfully for token");
+                return response;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Token introspection failed for malformed or invalid token");
+            _logger.LogError(ex, "Token introspection failed for malformed or invalid token");
         }
 
-        // Return inactive status for any invalid tokens
+        _logger.LogInformation("IntrospectToken finished with inactive response");
         return new IntrospectionResponse { Active = false };
     }
 }
