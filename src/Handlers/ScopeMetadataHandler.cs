@@ -79,6 +79,8 @@ public sealed class ScopeMetadataHandler
 
     public ScopeMetadataHandler(ICacheService cacheService, ILogger<ScopeMetadataHandler> logger)
     {
+        ArgumentNullException.ThrowIfNull(cacheService);
+        ArgumentNullException.ThrowIfNull(logger);
         _cacheService = cacheService;
         _logger = logger;
     }
@@ -91,6 +93,7 @@ public sealed class ScopeMetadataHandler
         string scopeName,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(scopeName);
         if (string.IsNullOrWhiteSpace(scopeName))
             return null;
 
@@ -121,6 +124,7 @@ public sealed class ScopeMetadataHandler
         IEnumerable<string> scopeNames,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(scopeNames);
         var results = new List<ScopeMetadata>();
 
         foreach (var scopeName in scopeNames)
@@ -160,6 +164,7 @@ public sealed class ScopeMetadataHandler
     /// </summary>
     public IEnumerable<ScopeMetadata> GetScopesRequiringConsent(IEnumerable<string> scopeNames)
     {
+        ArgumentNullException.ThrowIfNull(scopeNames);
         return scopeNames
             .Where(name => StandardScopes.TryGetValue(name, out var meta) && meta.RequiresConsent)
             .Select(name => StandardScopes[name]);
@@ -171,6 +176,7 @@ public sealed class ScopeMetadataHandler
     /// </summary>
     public void RegisterCustomScope(ScopeMetadata metadata)
     {
+        ArgumentNullException.ThrowIfNull(metadata);
         if (metadata is null || string.IsNullOrWhiteSpace(metadata.Name))
         {
             _logger.LogWarning("Cannot register scope with missing name");
