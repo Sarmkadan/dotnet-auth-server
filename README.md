@@ -1923,6 +1923,31 @@ public class ClientManagementController
 }
 ```
 
+## ClaimsEnrichmentServiceTests
+
+The `ClaimsEnrichmentServiceTests` class provides comprehensive unit testing for the `ClaimsEnrichmentService`, ensuring accurate claim enrichment and proper scope-based filtering. It verifies that user attributes are correctly transformed, duplicates are avoided, and claims adhere to scope-based requirements.
+
+### Usage Example
+
+```csharp
+using DotnetAuthServer.Tests.Services;
+using Xunit;
+
+public class ExampleTests
+{
+    [Fact]
+    public void RunEnrichmentTest()
+    {
+        // Instantiate the test class
+        var tests = new ClaimsEnrichmentServiceTests();
+
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.EnrichUserClaims_AddsClaimsForUserAttributes();
+    }
+}
+```
+
 ## DomainEntityTests
 
 The `DomainEntityTests` class provides unit tests for domain entity classes in the authorization server. It verifies core domain logic and behavior for entities like `User`, `Client`, and `RefreshToken`, ensuring that authentication, authorization, and token management operations work correctly according to the domain model's invariants.
