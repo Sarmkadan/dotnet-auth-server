@@ -1931,6 +1931,46 @@ The `DomainEntityTests` class provides unit tests for domain entity classes in t
 
 The `SessionManagementTests` class provides unit tests for user session management functionality in the authorization server. It verifies session creation, revocation, status checks, and statistics, ensuring that session lifecycle operations work correctly according to the domain model's invariants.
 
+## ConsentGrantedEventJsonExtensionsTests
+
+The `ConsentGrantedEventJsonExtensionsTests` class provides comprehensive unit tests for JSON serialization and deserialization of the `ConsentGrantedEvent` entity. It ensures correct data preservation, handles indentation options, validates behavior with null/empty/invalid input, and verifies robust round-trip serialization.
+
+```csharp
+using DotnetAuthServer.Events;
+using DotnetAuthServer.Tests;
+
+// Create a sample event
+var consentEvent = new ConsentGrantedEvent
+{
+    EventId = "evt-123",
+    OccurredAt = DateTime.UtcNow,
+    RequestId = "req-123",
+    UserId = "user-123",
+    ClientId = "client-456",
+    GrantedScopes = new[] { "read", "write" },
+    IsPermanent = true,
+    ClientIpAddress = "192.168.1.1"
+};
+
+// Serialize to JSON
+var json = consentEvent.ToJson();
+var prettyJson = consentEvent.ToJson(indented: true);
+
+// Deserialize from JSON
+var deserializedEvent = ConsentGrantedEventJsonExtensions.FromJson(json);
+
+// Try to deserialize with error handling
+if (ConsentGrantedEventJsonExtensions.TryFromJson(json, out var result))
+{
+    Console.WriteLine($"Deserialized event ID: {result?.EventId}");
+}
+
+// Perform a round-trip check
+var roundTripJson = deserializedEvent?.ToJson();
+var finalEvent = ConsentGrantedEventJsonExtensions.FromJson(roundTripJson!);
+```
+
+
 ## SessionManagementTestsExtensions
 
 The `SessionManagementTestsExtensions` class provides extension methods for creating and managing test user sessions in the authorization server. It simplifies test setup by providing methods to create individual sessions, multiple sessions for the same user, expiring sessions, and session retrieval utilities.
