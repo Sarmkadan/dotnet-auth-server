@@ -39,6 +39,7 @@ public sealed class ApiResponse<T>
     /// </summary>
     public static ApiResponse<T> ErrorResponse(string error, string? message = null, int? code = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(error);
         return new ApiResponse<T>
         {
             Success = false,
