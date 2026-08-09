@@ -21,6 +21,7 @@ public sealed class SessionStateService
 
     public SessionStateService(ILogger<SessionStateService> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -30,6 +31,9 @@ public sealed class SessionStateService
     /// </summary>
     public string CreateSession(string clientId, string redirectUri, string scopes, string? nonce = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
+        ArgumentException.ThrowIfNullOrEmpty(redirectUri);
+        ArgumentException.ThrowIfNullOrEmpty(scopes);
         var stateId = Guid.NewGuid().ToString("N");
 
         var session = new SessionState
@@ -103,6 +107,7 @@ public sealed class SessionStateService
     /// </summary>
     public bool UpdateSession(string stateId, string? userId = null, string? grantedScopes = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stateId);
         if (!_sessions.TryGetValue(stateId, out var session))
             return false;
 
