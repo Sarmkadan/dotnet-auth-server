@@ -30,6 +30,8 @@ public sealed class PkceValidationService
     /// <param name="logger">The logger.</param>
     public PkceValidationService(AuthServerOptions options, ILogger<PkceValidationService> logger)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
         _options = options;
         _logger = logger;
     }
