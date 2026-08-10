@@ -54,6 +54,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_tokens.TryGetValue(id, out var token) ? token : null);
     }
 
@@ -64,6 +65,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken> CreateAsync(RefreshToken entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_tokens.TryAdd(entity.TokenId, entity))
             throw new InvalidOperationException($"Token with ID {entity.TokenId} already exists");
         return await Task.FromResult(entity);
@@ -71,6 +73,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken> UpdateAsync(RefreshToken entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_tokens.ContainsKey(entity.TokenId))
             throw new InvalidOperationException($"Token with ID {entity.TokenId} not found");
 
@@ -81,22 +84,26 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task DeleteAsync(RefreshToken entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         await DeleteByIdAsync(entity.TokenId, cancellationToken);
     }
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         _tokens.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_tokens.ContainsKey(id));
     }
 
     public async Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(tokenHash);
         var token = _tokens.Values.FirstOrDefault(t =>
             t.TokenHash.Equals(tokenHash, StringComparison.OrdinalIgnoreCase));
         return await Task.FromResult(token);
@@ -104,6 +111,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<IEnumerable<RefreshToken>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         var tokens = _tokens.Values.Where(t =>
             t.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
         return await Task.FromResult(tokens);
@@ -111,6 +119,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<IEnumerable<RefreshToken>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
         var tokens = _tokens.Values.Where(t =>
             t.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase)).ToList();
         return await Task.FromResult(tokens);
@@ -118,6 +127,7 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<IEnumerable<RefreshToken>> GetValidTokensByUserAsync(string userId, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         var tokens = _tokens.Values.Where(t =>
             t.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase) &&
             t.IsValid()).ToList();
@@ -126,6 +136,8 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
 
     public Task RevokeAllUserTokensAsync(string userId, string reason, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentException.ThrowIfNullOrEmpty(reason);
         var userTokens = _tokens.Values.Where(t =>
             t.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
 
