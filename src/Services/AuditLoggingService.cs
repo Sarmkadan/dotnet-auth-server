@@ -37,6 +37,10 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string scopes,
         string? ipAddress = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(userId));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(clientId));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(grantType));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(scopes));
         LogAuditEvent(new AuditLogEntry
         {
             EventType = "TOKEN_ISSUED",
@@ -62,6 +66,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string? ipAddress = null,
         bool success = true)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(userId));
         LogAuditEvent(new AuditLogEntry
         {
             EventType = success ? "AUTH_SUCCESS" : "AUTH_FAILURE",
@@ -85,6 +90,8 @@ public sealed class AuditLoggingService : IAuditLoggingService
         bool granted,
         string reason = "")
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(userId));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(clientId));
         LogAuditEvent(new AuditLogEntry
         {
             EventType = granted ? "AUTHORIZATION_GRANTED" : "AUTHORIZATION_DENIED",
@@ -108,6 +115,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string? clientId = null,
         string? ipAddress = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(activityType));
         LogAuditEvent(new AuditLogEntry
         {
             EventType = "SUSPICIOUS_ACTIVITY",
@@ -133,6 +141,8 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string? targetUserId = null,
         Dictionary<string, string>? changes = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(action));
+        ArgumentNullException.ThrowIfNull(nameof(changes));
         var details = changes ?? new Dictionary<string, string>();
         details["action"] = action;
 
@@ -153,6 +163,10 @@ public sealed class AuditLoggingService : IAuditLoggingService
     /// </summary>
     public IEnumerable<AuditLogEntry> GetRecentEntries(int count = 100)
     {
+        if (count < 0)
+        {
+            throw new ArgumentException("Count must be non-negative", nameof(count));
+        }
         return _auditLog.TakeLast(count);
     }
 
@@ -172,6 +186,11 @@ public sealed class AuditLoggingService : IAuditLoggingService
         DateTime endTime,
         int maxCount = 100)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(eventType));
+        if (maxCount < 0)
+        {
+            throw new ArgumentException("Max count must be non-negative", nameof(maxCount));
+        }
         return _auditLog
             .Where(entry => entry.EventType == eventType
                 && entry.Timestamp >= startTime
@@ -201,6 +220,10 @@ public sealed class AuditLoggingService : IAuditLoggingService
     /// <returns>CSV-formatted string with proper escaping</returns>
     public string ExportToCsv(DateTime startTime, DateTime endTime, int maxCount = 1000)
     {
+        if (maxCount < 0)
+        {
+            throw new ArgumentException("Max count must be non-negative", nameof(maxCount));
+        }
         var filteredEntries = _auditLog
             .Where(entry => entry.Timestamp >= startTime && entry.Timestamp <= endTime)
             .OrderByDescending(entry => entry.Timestamp)
