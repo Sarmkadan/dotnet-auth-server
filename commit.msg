@@ -1,0 +1,1 @@
+feat: add argument null guards to ScopeService public methods
