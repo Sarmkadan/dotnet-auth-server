@@ -6,6 +6,11 @@
 
 namespace DotnetAuthServer.Services;
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Exceptions;
@@ -48,6 +53,7 @@ public sealed class ScopeRepository : IScopeRepository
 
     public async Task<Scope?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_scopes.TryGetValue(id, out var scope) ? scope : null);
     }
 
@@ -58,6 +64,7 @@ public sealed class ScopeRepository : IScopeRepository
 
     public async Task<Scope> CreateAsync(Scope entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (_scopes.ContainsKey(entity.ScopeId))
             throw new InvalidOperationException($"Scope with ID {entity.ScopeId} already exists");
 
@@ -67,6 +74,7 @@ public sealed class ScopeRepository : IScopeRepository
 
     public async Task<Scope> UpdateAsync(Scope entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_scopes.ContainsKey(entity.ScopeId))
             throw new InvalidOperationException($"Scope with ID {entity.ScopeId} not found");
 
@@ -77,22 +85,26 @@ public sealed class ScopeRepository : IScopeRepository
 
     public async Task DeleteAsync(Scope entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         await DeleteByIdAsync(entity.ScopeId, cancellationToken);
     }
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         _scopes.Remove(id);
         return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_scopes.ContainsKey(id));
     }
 
     public async Task<Scope?> GetByScopeIdAsync(string scopeId, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(scopeId);
         var scope = _scopes.Values.FirstOrDefault(s =>
             s.ScopeId.Equals(scopeId, StringComparison.OrdinalIgnoreCase));
         return await Task.FromResult(scope);
@@ -106,6 +118,7 @@ public sealed class ScopeRepository : IScopeRepository
 
     public async Task<IEnumerable<Scope>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(query);
         var lowerQuery = query.ToLower();
         var results = _scopes.Values.Where(s =>
             s.ScopeId.ToLower().Contains(lowerQuery) ||
@@ -124,6 +137,7 @@ public sealed class ScopeService
 
     public ScopeService(IScopeRepository scopeRepository)
     {
+        ArgumentNullException.ThrowIfNull(scopeRepository);
         _scopeRepository = scopeRepository;
     }
 
@@ -175,6 +189,8 @@ public sealed class ScopeService
         bool isIdTokenClaim = true,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(scopeId);
+        ArgumentException.ThrowIfNullOrEmpty(claim);
         var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
         if (scope is null)
             throw new AuthServerException(
@@ -204,6 +220,8 @@ public sealed class ScopeService
         string role,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(scopeId);
+        ArgumentException.ThrowIfNullOrEmpty(role);
         var scope = await _scopeRepository.GetByScopeIdAsync(scopeId, cancellationToken);
         if (scope is null)
             throw new AuthServerException(
@@ -244,6 +262,8 @@ public sealed class ScopeService
         IEnumerable<string> userRoles,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(requestedScopes);
+        ArgumentNullException.ThrowIfNull(userRoles);
         var validScopes = new List<string>();
 
         foreach (var scopeId in requestedScopes)
