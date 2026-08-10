@@ -20,6 +20,7 @@ public sealed class SecretsService
 
     public SecretsService(ILogger<SecretsService> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -57,11 +58,7 @@ public sealed class SecretsService
     /// </summary>
     public SecretHash HashSecret(string secret, int iterations = 10000)
     {
-        if (string.IsNullOrWhiteSpace(secret))
-        {
-            _logger.LogWarning("Cannot hash empty secret");
-            throw new ArgumentException("Secret cannot be empty");
-        }
+        ArgumentException.ThrowIfNullOrEmpty(secret);
 
         // Generate unique salt
         var salt = new byte[16];
@@ -91,8 +88,8 @@ public sealed class SecretsService
     /// </summary>
     public bool VerifySecret(string secret, SecretHash hash)
     {
-        if (string.IsNullOrWhiteSpace(secret) || hash is null)
-            return false;
+        ArgumentException.ThrowIfNullOrEmpty(secret);
+        ArgumentNullException.ThrowIfNull(hash);
 
         try
         {
