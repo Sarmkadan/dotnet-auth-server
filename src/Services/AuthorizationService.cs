@@ -41,6 +41,8 @@ public sealed class AuthorizationService
         AuthorizationRequest request,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         if (!request.IsValid())
         {
             _logger.LogWarning("Authorization request validation failed: missing parameters for client={ClientId}", request.ClientId);
@@ -169,6 +171,12 @@ public sealed class AuthorizationService
         AuthorizationRequest request,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentException.ThrowIfNullOrEmpty(grantedScopes);
+        ArgumentException.ThrowIfNullOrEmpty(redirectUri);
+        ArgumentNullException.ThrowIfNull(request);
+
         var code = GenerateAuthorizationCode();
         var grantId = Guid.NewGuid().ToString();
 
@@ -202,6 +210,9 @@ public sealed class AuthorizationService
         User user,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(user);
+
         var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
         if (client is null)
             throw new InvalidClientException("Client not found");
@@ -226,6 +237,8 @@ public sealed class AuthorizationService
     /// </summary>
     public bool ValidatePkceCodeVerifier(string codeChallenge, string codeVerifier, string? method)
     {
+        ArgumentException.ThrowIfNullOrEmpty(codeChallenge);
+        ArgumentException.ThrowIfNullOrEmpty(codeVerifier);
         method = method ?? "plain";
 
         if (method == "plain")
