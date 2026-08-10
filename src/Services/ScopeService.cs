@@ -152,6 +152,9 @@ public sealed class ScopeService
         bool requiresConsent = true,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(scopeId);
+        ArgumentException.ThrowIfNullOrEmpty(displayName);
+        ArgumentException.ThrowIfNullOrEmpty(description);
         if (string.IsNullOrWhiteSpace(scopeId) ||
             string.IsNullOrWhiteSpace(displayName) ||
             string.IsNullOrWhiteSpace(description))
