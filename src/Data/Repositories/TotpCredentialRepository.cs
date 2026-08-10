@@ -35,7 +35,10 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
 
     /// <inheritdoc />
     public Task<TotpCredential?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
-        => Task.FromResult(_credentials.TryGetValue(id, out var c) ? c : null);
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        return Task.FromResult(_credentials.TryGetValue(id, out var c) ? c : null);
+    }
 
     /// <inheritdoc />
     public Task<IEnumerable<TotpCredential>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -44,6 +47,7 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
     /// <inheritdoc />
     public Task<TotpCredential> CreateAsync(TotpCredential entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_credentials.TryAdd(entity.Id, entity))
             throw new InvalidOperationException($"TOTP credential {entity.Id} already exists");
         return Task.FromResult(entity);
@@ -52,6 +56,7 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
     /// <inheritdoc />
     public Task<TotpCredential> UpdateAsync(TotpCredential entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_credentials.ContainsKey(entity.Id))
             throw new InvalidOperationException($"TOTP credential {entity.Id} not found");
 
@@ -61,7 +66,10 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
 
     /// <inheritdoc />
     public Task DeleteAsync(TotpCredential entity, CancellationToken cancellationToken = default)
-        => DeleteByIdAsync(entity.Id, cancellationToken);
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        return DeleteByIdAsync(entity.Id, cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -85,6 +93,7 @@ public sealed class TotpCredentialRepository : ITotpCredentialRepository
     /// <inheritdoc />
     public Task DeleteByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         var toRemove = _credentials.Values
             .Where(c => c.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase))
             .Select(c => c.Id)
