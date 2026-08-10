@@ -38,6 +38,9 @@ public sealed class MfaController : ControllerBase
         ILogger<MfaController> logger,
         Data.Repositories.IUserRepository? userRepository = null)
     {
+        ArgumentNullException.ThrowIfNull(totpService);
+        ArgumentNullException.ThrowIfNull(totpRateLimiter);
+        ArgumentNullException.ThrowIfNull(logger);
         _totpService = totpService;
         _totpRateLimiter = totpRateLimiter;
         _logger = logger;
@@ -57,6 +60,7 @@ public sealed class MfaController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<MfaStatusResponse>), 200)]
     public async Task<IActionResult> GetStatusAsync(string userId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
             var status = await _totpService.GetStatusAsync(userId, cancellationToken);
@@ -85,6 +89,7 @@ public sealed class MfaController : ControllerBase
     [ProducesResponseType(404)]
     public async Task<IActionResult> SetupAsync(string userId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
             var user = _userRepository is null
@@ -123,6 +128,9 @@ public sealed class MfaController : ControllerBase
         [FromBody] MfaVerifyRequest request,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentNullException.ThrowIfNull(request);
+
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -162,6 +170,9 @@ public sealed class MfaController : ControllerBase
         [FromBody] MfaVerifyRequest request,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentNullException.ThrowIfNull(request);
+
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -203,6 +214,7 @@ public sealed class MfaController : ControllerBase
     [ProducesResponseType(200)]
     public async Task<IActionResult> DisableMfaAsync(string userId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
             await _totpService.DisableMfaAsync(userId, cancellationToken);
