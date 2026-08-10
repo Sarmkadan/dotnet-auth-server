@@ -46,7 +46,7 @@ public sealed class PolicyEnforcementService
     /// <summary>
     /// Registers a new policy that can be evaluated against principals.
     /// </summary>
-    public void RegisterPolicy(string policyName, Policy policy)
+    public void RegisterPolicy(string? policyName, Policy policy)
     {
         _policies[policyName] = policy;
         _logger.LogInformation("Policy registered: {PolicyName}", policyName);
@@ -58,7 +58,7 @@ public sealed class PolicyEnforcementService
     /// If OPA is unreachable and <see cref="OpaOptions.FailClosedOnError"/> is false,
     /// the built-in evaluator is used as a fallback.
     /// </summary>
-    public bool EvaluatePolicy(string policyName, ClaimsPrincipal principal)
+    public bool EvaluatePolicy(string? policyName, ClaimsPrincipal? principal)
     {
         if (_opaClient is not null && _opaOptions?.Enabled == true)
         {
@@ -107,7 +107,7 @@ public sealed class PolicyEnforcementService
     /// Evaluates whether a principal satisfies a policy object directly.
     /// Supports combining multiple rules with AND/OR logic.
     /// </summary>
-    public bool EvaluatePolicy(Policy policy, ClaimsPrincipal principal)
+    public bool EvaluatePolicy(Policy policy, ClaimsPrincipal? principal)
     {
         if (policy is null || principal is null)
             return false;
@@ -200,7 +200,7 @@ public sealed class PolicyEnforcementService
         };
     }
 
-    private void InitializeDefaultPolicies()
+    public void InitializeDefaultPolicies()
     {
         // Policy requiring admin role
         RegisterPolicy("AdminOnly", new Policy
