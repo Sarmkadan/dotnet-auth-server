@@ -30,6 +30,7 @@ public sealed class TokenRefreshRotationExample
 
     public TokenRefreshRotationExample(string authServerUrl)
     {
+        ArgumentException.ThrowIfNullOrEmpty(authServerUrl);
         _authServerUrl = authServerUrl;
         _httpClient = new HttpClient();
     }
@@ -40,6 +41,7 @@ public sealed class TokenRefreshRotationExample
     /// </summary>
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(refreshToken);
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Post,
@@ -79,6 +81,7 @@ public sealed class TokenRefreshRotationExample
     /// </summary>
     public async Task DemonstrateTokenRotationAsync(string initialRefreshToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(initialRefreshToken);
         Console.WriteLine("=== Token Rotation Demonstration ===\n");
 
         var currentRefreshToken = initialRefreshToken;
@@ -117,6 +120,7 @@ public sealed class TokenRefreshRotationExample
     public async Task<TokenResponse?> RefreshWithExpirationAsync(string refreshToken,
         int expiresInSeconds)
     {
+        ArgumentException.ThrowIfNullOrEmpty(refreshToken);
         var expirationTime = DateTime.UtcNow.AddSeconds(expiresInSeconds);
 
         while (DateTime.UtcNow < expirationTime.AddSeconds(-300)) // Refresh 5 min before expiry
@@ -162,6 +166,7 @@ public sealed class MobileAppTokenManager
 
     public MobileAppTokenManager(string authServerUrl)
     {
+        ArgumentException.ThrowIfNullOrEmpty(authServerUrl);
         _authServerUrl = authServerUrl;
     }
 
@@ -170,6 +175,7 @@ public sealed class MobileAppTokenManager
     /// </summary>
     public void SetToken(TokenResponse token)
     {
+        ArgumentNullException.ThrowIfNull(token);
         _currentToken = token;
         _tokenRefreshTime = DateTime.UtcNow.AddSeconds(token.ExpiresIn - 300);
         Console.WriteLine($"Token set, will refresh at {_tokenRefreshTime:HH:mm:ss}");
@@ -232,6 +238,7 @@ public sealed class MobileAppTokenManager
     /// </summary>
     public async Task<bool> CallApiAsync(string apiUrl)
     {
+        ArgumentException.ThrowIfNullOrEmpty(apiUrl);
         var token = await GetValidAccessTokenAsync();
 
         if (string.IsNullOrEmpty(token))
@@ -268,6 +275,7 @@ public sealed class ResilientTokenRefreshExample
 
     public ResilientTokenRefreshExample(string authServerUrl)
     {
+        ArgumentException.ThrowIfNullOrEmpty(authServerUrl);
         _authServerUrl = authServerUrl;
     }
 
@@ -276,6 +284,7 @@ public sealed class ResilientTokenRefreshExample
     /// </summary>
     public async Task<TokenResponse?> RefreshWithRetryAsync(string refreshToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(refreshToken);
         _refreshAttempts = 0;
 
         while (_refreshAttempts < MaxRefreshAttempts)
@@ -318,6 +327,8 @@ public sealed class ResilientTokenRefreshExample
         string refreshToken,
         Func<Task<string?>> fallbackAuthAsync)
     {
+        ArgumentException.ThrowIfNullOrEmpty(refreshToken);
+        ArgumentNullException.ThrowIfNull(fallbackAuthAsync);
         var flow = new TokenRefreshRotationExample(_authServerUrl);
         var newToken = await flow.RefreshTokenAsync(refreshToken);
 
