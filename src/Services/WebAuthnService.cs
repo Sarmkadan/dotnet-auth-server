@@ -160,6 +160,11 @@ public sealed class WebAuthnService : IWebAuthnService
         AuthServerOptions options,
         ILogger<WebAuthnService> logger)
     {
+        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _store = store;
         _cache = cache;
         _logger = logger;
@@ -175,6 +180,10 @@ public sealed class WebAuthnService : IWebAuthnService
         string userId, string username, string displayName,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentException.ThrowIfNullOrEmpty(username);
+        ArgumentException.ThrowIfNullOrEmpty(displayName);
+
         var challenge = NewChallenge();
         await _cache.SetAsync($"webauthn:reg:{userId}", new ChallengeEntry(challenge),
             TimeSpan.FromSeconds(RegChallengeTtlSeconds), cancellationToken);
@@ -201,6 +210,10 @@ public sealed class WebAuthnService : IWebAuthnService
         string userId, string clientDataJsonB64, string attestationObjectB64,
         string? friendlyName = null, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentException.ThrowIfNullOrEmpty(clientDataJsonB64);
+        ArgumentException.ThrowIfNullOrEmpty(attestationObjectB64);
+
         var cacheKey = $"webauthn:reg:{userId}";
         var entry = await _cache.GetAsync<ChallengeEntry>(cacheKey, cancellationToken)
             ?? throw new InvalidGrantException("Registration challenge expired or not found.");
@@ -268,6 +281,11 @@ public sealed class WebAuthnService : IWebAuthnService
         string signatureB64, string? userHandle = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(credentialId);
+        ArgumentException.ThrowIfNullOrEmpty(clientDataJsonB64);
+        ArgumentException.ThrowIfNullOrEmpty(authenticatorDataB64);
+        ArgumentException.ThrowIfNullOrEmpty(signatureB64);
+
         var clientDataBytes = Base64UrlDecode(clientDataJsonB64);
         using var clientDoc = JsonDocument.Parse(clientDataBytes);
         var challenge = clientDoc.RootElement.GetProperty("challenge").GetString()
