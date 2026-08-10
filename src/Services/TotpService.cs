@@ -228,7 +228,7 @@ public sealed class TotpService
 
     /// <summary>
     /// Disables and removes the TOTP credential for a user.
-    /// </summary>
+    /// </>
     /// <param name="userId">The user's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="ArgumentException"><paramref name="userId"/> is null or empty.</exception>
