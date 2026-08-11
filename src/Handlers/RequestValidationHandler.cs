@@ -43,6 +43,7 @@ public sealed class RequestValidationHandler
     /// <exception cref="AuthServerException">Thrown when validation fails</exception>
     public void ValidateAuthorizationRequest(AuthorizationRequest request, Client client)
     {
+        _logger.LogInformation("Validating authorization request for client={ClientId}", request?.ClientId);
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(client);
 
@@ -138,11 +139,7 @@ public sealed class RequestValidationHandler
         // Validate PKCE requirements per OAuth 2.1 BCP
         ValidatePkceRequirements(request, client);
 
-        _logger.LogDebug(
-            "Authorization request validation successful: client={ClientId} response_type={ResponseType} redirect_uri={RedirectUri}",
-            request.ClientId,
-            request.ResponseType,
-            request.RedirectUri);
+        _logger.LogInformation("Authorization request validation successful: client={ClientId} response_type={ResponseType} redirect_uri={RedirectUri}", request.ClientId, request.ResponseType, request.RedirectUri);
     }
 
     /// <summary>
