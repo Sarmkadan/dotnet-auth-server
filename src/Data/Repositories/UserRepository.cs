@@ -49,6 +49,11 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            throw new ArgumentException("Parameter cannot be null or empty", nameof(id));
+        }
+
         return await Task.FromResult(_users.TryGetValue(id, out var user) ? user : null);
     }
 
@@ -59,6 +64,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<User> CreateAsync(User entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_users.TryAdd(entity.UserId, entity))
             throw new InvalidOperationException($"User with ID {entity.UserId} already exists");
         return await Task.FromResult(entity);
@@ -66,6 +72,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<User> UpdateAsync(User entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_users.ContainsKey(entity.UserId))
             throw new InvalidOperationException($"User with ID {entity.UserId} not found");
 
@@ -76,6 +83,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task DeleteAsync(User entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         await DeleteByIdAsync(entity.UserId, cancellationToken);
     }
 
