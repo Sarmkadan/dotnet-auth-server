@@ -167,6 +167,8 @@ public sealed class JwkKey
     [JsonPropertyName("k")]
     public string? K { get; set; } // Symmetric key material (for oct keys)
 
+    public override string ToString() => $"JwkKey {{ Kty = {Kty}, Kid = {Kid}, Use = {Use}, Alg = {Alg}, K = {K} }}";
+
     [JsonPropertyName("n")]
     public string? N { get; set; } // RSA modulus
 
