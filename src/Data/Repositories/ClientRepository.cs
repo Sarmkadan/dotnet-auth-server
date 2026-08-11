@@ -37,9 +37,10 @@ public sealed class ClientRepository : IClientRepository
 {
     private readonly ConcurrentDictionary<string, Client> _clients = new(StringComparer.OrdinalIgnoreCase);
 
-    public async Task<Client?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Client?> GetByIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(_clients.TryGetValue(id, out var client) ? client : null);
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
+        return await Task.FromResult(_clients.TryGetValue(clientId, out var client) ? client : null);
     }
 
     public async Task<IEnumerable<Client>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -49,6 +50,7 @@ public sealed class ClientRepository : IClientRepository
 
     public async Task<Client> CreateAsync(Client entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_clients.TryAdd(entity.ClientId, entity))
             throw new InvalidOperationException($"Client with ID {entity.ClientId} already exists");
         return await Task.FromResult(entity);
@@ -56,6 +58,7 @@ public sealed class ClientRepository : IClientRepository
 
     public async Task<Client> UpdateAsync(Client entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         if (!_clients.ContainsKey(entity.ClientId))
             throw new InvalidOperationException($"Client with ID {entity.ClientId} not found");
 
@@ -66,22 +69,26 @@ public sealed class ClientRepository : IClientRepository
 
     public async Task DeleteAsync(Client entity, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         await DeleteByIdAsync(entity.ClientId, cancellationToken);
     }
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         _clients.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_clients.ContainsKey(id));
     }
 
     public async Task<Client?> GetActiveClientAsync(string clientId, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
         var client = await GetByIdAsync(clientId, cancellationToken);
         return await Task.FromResult(client?.IsActive == true ? client : null);
     }
@@ -94,6 +101,7 @@ public sealed class ClientRepository : IClientRepository
 
     public async Task<IEnumerable<Client>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(query);
         var lowerQuery = query.ToLower();
         var results = _clients.Values.Where(c =>
             c.ClientName.ToLower().Contains(lowerQuery) ||
