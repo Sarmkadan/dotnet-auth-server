@@ -35,6 +35,7 @@ public sealed class ClientCredentialsFlowExample
     /// </summary>
     public async Task<TokenResponse?> GetServiceAccessTokenAsync(string scope = "api:read api:write")
     {
+        ArgumentException.ThrowIfNullOrEmpty(scope);
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Post,
@@ -77,6 +78,8 @@ public sealed class ClientCredentialsFlowExample
     /// </summary>
     public async Task CallDownstreamApiAsync(string accessToken, string apiUrl)
     {
+        ArgumentException.ThrowIfNullOrEmpty(accessToken);
+        ArgumentException.ThrowIfNullOrEmpty(apiUrl);
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
@@ -106,6 +109,7 @@ public sealed class ClientCredentialsFlowExample
     /// </summary>
     public async Task<bool> ValidateTokenAsync(string accessToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(accessToken);
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Post,
@@ -141,6 +145,7 @@ public sealed class ClientCredentialsFlowExample
     /// </summary>
     public async Task RevokeTokenAsync(string accessToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(accessToken);
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Post,
@@ -186,6 +191,7 @@ public sealed class BackgroundDataProcessorService
     /// </summary>
     public async Task ExecuteJobAsync(string jobId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(jobId);
         try
         {
             Console.WriteLine($"Starting job: {jobId}");
@@ -229,6 +235,7 @@ public sealed class BackgroundDataProcessorService
     /// </summary>
     private async Task ProcessDataAsync(string? accessToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(accessToken);
         if (string.IsNullOrEmpty(accessToken))
             throw new InvalidOperationException("No access token");
 
@@ -256,6 +263,7 @@ public sealed class BackgroundDataProcessorService
     /// </summary>
     public async Task ShutdownAsync()
     {
+        ArgumentException.ThrowIfNullOrEmpty(_currentAccessToken);
         if (!string.IsNullOrEmpty(_currentAccessToken))
         {
             await _authFlow.RevokeTokenAsync(_currentAccessToken);
