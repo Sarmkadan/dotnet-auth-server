@@ -56,6 +56,7 @@ public sealed class LoginRateLimiter : IDisposable
     /// <exception cref="AuthServerException">Thrown when the username or IP address is blocked.</exception>
     public void ThrowIfBlocked(string? username, string? ipAddress)
     {
+        _logger.LogInformation("Checking if login is blocked for username {Username} and IP {IpAddress}", username, ipAddress);
         // Check global circuit breaker first - protects against distributed attacks
         CheckGlobalCircuitBreaker();
 
@@ -111,6 +112,7 @@ public sealed class LoginRateLimiter : IDisposable
     /// </summary>
     public void RecordSuccess(string? username)
     {
+        _logger.LogInformation("Recording successful login for username {Username}", username);
         if (!string.IsNullOrWhiteSpace(username))
         {
             _attempts.TryRemove(username, out _);
@@ -123,6 +125,7 @@ public sealed class LoginRateLimiter : IDisposable
     public void Dispose()
     {
         _cleanupTimer?.Dispose();
+        _logger.LogInformation("Disposing LoginRateLimiter");
         GC.SuppressFinalize(this);
     }
 
