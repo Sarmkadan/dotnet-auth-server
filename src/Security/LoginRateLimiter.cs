@@ -90,6 +90,7 @@ public sealed class LoginRateLimiter : IDisposable
     /// </summary>
     public void RecordFailure(string? username, string? ipAddress)
     {
+        _logger.LogInformation("Recording failed login attempt for username {Username} and IP {IpAddress}", username, ipAddress);
         var now = DateTime.UtcNow;
 
         // Update global failure tracking
