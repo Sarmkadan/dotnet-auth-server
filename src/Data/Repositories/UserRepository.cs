@@ -49,10 +49,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(id))
-        {
-            throw new ArgumentException("Parameter cannot be null or empty", nameof(id));
-        }
+        ArgumentException.ThrowIfNullOrEmpty(id);
 
         return await Task.FromResult(_users.TryGetValue(id, out var user) ? user : null);
     }
@@ -89,17 +86,20 @@ public sealed class UserRepository : IUserRepository
 
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         _users.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_users.ContainsKey(id));
     }
 
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(username);
         var user = _users.Values.FirstOrDefault(u =>
             u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
         return await Task.FromResult(user);
@@ -107,6 +107,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(email);
         var user = _users.Values.FirstOrDefault(u =>
             u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
         return await Task.FromResult(user);
@@ -114,6 +115,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<IEnumerable<User>> GetByRoleAsync(string role, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(role);
         var users = _users.Values.Where(u =>
             u.Roles.Contains(role, StringComparer.OrdinalIgnoreCase)).ToList();
         return await Task.FromResult(users);
@@ -127,6 +129,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<IEnumerable<User>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(query);
         var lowerQuery = query.ToLower();
         var results = _users.Values.Where(u =>
             u.Username.ToLower().Contains(lowerQuery) ||
