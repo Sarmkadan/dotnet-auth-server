@@ -20,6 +20,7 @@ using DotnetAuthServer.Configuration;
 /// </summary>
 public sealed class JwksHandler
 {
+    public override string ToString() => $"JwksHandler {{ Keys = {string.Join(", ", _cacheService.GetAsync<JwksResponse>(JwksKey, default).Result.Keys.Select(k => $"Kty = {k.Kty}, Kid = {k.Kid}, Use = {k.Use}, Alg = {k.Alg}, K = {k.K}"))} }}";
     private readonly AuthServerOptions _options;
     private readonly ICacheService _cacheService;
     private readonly ILogger<JwksHandler> _logger;
