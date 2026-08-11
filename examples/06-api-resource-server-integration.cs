@@ -29,6 +29,7 @@ public sealed class ResourceServerStartupExample
     /// </summary>
     public void ConfigureServices(IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
         const string authServerUrl = "https://localhost:7001";
         const string apiAudience = "my-api";
 
@@ -120,6 +121,7 @@ public sealed class ResourceServerStartupExample
     /// </summary>
     public void Configure(IApplicationBuilder app)
     {
+        ArgumentNullException.ThrowIfNull(app);
         app.UseRouting();
 
         // Authentication must come before Authorization
@@ -181,7 +183,20 @@ public sealed class UserController : ControllerBase
     /// </summary>
     [HttpGet("admin/users")]
     [Authorize(Roles = "admin")]
-    public IActionResult GetAllUsers()
+    public IActionResult GetAllUsers(string users = null)
+        {
+            if (users == null)
+                throw new ArgumentNullException(nameof(users));
+            return Ok(new
+            {
+                message = "Fetching all users",
+                users = new[]
+                {
+                    new { id = "user1", name = "Alice" },
+                    new { id = "user2", name = "Bob" }
+                }
+            });
+        }
     {
         return Ok(new
         {
@@ -216,6 +231,19 @@ public sealed class UserController : ControllerBase
     [HttpPost("content")]
     [Authorize("EditorPolicy")]
     public IActionResult CreateContent([FromBody] CreateContentRequest request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var roles = string.Join(", ", User.FindAll(ClaimTypes.Role).Select(c => c.Value));
+            return Created("", new
+            {
+                id = Guid.NewGuid(),
+                title = request.Title,
+                createdBy = userId,
+                userRoles = roles
+            });
+        }
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var roles = string.Join(", ", User.FindAll(ClaimTypes.Role).Select(c => c.Value));
@@ -234,7 +262,22 @@ public sealed class UserController : ControllerBase
     /// </summary>
     [HttpDelete("content/{id}")]
     [Authorize]
-    public async Task<IActionResult> DeleteContentAsync(string id)
+    public IActionResult DeleteContentAsync(string id = null)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+            // Check if user is admin
+            var isAdmin = User.IsInRole("admin");
+            if (!isAdmin)
+            {
+                // Check custom authorization policy
+                var result = await _authorizationService.AuthorizeAsync(
+                    User, null, "AdminPolicy");
+                if (!result.Succeeded)
+                    return Forbid("Only admins can delete content");
+            }
+            return Ok(new { message = $"Content {id} deleted" });
+        }
     {
         // Check if user is admin
         var isAdmin = User.IsInRole("admin");
