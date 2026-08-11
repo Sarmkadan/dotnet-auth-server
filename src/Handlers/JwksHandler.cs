@@ -43,10 +43,11 @@ public sealed class JwksHandler
     /// </summary>
     public async Task<JwksResponse> GetJwksAsync(CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Getting JWKS");
         var cached = await _cacheService.GetAsync<JwksResponse>(JwksKey, cancellationToken);
         if (cached is not null)
         {
-            _logger.LogDebug("Returning cached JWKS");
+            _logger.LogInformation("Returning cached JWKS");
             return cached;
         }
 
@@ -55,6 +56,7 @@ public sealed class JwksHandler
         // Cache for 24 hours
         await _cacheService.SetAsync(JwksKey, jwks, TimeSpan.FromHours(24), cancellationToken);
 
+        _logger.LogInformation("Returning generated JWKS with {KeyCount} keys", jwks.Keys.Count);
         return jwks;
     }
 
@@ -91,6 +93,8 @@ public sealed class JwksHandler
 
             // Create thumbprint of the key
             var thumbprint = GenerateSha256Thumbprint(keyBytes);
+
+            _logger.LogInformation("Generating JWK from signing key with {Thumbprint}", thumbprint);
 
             // NOTE: for symmetric (oct) keys the key material MUST NOT be published -
             // JWKS is a public document. Only the key id / alg / use are exposed so
@@ -134,6 +138,7 @@ public sealed class JwksHandler
         string keyId,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Checking if key ID {KeyId} is valid", keyId);
         var jwks = await GetJwksAsync(cancellationToken);
         return jwks.Keys.Any(k => k.Kid == keyId);
     }
