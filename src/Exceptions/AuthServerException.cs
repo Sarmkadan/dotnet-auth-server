@@ -70,4 +70,10 @@ public class AuthServerException : Exception
 
         return response;
     }
+
+    /// <summary>
+    /// Returns a concise, informative representation of the exception.
+    /// </summary>
+    public override string ToString() =>
+        $"AuthServerException {{ ErrorCode = {ErrorCode}, StatusCode = {StatusCode}, ErrorDescription = {ErrorDescription}, ErrorUri = {ErrorUri}, Details = {Details} }}";
 }
