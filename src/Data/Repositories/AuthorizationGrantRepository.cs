@@ -86,6 +86,8 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
     public async Task<AuthorizationGrant?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(code))
+            throw new ArgumentException("Code cannot be null or empty", nameof(code));
         var grant = _grants.Values.FirstOrDefault(g =>
             g.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
         return await Task.FromResult(grant);
@@ -93,6 +95,8 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
     public async Task<IEnumerable<AuthorizationGrant>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(userId))
+            throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
         var grants = _grants.Values.Where(g =>
             g.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).ToList();
         return await Task.FromResult(grants);
@@ -100,6 +104,8 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 
     public async Task<IEnumerable<AuthorizationGrant>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(clientId))
+            throw new ArgumentException("Client ID cannot be null or empty", nameof(clientId));
         var grants = _grants.Values.Where(g =>
             g.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase)).ToList();
         return await Task.FromResult(grants);
