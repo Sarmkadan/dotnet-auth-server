@@ -57,7 +57,10 @@ public sealed class UserSessionRepository : IUserSessionRepository
 
     /// <inheritdoc />
     public Task<UserSession?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
-        => Task.FromResult(_sessions.TryGetValue(id, out var s) ? s : null);
+    {
+        if (string.IsNullOrEmpty(id)) throw new ArgumentException("Session ID is null or empty", nameof(id));
+        return Task.FromResult(_sessions.TryGetValue(id, out var s) ? s : null);
+    }
 
     /// <inheritdoc />
     public Task<IEnumerable<UserSession>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -66,6 +69,7 @@ public sealed class UserSessionRepository : IUserSessionRepository
     /// <inheritdoc />
     public Task<UserSession> CreateAsync(UserSession entity, CancellationToken cancellationToken = default)
     {
+        if (entity == null) throw new ArgumentNullException(nameof(entity));
         if (!_sessions.TryAdd(entity.SessionId, entity))
             throw new InvalidOperationException($"Session {entity.SessionId} already exists");
         return Task.FromResult(entity);
@@ -83,22 +87,33 @@ public sealed class UserSessionRepository : IUserSessionRepository
 
     /// <inheritdoc />
     public Task DeleteAsync(UserSession entity, CancellationToken cancellationToken = default)
-        => DeleteByIdAsync(entity.SessionId, cancellationToken);
+    {
+        if (entity == null) throw new ArgumentNullException(nameof(entity));
+        if (!_sessions.ContainsKey(entity.SessionId))
+            throw new InvalidOperationException($"Session {entity.SessionId} not found");
+        _sessions.TryRemove(entity.SessionId, out _);
+        return Task.CompletedTask;
+    }
 
     /// <inheritdoc />
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(id)) throw new ArgumentException("Session ID is null or empty", nameof(id));
         _sessions.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
-        => Task.FromResult(_sessions.ContainsKey(id));
+    {
+        if (string.IsNullOrEmpty(id)) throw new ArgumentException("Session ID is null or empty", nameof(id));
+        return Task.FromResult(_sessions.ContainsKey(id));
+    }
 
     /// <inheritdoc />
     public Task<IEnumerable<UserSession>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(userId)) throw new ArgumentException("User ID is null or empty", nameof(userId));
         var result = _sessions.Values
             .Where(s => s.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase))
             .ToList();
