@@ -52,6 +52,7 @@ public sealed class UserManagementController : ControllerBase
         [FromQuery] string? q,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(q);
         try
         {
             var users = string.IsNullOrWhiteSpace(q)
@@ -77,6 +78,7 @@ public sealed class UserManagementController : ControllerBase
     [ProducesResponseType(404)]
     public async Task<IActionResult> GetUserAsync(string userId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
             var user = await _userManagementService.GetUserByIdAsync(userId, cancellationToken);
@@ -110,6 +112,7 @@ public sealed class UserManagementController : ControllerBase
         [FromBody] CreateUserRequest request,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -150,6 +153,8 @@ public sealed class UserManagementController : ControllerBase
         [FromBody] UpdateUserRequest request,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentNullException.ThrowIfNull(request);
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -183,6 +188,7 @@ public sealed class UserManagementController : ControllerBase
     [ProducesResponseType(404)]
     public async Task<IActionResult> DeleteUserAsync(string userId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
             await _userManagementService.DeleteUserAsync(userId, cancellationToken);
@@ -218,6 +224,8 @@ public sealed class UserManagementController : ControllerBase
         [FromBody] AssignRoleRequest request,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentNullException.ThrowIfNull(request);
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -251,6 +259,8 @@ public sealed class UserManagementController : ControllerBase
         string role,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentException.ThrowIfNullOrEmpty(role);
         try
         {
             await _userManagementService.RemoveRoleAsync(userId, role, cancellationToken);
@@ -285,6 +295,7 @@ public sealed class UserManagementController : ControllerBase
         [FromQuery] int minutes = 60,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
             if (minutes <= 0) minutes = 60;
@@ -312,6 +323,7 @@ public sealed class UserManagementController : ControllerBase
     [ProducesResponseType(404)]
     public async Task<IActionResult> UnlockUserAsync(string userId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
             await _userManagementService.UnlockUserAsync(userId, cancellationToken);
