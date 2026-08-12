@@ -127,4 +127,7 @@ public sealed class TokenRequest
             _ => false
         };
     }
+
+    public override string ToString() =>
+        $"TokenRequest {{ GrantType = {GrantType}, ClientId = {ClientId}, ClientSecret = {ClientSecret}, Code = {Code}, RedirectUri = {RedirectUri}, RefreshToken = {RefreshToken} }}";
 }
