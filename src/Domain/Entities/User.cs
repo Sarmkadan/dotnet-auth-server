@@ -136,4 +136,12 @@ public sealed class User
         FailedLoginAttempts = 0;
         LockedUntil = null;
     }
+
+    /// <summary>
+    /// Returns a concise string representation of the user.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"User {{ UserId = {UserId}, Username = {Username}, Email = {Email}, FullName = {FullName}, PasswordHash = {PasswordHash}, EmailVerified = {EmailVerified} }}";
+    }
 }
