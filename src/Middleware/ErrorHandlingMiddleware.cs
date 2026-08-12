@@ -28,9 +28,11 @@ public sealed class ErrorHandlingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        _logger.LogInformation("Processing request {Method} {Path}", context.Request.Method, context.Request.Path);
         try
         {
             await _next(context);
+            _logger.LogInformation("Finished processing request {Method} {Path}", context.Request.Method, context.Request.Path);
         }
         catch (Exception exception)
         {
