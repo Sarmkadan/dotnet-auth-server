@@ -43,6 +43,15 @@ public sealed class CreateUserRequest
     /// Initial roles to assign. Roles are case-insensitive strings (e.g. "admin", "user").
     /// </summary>
     public ICollection<string> Roles { get; set; } = [];
+
+    /// <summary>
+    /// Returns a concise string representation of the request.
+    /// </summary>
+    public override string ToString()
+    {
+        var roles = Roles != null ? string.Join(", ", Roles) : string.Empty;
+        return $"CreateUserRequest {{ Username = {Username}, Email = {Email}, Password = {Password}, FullName = {FullName}, Roles = [{roles}] }}";
+    }
 }
 
 /// <summary>
