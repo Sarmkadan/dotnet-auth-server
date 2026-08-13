@@ -41,6 +41,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         ArgumentException.ThrowIfNullOrEmpty(nameof(clientId));
         ArgumentException.ThrowIfNullOrEmpty(nameof(grantType));
         ArgumentException.ThrowIfNullOrEmpty(nameof(scopes));
+        _logger.LogInformation("LogTokenIssuance called with UserId: {UserId}, ClientId: {ClientId}, GrantType: {GrantType}, Scopes: {Scopes}, IpAddress: {IpAddress}", userId, clientId, grantType, scopes, ipAddress ?? "unknown");
         LogAuditEvent(new AuditLogEntry
         {
             EventType = "TOKEN_ISSUED",
@@ -55,6 +56,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
             Timestamp = DateTime.UtcNow,
             RequestId = LogicalContext.RequestId
         });
+        _logger.LogInformation("LogTokenIssuance completed for UserId: {UserId}", userId);
     }
 
     /// <summary>
