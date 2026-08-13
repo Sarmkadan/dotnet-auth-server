@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Xunit;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 /// <summary>
 /// Tests for the AuditLoggingService class.
@@ -33,6 +34,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void LogTokenIssuance_AddsEntryToLog()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(LogTokenIssuance_AddsEntryToLog));
+
         // Act
         _service.LogTokenIssuance("user1", "client1", "authorization_code", "openid profile");
 
@@ -43,6 +46,8 @@ public sealed class AuditLoggingServiceTests
         entries[0].UserId.Should().Be("user1");
         entries[0].ClientId.Should().Be("client1");
         entries[0].Details["grant_type"].Should().Be("authorization_code");
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(LogTokenIssuance_AddsEntryToLog));
     }
 
     /// <summary>
@@ -51,6 +56,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void LogAuthentication_AddsEntryToLog()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(LogAuthentication_AddsEntryToLog));
+
         // Act
         _service.LogAuthentication("user1", "testuser", success: true);
 
@@ -58,6 +65,8 @@ public sealed class AuditLoggingServiceTests
         var entries = _service.GetRecentEntries().ToList();
         entries.Should().HaveCount(1);
         entries[0].EventType.Should().Be("AUTH_SUCCESS");
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(LogAuthentication_AddsEntryToLog));
     }
 
     /// <summary>
@@ -66,6 +75,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void GetRecentEntries_LimitsResults()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(GetRecentEntries_LimitsResults));
+
         // Arrange
         for (int i = 0; i < 150; i++)
         {
@@ -77,6 +88,8 @@ public sealed class AuditLoggingServiceTests
 
         // Assert
         entries.Should().HaveCount(10);
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(GetRecentEntries_LimitsResults));
     }
 
     /// <summary>
@@ -85,6 +98,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void Clear_RemovesAllEntries()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(Clear_RemovesAllEntries));
+
         // Arrange
         _service.LogAuthentication("user1", "testuser");
         _service.GetRecentEntries().Should().HaveCount(1);
@@ -94,6 +109,8 @@ public sealed class AuditLoggingServiceTests
 
         // Assert
         _service.GetRecentEntries().Should().BeEmpty();
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(Clear_RemovesAllEntries));
     }
 
     /// <summary>
@@ -102,6 +119,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void ExportToCsv_ContainsExpectedColumns()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(ExportToCsv_ContainsExpectedColumns));
+
         // Arrange
         var startTime = DateTime.UtcNow.AddHours(-1);
         var endTime = DateTime.UtcNow.AddHours(1);
@@ -115,6 +134,8 @@ public sealed class AuditLoggingServiceTests
         // Assert
         lines.Should().HaveCount(3); // Header + 2 entries
         lines[0].Should().Be("Timestamp,EventType,UserId,ClientId,RequestId,Severity,Details");
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(ExportToCsv_ContainsExpectedColumns));
     }
 
     /// <summary>
@@ -123,6 +144,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void ExportToCsv_EscapesSpecialCharacters()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(ExportToCsv_EscapesSpecialCharacters));
+
         // Arrange
         var startTime = DateTime.UtcNow.AddHours(-1);
         var endTime = DateTime.UtcNow.AddHours(1);
@@ -147,6 +170,8 @@ public sealed class AuditLoggingServiceTests
         entryLine.Should().Contain("ADMIN_ACTION");
         entryLine.Should().Contain("\"user\"\"with\"\"quotes\"");
         entryLine.Should().Contain("\"client,with,commas\"");
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(ExportToCsv_EscapesSpecialCharacters));
     }
 
     /// <summary>
@@ -155,6 +180,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void ExportToCsv_IncludesDetailsAsJson()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(ExportToCsv_IncludesDetailsAsJson));
+
         // Arrange
         var startTime = DateTime.UtcNow.AddHours(-1);
         var endTime = DateTime.UtcNow.AddHours(1);
@@ -168,6 +195,8 @@ public sealed class AuditLoggingServiceTests
         lines[1].Should().Contain("TOKEN_ISSUED");
         lines[1].Should().Contain("user1");
         lines[1].Should().Contain("client1");
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(ExportToCsv_IncludesDetailsAsJson));
     }
 
     /// <summary>
@@ -176,6 +205,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void ExportToCsv_RespectsDateRangeFilter()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(ExportToCsv_RespectsDateRangeFilter));
+
         // Arrange
         var startTime = DateTime.UtcNow.AddMinutes(-30);
         var endTime = DateTime.UtcNow.AddMinutes(-10);
@@ -193,6 +224,8 @@ public sealed class AuditLoggingServiceTests
 
         // Assert - should have header only since all entries are outside the range
         lines.Should().HaveCount(1); // Only header
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(ExportToCsv_RespectsDateRangeFilter));
     }
 
     /// <summary>
@@ -201,6 +234,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void ExportToCsv_RespectsMaxCount()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(ExportToCsv_RespectsMaxCount));
+
         // Arrange
         var startTime = DateTime.UtcNow.AddHours(-1);
         var endTime = DateTime.UtcNow.AddHours(1);
@@ -217,6 +252,8 @@ public sealed class AuditLoggingServiceTests
 
         // Assert
         lines.Should().HaveCount(11); // Header + 10 entries
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(ExportToCsv_RespectsMaxCount));
     }
 
     /// <summary>
@@ -225,6 +262,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void ExportToCsv_OrdersByTimestampDescending()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(ExportToCsv_OrdersByTimestampDescending));
+
         // Arrange
         var startTime = DateTime.UtcNow.AddHours(-1);
         var endTime = DateTime.UtcNow.AddHours(1);
@@ -248,6 +287,8 @@ public sealed class AuditLoggingServiceTests
         firstEntry.Should().Contain("user3");
         secondEntry.Should().Contain("user2");
         thirdEntry.Should().Contain("user1");
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(ExportToCsv_OrdersByTimestampDescending));
     }
 
     /// <summary>
@@ -256,6 +297,8 @@ public sealed class AuditLoggingServiceTests
     [Fact]
     public void ExportToCsv_StaticMethodWorksWithAnyCollection()
     {
+        _loggerMock.Object.LogInformation("Entering {Method}", nameof(ExportToCsv_StaticMethodWorksWithAnyCollection));
+
         // Arrange
         var entries = new List<AuditLogEntry>
         {
@@ -280,5 +323,7 @@ public sealed class AuditLoggingServiceTests
         lines[0].Should().Be("Timestamp,EventType,UserId,ClientId,RequestId,Severity,Details");
         lines[1].Should().Contain("TEST_EVENT");
         lines[1].Should().Contain("user1");
+
+        _loggerMock.Object.LogInformation("Exiting {Method}", nameof(ExportToCsv_StaticMethodWorksWithAnyCollection));
     }
 }
