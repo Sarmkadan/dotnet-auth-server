@@ -38,6 +38,8 @@ public sealed class ClaimsEnrichmentService
         if (user is null)
             throw new ArgumentNullException(nameof(user));
 
+        _logger.LogInformation("Enriching claims for user {UserId} with scopes {Scopes}", user.UserId, grantedScopes?.ToArray() ?? Array.Empty<string>());
+
         var claims = new List<Claim>();
         var scopeList = grantedScopes?.ToList() ?? new List<string>();
 
@@ -80,6 +82,7 @@ public sealed class ClaimsEnrichmentService
             "Enriched claims for user {UserId}: {ClaimCount} claims added",
             user.UserId,
             claims.Count);
+        _logger.LogInformation("Finished enriching claims for user {UserId}. Total claims: {ClaimCount}", user.UserId, claims.Count);
 
         return claims;
     }
