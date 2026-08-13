@@ -42,6 +42,7 @@ public sealed class ClientValidationService
         string? clientSecret,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Validating client credentials for {ClientId}", clientId);
         if (string.IsNullOrWhiteSpace(clientId))
         {
             _logger.LogWarning("Client validation requested without client_id");
@@ -72,6 +73,7 @@ public sealed class ClientValidationService
             }
         }
 
+        _logger.LogInformation("Client credentials validated successfully for {ClientId}", clientId);
         return client;
     }
 
