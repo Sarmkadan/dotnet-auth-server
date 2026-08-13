@@ -37,6 +37,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string scopes,
         string? ipAddress = null)
     {
+        _logger.LogInformation("LogTokenIssuance started with UserId: {UserId}, ClientId: {ClientId}, GrantType: {GrantType}, Scopes: {Scopes}, IpAddress: {IpAddress}", userId, clientId, grantType, scopes, ipAddress ?? "unknown");
         ArgumentException.ThrowIfNullOrEmpty(nameof(userId));
         ArgumentException.ThrowIfNullOrEmpty(nameof(clientId));
         ArgumentException.ThrowIfNullOrEmpty(nameof(grantType));
@@ -68,6 +69,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string? ipAddress = null,
         bool success = true)
     {
+        _logger.LogInformation("LogAuthentication started with UserId: {UserId}, Username: {Username}, IpAddress: {IpAddress}, Success: {Success}", userId, username ?? "unknown", ipAddress ?? "unknown", success);
         ArgumentException.ThrowIfNullOrEmpty(nameof(userId));
         LogAuditEvent(new AuditLogEntry
         {
@@ -81,6 +83,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
             Timestamp = DateTime.UtcNow,
             RequestId = LogicalContext.RequestId
         });
+        _logger.LogInformation("LogAuthentication completed for UserId: {UserId}", userId);
     }
 
     /// <summary>
@@ -92,6 +95,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         bool granted,
         string reason = "")
     {
+        _logger.LogInformation("LogAuthorizationDecision started with UserId: {UserId}, ClientId: {ClientId}, Granted: {Granted}, Reason: {Reason}", userId, clientId, granted, reason);
         ArgumentException.ThrowIfNullOrEmpty(nameof(userId));
         ArgumentException.ThrowIfNullOrEmpty(nameof(clientId));
         LogAuditEvent(new AuditLogEntry
@@ -106,6 +110,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
             Timestamp = DateTime.UtcNow,
             RequestId = LogicalContext.RequestId
         });
+        _logger.LogInformation("LogAuthorizationDecision completed for UserId: {UserId}", userId);
     }
 
     /// <summary>
@@ -117,6 +122,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string? clientId = null,
         string? ipAddress = null)
     {
+        _logger.LogInformation("LogSuspiciousActivity started with ActivityType: {ActivityType}, UserId: {UserId}, ClientId: {ClientId}, IpAddress: {IpAddress}", activityType, userId ?? "unknown", clientId ?? "unknown", ipAddress ?? "unknown");
         ArgumentException.ThrowIfNullOrEmpty(nameof(activityType));
         LogAuditEvent(new AuditLogEntry
         {
@@ -132,6 +138,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
             RequestId = LogicalContext.RequestId,
             Severity = AuditSeverity.Warning
         });
+        _logger.LogInformation("LogSuspiciousActivity completed for ActivityType: {ActivityType}", activityType);
     }
 
     /// <summary>
@@ -143,6 +150,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
         string? targetUserId = null,
         Dictionary<string, string>? changes = null)
     {
+        _logger.LogInformation("LogAdministrativeAction started with Action: {Action}, TargetClientId: {TargetClientId}, TargetUserId: {TargetUserId}", action, targetClientId ?? "unknown", targetUserId ?? "unknown");
         ArgumentException.ThrowIfNullOrEmpty(nameof(action));
         ArgumentNullException.ThrowIfNull(nameof(changes));
         var details = changes ?? new Dictionary<string, string>();
@@ -158,6 +166,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
             RequestId = LogicalContext.RequestId,
             Severity = AuditSeverity.Critical
         });
+        _logger.LogInformation("LogAdministrativeAction completed for Action: {Action}", action);
     }
 
     /// <summary>
@@ -165,11 +174,14 @@ public sealed class AuditLoggingService : IAuditLoggingService
     /// </summary>
     public IEnumerable<AuditLogEntry> GetRecentEntries(int count = 100)
     {
+        _logger.LogInformation("GetRecentEntries started with Count: {Count}", count);
         if (count < 0)
         {
             throw new ArgumentException("Count must be non-negative", nameof(count));
         }
-        return _auditLog.TakeLast(count);
+        var result = _auditLog.TakeLast(count);
+        _logger.LogInformation("GetRecentEntries completed with {Count} entries", result.Count());
+        return result;
     }
 
     /// <summary>
@@ -188,17 +200,20 @@ public sealed class AuditLoggingService : IAuditLoggingService
         DateTime endTime,
         int maxCount = 100)
     {
+        _logger.LogInformation("GetEntriesByEventTypeAndTimeRange started with EventType: {EventType}, StartTime: {StartTime}, EndTime: {EndTime}, MaxCount: {MaxCount}", eventType, startTime, endTime, maxCount);
         ArgumentException.ThrowIfNullOrEmpty(nameof(eventType));
         if (maxCount < 0)
         {
             throw new ArgumentException("Max count must be non-negative", nameof(maxCount));
         }
-        return _auditLog
+        var result = _auditLog
             .Where(entry => entry.EventType == eventType
                 && entry.Timestamp >= startTime
                 && entry.Timestamp <= endTime)
             .OrderByDescending(entry => entry.Timestamp)
             .Take(maxCount);
+        _logger.LogInformation("GetEntriesByEventTypeAndTimeRange completed with {Count} entries", result.Count());
+        return result;
     }
 
     /// <summary>
@@ -207,10 +222,12 @@ public sealed class AuditLoggingService : IAuditLoggingService
     /// </summary>
     public void Clear()
     {
+        _logger.LogInformation("Clear started");
         while (_auditLog.Count > 0)
         {
             _auditLog.TryDequeue(out _);
         }
+        _logger.LogInformation("Clear completed");
     }
 
     /// <summary>
@@ -222,6 +239,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
     /// <returns>CSV-formatted string with proper escaping</returns>
     public string ExportToCsv(DateTime startTime, DateTime endTime, int maxCount = 1000)
     {
+        _logger.LogInformation("ExportToCsv started with StartTime: {StartTime}, EndTime: {EndTime}, MaxCount: {MaxCount}", startTime, endTime, maxCount);
         if (maxCount < 0)
         {
             throw new ArgumentException("Max count must be non-negative", nameof(maxCount));
@@ -231,7 +249,9 @@ public sealed class AuditLoggingService : IAuditLoggingService
             .OrderByDescending(entry => entry.Timestamp)
             .Take(maxCount);
 
-        return ExportToCsv(filteredEntries);
+        var result = ExportToCsv(filteredEntries);
+        _logger.LogInformation("ExportToCsv completed with {Count} entries", filteredEntries.Count());
+        return result;
     }
 
     /// <summary>
@@ -295,6 +315,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
 
     private void LogAuditEvent(AuditLogEntry entry)
     {
+        _logger.LogInformation("LogAuditEvent started with EventType: {EventType}, UserId: {UserId}, ClientId: {ClientId}, RequestId: {RequestId}", entry.EventType, entry.UserId ?? "unknown", entry.ClientId ?? "unknown", entry.RequestId ?? "unknown");
         _auditLog.Enqueue(entry);
 
         // Prevent unbounded memory growth
@@ -317,6 +338,7 @@ public sealed class AuditLoggingService : IAuditLoggingService
             entry.UserId ?? "unknown",
             entry.ClientId ?? "unknown",
             entry.RequestId ?? "unknown");
+        _logger.LogInformation("LogAuditEvent completed with EventType: {EventType}", entry.EventType);
     }
 }
 
