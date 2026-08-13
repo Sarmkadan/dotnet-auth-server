@@ -30,6 +30,7 @@ public sealed class JwtTokenFormatter
     /// </summary>
     public TokenInspection? InspectToken(string token)
     {
+        _logger.LogInformation("InspectToken called with {Token}", token);
         if (string.IsNullOrWhiteSpace(token))
             return null;
 
@@ -40,11 +41,13 @@ public sealed class JwtTokenFormatter
             // This does NOT validate signature or expiration
             if (!handler.CanReadToken(token))
             {
-                _logger.LogWarning("Token cannot be read as JWT");
+                _logger.LogWarning("Token cannot be read as JWT: {Token}", token);
                 return null;
             }
 
             var jwtToken = handler.ReadJwtToken(token);
+
+            _logger.LogInformation("Successfully inspected token with Subject {Subject} and Issuer {Issuer}", jwtToken.Subject, jwtToken.Issuer);
 
             return new TokenInspection
             {
@@ -71,7 +74,7 @@ public sealed class JwtTokenFormatter
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Failed to inspect JWT token");
+            _logger.LogError(ex, "Failed to inspect JWT token: {Token}", token);
             return null;
         }
     }
@@ -82,8 +85,12 @@ public sealed class JwtTokenFormatter
     /// </summary>
     public string FormatForLogging(TokenInspection inspection)
     {
+        _logger.LogInformation("FormatForLogging called");
         if (inspection is null)
+        {
+            _logger.LogWarning("FormatForLogging called with null inspection");
             return "(null token inspection)";
+        }
 
         return $"JWT{{ " +
             $"iss={inspection.Payload.Issuer}, " +
