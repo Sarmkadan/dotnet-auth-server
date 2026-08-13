@@ -70,6 +70,15 @@ public sealed class JsonTokenResponseFormatter
     }
 
     /// <summary>
+    /// Provides a concise, informative string representation of the formatter.
+    /// Since the formatter does not hold instance state, property values are shown as null.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"JsonTokenResponseFormatter {{ AccessToken = null, TokenType = null, ExpiresIn = null, RefreshToken = null, Scope = null }}";
+    }
+
+    /// <summary>
     /// DTO for JSON serialization of token responses.
     /// Uses snake_case property names per OAuth2 specification.
     /// </summary>
