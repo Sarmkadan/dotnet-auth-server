@@ -82,4 +82,6 @@ public sealed class AuthServerOptions
         Constants.GrantTypes.ClientCredentials,
         Constants.GrantTypes.Password
     ];
+    public override string ToString() => 
+        $"AuthServerOptions {{ IssuerUrl = {IssuerUrl}, JwtSigningKey = {JwtSigningKey}, JwtAlgorithm = {JwtAlgorithm}, AccessTokenLifetimeSeconds = {AccessTokenLifetimeSeconds}, RefreshTokenLifetimeSeconds = {RefreshTokenLifetimeSeconds}, AuthorizationCodeLifetimeSeconds = {AuthorizationCodeLifetimeSeconds} }}";
 }
