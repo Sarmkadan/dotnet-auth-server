@@ -8,6 +8,7 @@ namespace DotnetAuthServer.Caching;
 
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using System.Linq; // Added for LINQ operations
 
 /// <summary>
 /// In-memory cache implementation using ConcurrentDictionary.
@@ -146,5 +147,14 @@ public sealed class MemoryCacheService : ICacheService
     {
         public object? Value { get; set; }
         public DateTime? ExpiresAt { get; set; }
+    }
+
+    // Added ToString override for concise state representation
+    public override string ToString()
+    {
+        var entries = string.Join(
+            ", ",
+            _cache.Select(kv => $"{kv.Key}: {{ Value = {kv.Value.Value}, ExpiresAt = {kv.Value.ExpiresAt} }}"));
+        return $"MemoryCacheService {{ {entries} }}";
     }
 }
