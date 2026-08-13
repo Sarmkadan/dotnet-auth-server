@@ -99,6 +99,15 @@ public sealed class JwtTokenFormatter
             $"exp={inspection.Payload.ExpiresAt:O} " +
             $"}}";
     }
+
+    /// <summary>
+    /// Returns a concise, informative representation of the formatter.
+    /// Includes placeholder values for token‑related properties.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"JwtTokenFormatter {{ Header = N/A, Payload = N/A, Raw = N/A, Alg = N/A, Typ = N/A, Kid = N/A }}";
+    }
 }
 
 /// <summary>
