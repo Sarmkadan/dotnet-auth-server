@@ -58,6 +58,8 @@ public sealed class CacheOptions
     /// </summary>
     [Required]
     public CacheItemExpirations ItemExpirations { get; set; } = new();
+
+    public override string ToString() => $"CacheOptions {{ Enabled = {Enabled}, Backend = {Backend}, DefaultExpirationSeconds = {DefaultExpirationSeconds}, MaxEntries = {MaxEntries}, ExpirationScanIntervalSeconds = {ExpirationScanIntervalSeconds}, ConnectionString = {ConnectionString} }}";
 }
 
 /// <summary>
