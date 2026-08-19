@@ -97,10 +97,14 @@ public sealed class ScopeMetadataHandler
         if (string.IsNullOrWhiteSpace(scopeName))
             return null;
 
+        _logger.LogInformation("Getting scope metadata for {ScopeName}", scopeName);
         var cacheKey = $"scope_metadata:{scopeName}";
         var cached = await _cacheService.GetAsync<ScopeMetadata>(cacheKey, cancellationToken);
         if (cached is not null)
+        {
+            _logger.LogInformation("Found scope metadata for {ScopeName} in cache", scopeName);
             return cached;
+        }
 
         ScopeMetadata? metadata = null;
         if (StandardScopes.TryGetValue(scopeName, out var standardScope))
