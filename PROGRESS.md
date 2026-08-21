@@ -1,0 +1,1 @@
+Added structured logging to `UserManagementTests` in `tests/dotnet-auth-server.Tests/UserManagementTests.cs`
