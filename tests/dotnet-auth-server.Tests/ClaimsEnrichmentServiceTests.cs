@@ -31,37 +31,54 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that EnrichUserClaimsAsync adds claims for user attributes when profile and email scopes are granted.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_AddsClaimsForUserAttributes()
         {
-            // Arrange
-            var user = new User
+            _logger.Object.LogInformation("Starting test {TestName}", nameof(EnrichUserClaims_AddsClaimsForUserAttributes));
+            try
             {
-                UserId = "user123",
-                Username = "testuser",
-                Email = "test@example.com",
-                EmailVerified = true,
-                FullName = "Test User",
-                Roles = new List<string> { "admin" },
-                Attributes = new Dictionary<string, object> { { "custom", "value" } }
-            };
+                // Arrange
+                var user = new User
+                {
+                    UserId = "user123",
+                    Username = "testuser",
+                    Email = "test@example.com",
+                    EmailVerified = true,
+                    FullName = "Test User",
+                    Roles = new List<string> { "admin" },
+                    Attributes = new Dictionary<string, object> { { "custom", "value" } }
+                };
 
-            // Act
-            var claims = _service.EnrichUserClaimsAsync(user, new List<string> { "profile", "email" }).Result;
+                // Act
+                var claims = _service.EnrichUserClaimsAsync(user, new List<string> { "profile", "email" }).Result;
 
-            // Assert
-            claims.Should().Contain(claim => claim.Type == ClaimTypes.NameIdentifier && claim.Value == user.UserId);
-            claims.Should().Contain(claim => claim.Type == "name" && claim.Value == user.FullName);
-            claims.Should().Contain(claim => claim.Type == "email" && claim.Value == user.Email);
-            claims.Should().Contain(claim => claim.Type == "email_verified" && claim.Value == user.EmailVerified.ToString().ToLower());
-            claims.Should().Contain(claim => claim.Type == "roles" && claim.Value == "admin");
-            claims.Should().Contain(claim => claim.Type == "preferred_username" && claim.Value == user.Username);
-            claims.Should().Contain(claim => claim.Type == "account_created");
+                // Assert
+                claims.Should().Contain(claim => claim.Type == ClaimTypes.NameIdentifier && claim.Value == user.UserId);
+                claims.Should().Contain(claim => claim.Type == "name" && claim.Value == user.FullName);
+                claims.Should().Contain(claim => claim.Type == "email" && claim.Value == user.Email);
+                claims.Should().Contain(claim => claim.Type == "email_verified" && claim.Value == user.EmailVerified.ToString().ToLower());
+                claims.Should().Contain(claim => claim.Type == "roles" && claim.Value == "admin");
+                claims.Should().Contain(claim => claim.Type == "preferred_username" && claim.Value == user.Username);
+                claims.Should().Contain(claim => claim.Type == "account_created");
+
+                _logger.Object.LogInformation("Finished test {TestName} successfully", nameof(EnrichUserClaims_AddsClaimsForUserAttributes));
+            }
+            catch (Exception ex)
+            {
+                _logger.Object.LogError(ex, "Error in test {TestName}", nameof(EnrichUserClaims_AddsClaimsForUserAttributes));
+                throw;
+            }
         }
 
         /// <summary>
         /// Tests that EnrichUserClaimsAsync does not add duplicate claims when called multiple times with the same input.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_DoesNotAddDuplicates()
         {
             // Arrange
@@ -88,6 +105,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that EnrichUserClaimsAsync adds standard identity claims (NameIdentifier and sub) regardless of scopes.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_AddsStandardIdentityClaims()
         {
             // Arrange
@@ -113,6 +133,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that EnrichUserClaimsAsync adds profile claims (name, given_name, family_name) when the profile scope is granted.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_AddsProfileClaims_WhenScopeGranted()
         {
             // Arrange
@@ -137,6 +160,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that EnrichUserClaimsAsync adds email claims (email, email_verified) when the email scope is granted.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_AddsEmailClaims_WhenScopeGranted()
         {
             // Arrange
@@ -161,6 +187,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that EnrichUserClaimsAsync adds role claims for each role in the user's roles list.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_AddsRoleClaims()
         {
             // Arrange
@@ -187,6 +216,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that EnrichUserClaimsAsync adds application claims (preferred_username) regardless of scopes.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_AddsApplicationClaims()
         {
             // Arrange
@@ -208,6 +240,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that EnrichUserClaimsAsync does not add name claims when the user's full name is null.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void EnrichUserClaims_HandlesNullFullName()
         {
             // Arrange
@@ -233,6 +268,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that FilterClaimsByScope removes claims that are not associated with the granted scopes.
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void FilterClaimsByScope_RemovesNonGrantedClaims()
         {
             // Arrange
@@ -262,6 +300,9 @@ namespace DotnetAuthServer.Tests.Services
         /// Tests that FilterClaimsByScope includes all claims when no scopes are specified (i.e., when the scope list is empty).
         /// </summary>
         [Fact]
+        [Trait("Category", "Logging")]
+        [Trait("Scope", "Unit")]
+        [Trait("Feature", "ClaimsEnrichmentService")]
         public void FilterClaimsByScope_IncludesAllClaims_WhenNoScopes()
         {
             // Arrange
