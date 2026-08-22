@@ -28,8 +28,10 @@ public sealed class ErrorHandlingMiddlewareTests
     public ErrorHandlingMiddlewareTests()
     {
         _loggerMock = new Mock<ILogger<ErrorHandlingMiddleware>>();
+        _loggerMock.Object.LogInformation("Starting constructor {ConstructorName}", nameof(ErrorHandlingMiddlewareTests));
         _next = context => throw new InvalidOperationException("Should not be called when exception is thrown");
         _middleware = new ErrorHandlingMiddleware(_next, _loggerMock.Object);
+        _loggerMock.Object.LogInformation("Finished constructor {ConstructorName}", nameof(ErrorHandlingMiddlewareTests));
     }
 
     [Fact]
