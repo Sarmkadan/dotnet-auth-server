@@ -46,6 +46,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_Deterministic_ReturnsTrue()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_Deterministic_ReturnsTrue));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
@@ -58,6 +59,7 @@ public sealed class TotpServiceTests
         result1.Should().BeTrue("Known valid TOTP code should be accepted");
         result2.Should().BeTrue("Known valid TOTP code should be accepted");
         result3.Should().BeTrue("Known valid TOTP code should be accepted");
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_Deterministic_ReturnsTrue));
     }
 
     /// <summary>
@@ -66,6 +68,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_InvalidCode_ReturnsFalse()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_InvalidCode_ReturnsFalse));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string invalidCode = "000000";
@@ -75,6 +78,7 @@ public sealed class TotpServiceTests
 
         // Assert
         result.Should().BeFalse("Invalid code should be rejected");
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_InvalidCode_ReturnsFalse));
     }
 
     #endregion
@@ -87,6 +91,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_WithWindowTolerance_AcceptsPreviousStep()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsPreviousStep));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string currentCode = "94287082"; // Valid at counter 59
@@ -99,6 +104,7 @@ public sealed class TotpServiceTests
         // Assert
         resultCurrent.Should().BeTrue();
         resultPrevious.Should().BeTrue(); // Should accept previous step with window=1
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsPreviousStep));
     }
 
     /// <summary>
@@ -107,6 +113,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_WithZeroWindow_RejectsPreviousStep()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_WithZeroWindow_RejectsPreviousStep));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string previousCode = "708180"; // Valid at counter 58
@@ -116,6 +123,7 @@ public sealed class TotpServiceTests
 
         // Assert
         result.Should().BeFalse(); // Should reject with window=0
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_WithZeroWindow_RejectsPreviousStep));
     }
 
     /// <summary>
@@ -124,6 +132,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_WithWindowTolerance_AcceptsNextStep()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsNextStep));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string nextCode = "14050471"; // Valid at counter 60
@@ -133,6 +142,7 @@ public sealed class TotpServiceTests
 
         // Assert
         result.Should().BeTrue(); // Should accept next step with window=1
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsNextStep));
     }
 
     #endregion
@@ -145,6 +155,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_NonNumericCode_ReturnsFalse()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_NonNumericCode_ReturnsFalse));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string code = "abcdef";
@@ -154,6 +165,7 @@ public sealed class TotpServiceTests
 
         // Assert
         result.Should().BeFalse();
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_NonNumericCode_ReturnsFalse));
     }
 
     /// <summary>
@@ -162,12 +174,14 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_WrongLengthCode_ReturnsFalse()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_WrongLengthCode_ReturnsFalse));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
         // Act & Assert
         _service.VerifyTotpCode(base32Secret, "12345").Should().BeFalse();   // Too short
         _service.VerifyTotpCode(base32Secret, "1234567").Should().BeFalse(); // Too long
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_WrongLengthCode_ReturnsFalse));
     }
 
     /// <summary>
@@ -176,6 +190,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_EmptyOrWhitespaceCode_ReturnsFalse()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_EmptyOrWhitespaceCode_ReturnsFalse));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
@@ -183,6 +198,7 @@ public sealed class TotpServiceTests
         _service.VerifyTotpCode(base32Secret, "").Should().BeFalse();
         _service.VerifyTotpCode(base32Secret, "   ").Should().BeFalse();
         _service.VerifyTotpCode(base32Secret, null!).Should().BeFalse();
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_EmptyOrWhitespaceCode_ReturnsFalse));
     }
 
     /// <summary>
@@ -191,6 +207,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_InvalidBase32Secret_ReturnsFalse()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_InvalidBase32Secret_ReturnsFalse));
         // Arrange
         const string invalidSecret = "INVALID!@#$%SECRET";
         const string code = "123456";
@@ -200,6 +217,7 @@ public sealed class TotpServiceTests
 
         // Assert
         result.Should().BeFalse();
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_InvalidBase32Secret_ReturnsFalse));
     }
 
     #endregion
@@ -212,6 +230,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task InitiateSetupAsync_ValidParameters_GeneratesSetupData()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(InitiateSetupAsync_ValidParameters_GeneratesSetupData));
         // Arrange
         const string userId = "test-user-id";
         const string username = "testuser";
@@ -231,6 +250,7 @@ public sealed class TotpServiceTests
         // Verify repository calls
         _credentialRepositoryMock.Verify(r => r.DeleteByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
         _credentialRepositoryMock.Verify(r => r.CreateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Once);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(InitiateSetupAsync_ValidParameters_GeneratesSetupData));
     }
 
     /// <summary>
@@ -239,6 +259,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task ConfirmSetupAsync_ValidCode_EnablesMfa()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(ConfirmSetupAsync_ValidCode_EnablesMfa));
         // Arrange
         const string userId = "test-user-id";
         const string validCode = "123456";
@@ -264,6 +285,7 @@ public sealed class TotpServiceTests
         credential.IsEnabled.Should().BeTrue();
         credential.EnabledAt.Should().NotBeNull();
         _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Once);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(ConfirmSetupAsync_ValidCode_EnablesMfa));
     }
 
     /// <summary>
@@ -272,6 +294,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task ConfirmSetupAsync_InvalidCode_ThrowsException()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(ConfirmSetupAsync_InvalidCode_ThrowsException));
         // Arrange
         const string userId = "test-user-id";
         const string invalidCode = "000000";
@@ -294,6 +317,7 @@ public sealed class TotpServiceTests
             .Where(e => e.ErrorCode == Constants.ErrorCodes.InvalidGrant);
         credential.IsEnabled.Should().BeFalse();
         _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Never);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(ConfirmSetupAsync_InvalidCode_ThrowsException));
     }
 
     /// <summary>
@@ -302,6 +326,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task ConfirmSetupAsync_NoPendingCredential_ThrowsException()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(ConfirmSetupAsync_NoPendingCredential_ThrowsException));
         // Arrange
         const string userId = "test-user-id";
         const string code = "123456";
@@ -315,6 +340,7 @@ public sealed class TotpServiceTests
         // Assert
         await act.Should().ThrowAsync<AuthServerException>()
             .Where(e => e.ErrorCode == Constants.ErrorCodes.InvalidRequest);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(ConfirmSetupAsync_NoPendingCredential_ThrowsException));
     }
 
     #endregion
@@ -327,6 +353,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task VerifyAsync_ValidTotpCode_ReturnsTrue()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyAsync_ValidTotpCode_ReturnsTrue));
         // Arrange
         const string userId = "test-user-id";
         const string validCode = "123456";
@@ -348,6 +375,7 @@ public sealed class TotpServiceTests
         result.Should().BeTrue();
         credential.LastUsedAt.Should().NotBeNull();
         _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Once);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyAsync_ValidTotpCode_ReturnsTrue));
     }
 
     /// <summary>
@@ -356,6 +384,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task VerifyAsync_ValidBackupCode_MarksAsUsed()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyAsync_ValidBackupCode_MarksAsUsed));
         // Arrange
         const string userId = "test-user-id";
         const string backupCode = "ABCDEF12";
@@ -378,6 +407,7 @@ public sealed class TotpServiceTests
         credential.BackupCodes.Should().ContainSingle(c => c == "GHIJKL34"); // Used code should be removed
         credential.LastUsedAt.Should().NotBeNull();
         _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Once);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyAsync_ValidBackupCode_MarksAsUsed));
     }
 
     /// <summary>
@@ -386,6 +416,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task VerifyAsync_DisabledMfa_ReturnsFalse()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyAsync_DisabledMfa_ReturnsFalse));
         // Arrange
         const string userId = "test-user-id";
         const string code = "123456";
@@ -406,6 +437,7 @@ public sealed class TotpServiceTests
         // Assert
         result.Should().BeFalse();
         _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Never);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyAsync_DisabledMfa_ReturnsFalse));
     }
 
     /// <summary>
@@ -414,6 +446,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task VerifyAsync_NoCredential_ReturnsFalse()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyAsync_NoCredential_ReturnsFalse));
         // Arrange
         const string userId = "test-user-id";
         const string code = "123456";
@@ -426,6 +459,7 @@ public sealed class TotpServiceTests
 
         // Assert
         result.Should().BeFalse();
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyAsync_NoCredential_ReturnsFalse));
     }
 
     #endregion
@@ -438,6 +472,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task GetStatusAsync_EnabledMfa_ReturnsCorrectStatus()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(GetStatusAsync_EnabledMfa_ReturnsCorrectStatus));
         // Arrange
         const string userId = "test-user-id";
         var now = DateTime.UtcNow;
@@ -462,6 +497,7 @@ public sealed class TotpServiceTests
         result.EnabledAt.Should().BeCloseTo(now.AddDays(-10), TimeSpan.FromMinutes(1));
         result.LastUsedAt.Should().BeCloseTo(now.AddDays(-2), TimeSpan.FromMinutes(1));
         result.BackupCodesRemaining.Should().Be(3);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(GetStatusAsync_EnabledMfa_ReturnsCorrectStatus));
     }
 
     /// <summary>
@@ -470,6 +506,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task GetStatusAsync_DisabledMfa_ReturnsCorrectStatus()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(GetStatusAsync_DisabledMfa_ReturnsCorrectStatus));
         // Arrange
         const string userId = "test-user-id";
         var credential = new TotpCredential
@@ -490,6 +527,7 @@ public sealed class TotpServiceTests
         result.EnabledAt.Should().BeNull();
         result.LastUsedAt.Should().BeNull();
         result.BackupCodesRemaining.Should().Be(0);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(GetStatusAsync_DisabledMfa_ReturnsCorrectStatus));
     }
 
     /// <summary>
@@ -498,6 +536,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task GetStatusAsync_NoCredential_ReturnsDisabledStatus()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(GetStatusAsync_NoCredential_ReturnsDisabledStatus));
         // Arrange
         const string userId = "test-user-id";
 
@@ -512,6 +551,7 @@ public sealed class TotpServiceTests
         result.EnabledAt.Should().BeNull();
         result.LastUsedAt.Should().BeNull();
         result.BackupCodesRemaining.Should().Be(0);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(GetStatusAsync_NoCredential_ReturnsDisabledStatus));
     }
 
     #endregion
@@ -524,6 +564,7 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task DisableMfaAsync_ExistingCredential_RemovesCredential()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(DisableMfaAsync_ExistingCredential_RemovesCredential));
         // Arrange
         const string userId = "test-user-id";
 
@@ -532,6 +573,7 @@ public sealed class TotpServiceTests
 
         // Assert
         _credentialRepositoryMock.Verify(r => r.DeleteByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(DisableMfaAsync_ExistingCredential_RemovesCredential));
     }
 
     #endregion
@@ -544,6 +586,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void Base32_EncodeThenDecode_ReturnsOriginalBytes()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(Base32_EncodeThenDecode_ReturnsOriginalBytes));
         // Arrange
         var originalBytes = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 
@@ -553,6 +596,7 @@ public sealed class TotpServiceTests
 
         // Assert
         decoded.Should().BeEquivalentTo(originalBytes);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(Base32_EncodeThenDecode_ReturnsOriginalBytes));
     }
 
     /// <summary>
@@ -561,6 +605,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void Base32_DecodeLowercaseInput_ReturnsCorrectBytes()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(Base32_DecodeLowercaseInput_ReturnsCorrectBytes));
         // Arrange
         const string lowercaseInput = "gezdgnbvgy3tqojqgezdgnbvgy3tqojq";
         var expectedBytes = TotpService.DecodeBase32("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ");
@@ -570,6 +615,7 @@ public sealed class TotpServiceTests
 
         // Assert
         result.Should().BeEquivalentTo(expectedBytes);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(Base32_DecodeLowercaseInput_ReturnsCorrectBytes));
     }
 
     /// <summary>
@@ -578,6 +624,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void Base32_DecodeInputWithInvalidCharacters_IgnoresInvalidChars()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(Base32_DecodeInputWithInvalidCharacters_IgnoresInvalidChars));
         // Arrange
         const string inputWithInvalid = "GE-ZD_GN+BV&GY3TQOJQGEZDGNBVGY3TQOJQ";
         var expectedBytes = TotpService.DecodeBase32("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ");
@@ -587,6 +634,7 @@ public sealed class TotpServiceTests
 
         // Assert - Check that the valid portion matches
         result.Take(expectedBytes.Length).Should().BeEquivalentTo(expectedBytes);
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(Base32_DecodeInputWithInvalidCharacters_IgnoresInvalidChars));
     }
 
     #endregion
@@ -599,6 +647,7 @@ public sealed class TotpServiceTests
     [Fact]
     public void BuildProvisioningUri_ValidParameters_CreatesCorrectUri()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(BuildProvisioningUri_ValidParameters_CreatesCorrectUri));
         // Arrange
         const string secretKey = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string username = "testuser";
@@ -614,6 +663,7 @@ public sealed class TotpServiceTests
         uri.Should().Contain("algorithm=SHA1&digits=6&period=30");
         // Username and issuer should be URL-encoded in the label
         uri.Should().Contain($"{Uri.EscapeDataString($"{issuer}:{username}")}");
+        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(BuildProvisioningUri_ValidParameters_CreatesCorrectUri));
     }
 
     #endregion
