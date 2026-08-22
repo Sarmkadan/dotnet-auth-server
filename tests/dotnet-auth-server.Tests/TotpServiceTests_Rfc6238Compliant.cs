@@ -36,6 +36,8 @@ public sealed class TotpServiceTests_Rfc6238Compliant
             _credentialRepositoryMock.Object,
             _loggerMock.Object,
             _options);
+
+        _loggerMock.Object.LogInformation("TotpServiceTests_Rfc6238Compliant test class initialized");
     }
 
     #region RFC 6238 Algorithm Verification
@@ -47,6 +49,8 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void TotpAlgorithm_UsesHmacSha1_AsRequiredByRfc6238()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(TotpAlgorithm_UsesHmacSha1_AsRequiredByRfc6238));
+
         // Arrange
         var key = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78 };
 
@@ -54,6 +58,8 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         // The implementation clearly shows it uses HMACSHA1
         // This is verified by code inspection: line 219 shows "using var hmac = new HMACSHA1(key);"
         true.Should().BeTrue("Implementation uses HMACSHA1 as required by RFC 6238");
+
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(TotpAlgorithm_UsesHmacSha1_AsRequiredByRfc6238));
     }
 
     /// <summary>
@@ -62,6 +68,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void TotpAlgorithm_ProducesExactlySixDigits()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(TotpAlgorithm_ProducesExactlySixDigits));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
@@ -69,6 +76,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         // Test that our implementation only accepts 6-digit codes
         _service.VerifyTotpCode(base32Secret, "12345").Should().BeFalse("5-digit code should be rejected");
         _service.VerifyTotpCode(base32Secret, "1234567").Should().BeFalse("7-digit code should be rejected");
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(TotpAlgorithm_ProducesExactlySixDigits));
     }
 
     /// <summary>
@@ -77,6 +85,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void TotpAlgorithm_ValidatesOnlyNumericCodes()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(TotpAlgorithm_ValidatesOnlyNumericCodes));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
@@ -84,6 +93,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         _service.VerifyTotpCode(base32Secret, "abcdef").Should().BeFalse("Non-numeric code should be rejected");
         _service.VerifyTotpCode(base32Secret, "12a456").Should().BeFalse("Mixed alphanumeric code should be rejected");
         _service.VerifyTotpCode(base32Secret, "12-456").Should().BeFalse("Code with special characters should be rejected");
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(TotpAlgorithm_ValidatesOnlyNumericCodes));
     }
 
     /// <summary>
@@ -92,6 +102,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void TotpAlgorithm_HandlesEmptyOrNullCodes()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(TotpAlgorithm_HandlesEmptyOrNullCodes));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
@@ -99,6 +110,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         _service.VerifyTotpCode(base32Secret, "").Should().BeFalse("Empty code should be rejected");
         _service.VerifyTotpCode(base32Secret, " ").Should().BeFalse("Whitespace-only code should be rejected");
         _service.VerifyTotpCode(base32Secret, null!).Should().BeFalse("Null code should be rejected");
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(TotpAlgorithm_HandlesEmptyOrNullCodes));
     }
 
     /// <summary>
@@ -107,6 +119,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void TotpAlgorithm_Rfc6238_TestSecret_ProducesValidFormat()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(TotpAlgorithm_Rfc6238_TestSecret_ProducesValidFormat));
         // Arrange
         // RFC 6238 Test Case 1
         const string base32Secret = "GEZDGNBVGY3TQOJQ";
@@ -119,6 +132,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         // Both should return boolean values (true or false)
         result1.Should().BeFalse();
         result2.Should().BeFalse();
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(TotpAlgorithm_Rfc6238_TestSecret_ProducesValidFormat));
     }
 
     #endregion
@@ -131,6 +145,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void VerifyTotpCode_WindowTolerance_RespectsWindowParameter()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(VerifyTotpCode_WindowTolerance_RespectsWindowParameter));
         // Arrange
         const string testCode = "123456";
 
@@ -144,6 +159,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         result0.Should().BeFalse();
         result1.Should().BeFalse();
         result2.Should().BeFalse();
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(VerifyTotpCode_WindowTolerance_RespectsWindowParameter));
     }
 
     /// <summary>
@@ -152,6 +168,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void VerifyTotpCode_InvalidCodes_RejectedRegardlessOfWindowSize()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(VerifyTotpCode_InvalidCodes_RejectedRegardlessOfWindowSize));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string invalidCode = "000000"; // Clearly invalid
@@ -161,6 +178,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         _service.VerifyTotpCode(base32Secret, invalidCode, windowSteps: 1).Should().BeFalse();
         _service.VerifyTotpCode(base32Secret, invalidCode, windowSteps: 2).Should().BeFalse();
         _service.VerifyTotpCode(base32Secret, invalidCode, windowSteps: 5).Should().BeFalse();
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(VerifyTotpCode_InvalidCodes_RejectedRegardlessOfWindowSize));
     }
 
     #endregion
@@ -173,6 +191,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void Base32_EncodingDecoding_IsCorrect()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(Base32_EncodingDecoding_IsCorrect));
         // Arrange
         var originalBytes = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 
@@ -182,6 +201,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
 
         // Assert
         decoded.Should().BeEquivalentTo(originalBytes);
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(Base32_EncodingDecoding_IsCorrect));
     }
 
     /// <summary>
@@ -190,6 +210,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void Base32_HandlesPaddingCorrectly()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(Base32_HandlesPaddingCorrectly));
         // Arrange
         const string paddedInput = "GEZDGNBVGY3TQOJQ====="; // Extra padding
         const string unpaddedInput = "GEZDGNBVGY3TQOJQ";     // No padding
@@ -203,6 +224,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         // Assert
         result1.Should().BeEquivalentTo(result2); // Padding should be ignored
         result2.Should().BeEquivalentTo(result3); // Standard form should work
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(Base32_HandlesPaddingCorrectly));
     }
 
     /// <summary>
@@ -211,6 +233,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void Base32_IgnoresInvalidCharacters()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(Base32_IgnoresInvalidCharacters));
         // Arrange
         const string cleanInput = "GEZDGNBVGY3TQOJQ";
         const string dirtyInput = "GEZDGNBVGY3TQOJQ"; // Invalid chars are already filtered by IndexOf
@@ -222,6 +245,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         // Assert
         cleanResult.Should().BeEquivalentTo(dirtyResult); // Should produce same result
         cleanResult.Should().HaveCount(10); // 80 bits = 10 bytes
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(Base32_IgnoresInvalidCharacters));
     }
 
     #endregion
@@ -234,6 +258,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
     [Fact]
     public void BuildProvisioningUri_CreatesCorrectRfc6238Format()
     {
+        _loggerMock.Object.LogInformation("Starting {MethodName}", nameof(BuildProvisioningUri_CreatesCorrectRfc6238Format));
         // Arrange
         const string secretKey = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         const string username = "testuser";
@@ -251,6 +276,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         uri.Should().Contain("period=30");
         // Label should be issuer:username (both URL-encoded)
         uri.Should().Contain($"{Uri.EscapeDataString($"{issuer}:{username}")}");
+        _loggerMock.Object.LogInformation("Finished {MethodName}", nameof(BuildProvisioningUri_CreatesCorrectRfc6238Format));
     }
 
     #endregion
