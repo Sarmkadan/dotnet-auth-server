@@ -30,7 +30,10 @@ public sealed class TokenValidator : ITokenValidator
     /// </summary>
     public async Task<IntrospectionResponse> ValidateTokenAsync(string token, string? tokenTypeHint = null)
     {
-        return _introspectionHandler.IntrospectToken(token);
+        _logger.LogInformation("Validating token with hint {TokenTypeHint}", tokenTypeHint);
+        var result = _introspectionHandler.IntrospectToken(token);
+        _logger.LogInformation("Token validation complete");
+        return result;
     }
 
     /// <summary>
@@ -38,7 +41,10 @@ public sealed class TokenValidator : ITokenValidator
     /// </summary>
     public IntrospectionResponse IntrospectToken(string token)
     {
-        return _introspectionHandler.IntrospectToken(token);
+        _logger.LogInformation("Introspecting token");
+        var result = _introspectionHandler.IntrospectToken(token);
+        _logger.LogInformation("Token introspection complete");
+        return result;
     }
 
     /// <summary>
@@ -46,6 +52,17 @@ public sealed class TokenValidator : ITokenValidator
     /// </summary>
     public async Task<RevocationResult> RevokeTokenAsync(string token, string? tokenTypeHint, CancellationToken cancellationToken)
     {
-        return await _revocationHandler.RevokeTokenAsync(token, tokenTypeHint, cancellationToken);
+        _logger.LogInformation("Revoking token with hint {TokenTypeHint}", tokenTypeHint);
+        try
+        {
+            var result = await _revocationHandler.RevokeTokenAsync(token, tokenTypeHint, cancellationToken);
+            _logger.LogInformation("Token revocation complete");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred during token revocation");
+            throw;
+        }
     }
 }
