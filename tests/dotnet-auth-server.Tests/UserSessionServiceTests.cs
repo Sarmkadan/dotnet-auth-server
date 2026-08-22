@@ -52,7 +52,9 @@ public sealed class UserSessionServiceTests
         var userAgent = "TestAgent/1.0";
 
         // Act
+        _loggerMock.Object.LogInformation("Creating session for user {UserId} with client {ClientId}", userId, clientId);
         var session = await _service.CreateSessionAsync(userId, clientId, grantedScopes, ipAddress, userAgent);
+        _loggerMock.Object.LogInformation("Session created for user {UserId} with id {SessionId}", userId, session.SessionId);
 
         // Assert
         session.Should().NotBeNull();
@@ -75,7 +77,9 @@ public sealed class UserSessionServiceTests
             .ReturnsAsync(new[] { session1, session2 });
 
         // Act
+        _loggerMock.Object.LogInformation("Fetching active sessions for user {UserId}", userId);
         var activeSessions = await _service.GetActiveSessionsAsync(userId);
+        _loggerMock.Object.LogInformation("Fetched {Count} active sessions for user {UserId}", activeSessions.Count(), userId);
 
         // Assert
         activeSessions.Should().HaveCount(2);
@@ -112,7 +116,9 @@ public sealed class UserSessionServiceTests
             .ReturnsAsync(session);
 
         // Act
+        _loggerMock.Object.LogWarning("Revoking session {SessionId}", sessionId);
         await _service.RevokeSessionAsync(sessionId);
+        _loggerMock.Object.LogInformation("Session {SessionId} successfully revoked", sessionId);
 
         // Assert
         session.IsRevoked.Should().BeTrue();
@@ -128,6 +134,7 @@ public sealed class UserSessionServiceTests
             .ReturnsAsync((UserSession)null);
 
         // Act & Assert
+        _loggerMock.Object.LogWarning("Attempt to revoke non-existent session {SessionId}", sessionId);
         await Assert.ThrowsAsync<AuthServerException>(() => _service.RevokeSessionAsync(sessionId));
     }
 
@@ -143,7 +150,9 @@ public sealed class UserSessionServiceTests
             .ReturnsAsync(new[] { session1, session2 });
 
         // Act
+        _loggerMock.Object.LogInformation("Revoking all sessions for user {UserId}", userId);
         var count = await _service.RevokeAllUserSessionsAsync(userId);
+        _loggerMock.Object.LogInformation("Successfully revoked {Count} sessions for user {UserId}", count, userId);
 
         // Assert
         count.Should().Be(2);
@@ -164,7 +173,9 @@ public sealed class UserSessionServiceTests
             .ReturnsAsync(new[] { session1, session2 });
 
         // Act
+        _loggerMock.Object.LogInformation("Revoking all sessions for user {UserId} except {KeepSessionId}", userId, keepSessionId);
         var count = await _service.RevokeAllOtherUserSessionsAsync(userId, keepSessionId);
+        _loggerMock.Object.LogInformation("Successfully revoked {Count} sessions for user {UserId}", count, userId);
 
         // Assert
         count.Should().Be(1);
