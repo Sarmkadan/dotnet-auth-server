@@ -20,6 +20,7 @@ public sealed class PolicyEnforcementServiceTests
     {
         _logger = new MockLogger<PolicyEnforcementService>();
         _service = new PolicyEnforcementService(_logger);
+        _logger.LogInformation("Creating {ClassName} test instance", nameof(PolicyEnforcementServiceTests));
     }
 
     #region Constructor and Initial State
@@ -30,8 +31,10 @@ public sealed class PolicyEnforcementServiceTests
     [Fact]
     public void Constructor_InitializesWithDefaultPolicies()
     {
+        _logger.LogInformation("Testing {MethodName} - verifying service initialization", nameof(Constructor_InitializesWithDefaultPolicies));
         // Arrange & Act
         var service = new PolicyEnforcementService(_logger);
+        _logger.LogInformation("Service initialization completed for {MethodName}", nameof(Constructor_InitializesWithDefaultPolicies));
 
         // Assert
         service.Should().NotBeNull();
@@ -47,6 +50,7 @@ public sealed class PolicyEnforcementServiceTests
     [Fact]
     public void EvaluatePolicy_AdminRole_Allowed()
     {
+        _logger.LogInformation("Testing {MethodName} - evaluating admin role policy", nameof(EvaluatePolicy_AdminRole_Allowed));
         // Arrange
         var claims = new List<Claim>
         {
@@ -58,6 +62,7 @@ public sealed class PolicyEnforcementServiceTests
 
         // Act
         var result = _service.EvaluatePolicy("AdminOnly", principal);
+        _logger.LogInformation("Policy evaluation result for {MethodName}: {Result}", nameof(EvaluatePolicy_AdminRole_Allowed), result);
 
         // Assert
         result.Should().BeTrue();
@@ -69,6 +74,7 @@ public sealed class PolicyEnforcementServiceTests
     [Fact]
     public void EvaluatePolicy_NonAdminRole_Denied()
     {
+        _logger.LogInformation("Testing {MethodName} - evaluating non-admin role policy", nameof(EvaluatePolicy_NonAdminRole_Denied));
         // Arrange
         var claims = new List<Claim>
         {
@@ -80,6 +86,7 @@ public sealed class PolicyEnforcementServiceTests
 
         // Act
         var result = _service.EvaluatePolicy("AdminOnly", principal);
+        _logger.LogInformation("Policy evaluation result for {MethodName}: {Result}", nameof(EvaluatePolicy_NonAdminRole_Denied), result);
 
         // Assert
         result.Should().BeFalse();
@@ -91,6 +98,7 @@ public sealed class PolicyEnforcementServiceTests
     [Fact]
     public void EvaluatePolicy_RoleAnyMatch_AllowedWithAnyRole()
     {
+        _logger.LogInformation("Testing {MethodName} - evaluating role any match policy", nameof(EvaluatePolicy_RoleAnyMatch_AllowedWithAnyRole));
         // Arrange
         var claims = new List<Claim>
         {
@@ -119,6 +127,7 @@ public sealed class PolicyEnforcementServiceTests
 
         // Act
         var result = _service.EvaluatePolicy("ContentEditor", principal);
+        _logger.LogInformation("Policy evaluation result for {MethodName}: {Result}", nameof(EvaluatePolicy_RoleAnyMatch_AllowedWithAnyRole), result);
 
         // Assert
         result.Should().BeTrue();
@@ -130,6 +139,7 @@ public sealed class PolicyEnforcementServiceTests
     [Fact]
     public void EvaluatePolicy_RoleAnyMatch_DeniedWithNoMatchingRoles()
     {
+        _logger.LogInformation("Testing {MethodName} - evaluating role any match policy with no matching roles", nameof(EvaluatePolicy_RoleAnyMatch_DeniedWithNoMatchingRoles));
         // Arrange
         var claims = new List<Claim>
         {
@@ -157,6 +167,7 @@ public sealed class PolicyEnforcementServiceTests
 
         // Act
         var result = _service.EvaluatePolicy("AdminOrEditor", principal);
+        _logger.LogInformation("Policy evaluation result for {MethodName}: {Result}", nameof(EvaluatePolicy_RoleAnyMatch_DeniedWithNoMatchingRoles), result);
 
         // Assert
         result.Should().BeFalse();
@@ -258,6 +269,7 @@ public sealed class PolicyEnforcementServiceTests
     [Fact]
     public void EvaluatePolicy_MissingPolicy_ReturnsFalse()
     {
+        _logger.LogInformation("Testing {MethodName} - evaluating missing policy", nameof(EvaluatePolicy_MissingPolicy_ReturnsFalse));
         // Arrange
         var claims = new List<Claim>
         {
@@ -269,6 +281,7 @@ public sealed class PolicyEnforcementServiceTests
 
         // Act
         var result = _service.EvaluatePolicy("NonExistentPolicy", principal);
+        _logger.LogInformation("Policy evaluation result for {MethodName}: {Result}", nameof(EvaluatePolicy_MissingPolicy_ReturnsFalse), result);
 
         // Assert
         result.Should().BeFalse();
