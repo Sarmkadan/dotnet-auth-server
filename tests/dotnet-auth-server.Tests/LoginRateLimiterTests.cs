@@ -37,6 +37,7 @@ public sealed class LoginRateLimiterTests
     [Fact]
     public void ThrowIfBlocked_NoAttempts_DoesNotThrow()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestName}", nameof(ThrowIfBlocked_NoAttempts_DoesNotThrow));
         // Arrange
         var username = "testuser";
         var ipAddress = "192.168.1.1";
@@ -46,6 +47,7 @@ public sealed class LoginRateLimiterTests
 
         // Assert
         act.Should().NotThrow<AuthServerException>();
+        _loggerMock.Object.LogInformation("Finished test {TestName}", nameof(ThrowIfBlocked_NoAttempts_DoesNotThrow));
     }
 
     /// <summary>
