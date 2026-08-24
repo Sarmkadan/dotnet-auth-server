@@ -189,6 +189,8 @@ public sealed class RevocationResult
     /// </summary>
     public string? Error { get; set; }
 
+    public override string ToString() => $"RevocationResult {{ Success = {Success}, Revoked = {Revoked}, Error = {Error} }}";
+
     /// <summary>
     /// Initializes a new instance of the <see cref="RevocationResult"/> class.
     /// </summary>
