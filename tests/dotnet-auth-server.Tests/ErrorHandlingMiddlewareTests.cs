@@ -34,6 +34,15 @@ public sealed class ErrorHandlingMiddlewareTests
         _loggerMock.Object.LogInformation("Finished constructor {ConstructorName}", nameof(ErrorHandlingMiddlewareTests));
     }
 
+    public string? Error { get; init; }
+
+    public string? ErrorDescription { get; init; }
+
+    public string? ErrorUri { get; init; }
+
+    public override string ToString() =>
+        $"ErrorHandlingMiddlewareTests {{ Error = {Error}, ErrorDescription = {ErrorDescription}, ErrorUri = {ErrorUri} }}";
+
     [Fact]
     public void Constructor_InitializesProperties()
     {
