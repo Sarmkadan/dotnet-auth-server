@@ -26,7 +26,7 @@ public sealed class UserinfoHandler
         _logger = logger;
     }
 
-    public override string ToString() => $"UserinfoHandler {{ Sub = {Sub}, Name = {Name}, GivenName = {GivenName}, FamilyName = {FamilyName}, UpdatedAt = {UpdatedAt}, Email = {Email} }}";
+    public override string ToString() => "UserinfoHandler";
 
     /// <summary>
     /// Retrieves user information based on claims from an access token.
