@@ -8,8 +8,14 @@ using DotnetAuthServer.Exceptions;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Tests for the <see cref="AuthServerException"/> class.
+/// </summary>
 public sealed class AuthServerExceptionTests
 {
+    /// <summary>
+    /// Verifies that constructing an AuthServerException with required parameters sets the ErrorCode, StatusCode, ErrorDescription, and Message properties correctly, while leaving ErrorUri null and Details empty.
+    /// </summary>
     [Fact]
     public void Constructor_WithRequiredParameters_SetsPropertiesCorrectly()
     {
@@ -28,6 +34,9 @@ public sealed class AuthServerExceptionTests
         exception.Message.Should().Be("The request is missing a required parameter");
     }
 
+    /// <summary>
+    /// Verifies that constructing an AuthServerException with all parameters (including inner exception and details) sets all corresponding properties correctly.
+    /// </summary>
     [Fact]
     public void Constructor_WithAllParameters_SetsAllProperties()
     {
@@ -54,6 +63,9 @@ public sealed class AuthServerExceptionTests
         exception.InnerException.Should().BeSameAs(innerException);
     }
 
+    /// <summary>
+    /// Verifies that when the errorDescription parameter is null, the constructor sets the ErrorDescription property to the message parameter value.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullErrorDescription_SetsErrorDescriptionToMessage()
     {
@@ -71,6 +83,9 @@ public sealed class AuthServerExceptionTests
         exception.Message.Should().Be("Internal server error occurred");
     }
 
+    /// <summary>
+    /// Verifies that when the errorDescription parameter is an empty string, the constructor sets the ErrorDescription property to an empty string.
+    /// </summary>
     [Fact]
     public void Constructor_WithEmptyErrorDescription_SetsErrorDescriptionToEmptyString()
     {
@@ -88,6 +103,9 @@ public sealed class AuthServerExceptionTests
         exception.Message.Should().Be("Service is temporarily unavailable");
     }
 
+    /// <summary>
+    /// Verifies that the constructor does not trim whitespace from the errorDescription parameter; leading and trailing spaces are preserved.
+    /// </summary>
     [Fact]
     public void Constructor_WithWhitespaceErrorDescription_DoesNotTrimErrorDescription()
     {
@@ -102,6 +120,9 @@ public sealed class AuthServerExceptionTests
         exception.ErrorDescription.Should().Be("   Client authentication failed   ");
     }
 
+    /// <summary>
+    /// Verifies that constructing an AuthServerException without specifying a status code defaults the StatusCode property to 400.
+    /// </summary>
     [Fact]
     public void Constructor_WithDefaultStatusCode_SetsStatusCodeTo400()
     {
@@ -114,6 +135,9 @@ public sealed class AuthServerExceptionTests
         exception.StatusCode.Should().Be(400);
     }
 
+    /// <summary>
+    /// Verifies that the ErrorCode property is mutable and can be changed after construction.
+    /// </summary>
     [Fact]
     public void ErrorCode_IsSettable()
     {
@@ -127,6 +151,9 @@ public sealed class AuthServerExceptionTests
         exception.ErrorCode.Should().Be("new_error_code");
     }
 
+    /// <summary>
+    /// Verifies that the StatusCode property is mutable and can be changed after construction.
+    /// </summary>
     [Fact]
     public void StatusCode_IsSettable()
     {
@@ -140,6 +167,9 @@ public sealed class AuthServerExceptionTests
         exception.StatusCode.Should().Be(401);
     }
 
+    /// <summary>
+    /// Verifies that the ErrorDescription property is mutable and can be changed after construction.
+    /// </summary>
     [Fact]
     public void ErrorDescription_IsSettable()
     {
@@ -153,6 +183,9 @@ public sealed class AuthServerExceptionTests
         exception.ErrorDescription.Should().Be("new description");
     }
 
+    /// <summary>
+    /// Verifies that the ErrorUri property is mutable and can be changed after construction.
+    /// </summary>
     [Fact]
     public void ErrorUri_IsSettable()
     {
@@ -166,6 +199,9 @@ public sealed class AuthServerExceptionTests
         exception.ErrorUri.Should().Be("https://example.com/docs");
     }
 
+    /// <summary>
+    /// Verifies that the Details property is initialized as an empty dictionary and can be modified after construction.
+    /// </summary>
     [Fact]
     public void Details_IsSettable_AndInitializesEmpty()
     {
@@ -177,6 +213,9 @@ public sealed class AuthServerExceptionTests
         exception.Details.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Verifies that ToErrorResponse returns a dictionary containing the error and error_description keys when only basic properties are set.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_WithBasicProperties_ReturnsCorrectDictionary()
     {
@@ -196,6 +235,9 @@ public sealed class AuthServerExceptionTests
         response.Should().HaveCount(2);
     }
 
+    /// <summary>
+    /// Verifies that ToErrorResponse includes the error_uri key in the returned dictionary when the ErrorUri property is set.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_WithErrorUri_IncludesUriInResponse()
     {
@@ -215,6 +257,9 @@ public sealed class AuthServerExceptionTests
         response.Should().HaveCount(3);
     }
 
+    /// <summary>
+    /// Verifies that ToErrorResponse includes any custom details added to the Details property in the returned dictionary.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_WithDetails_IncludesDetailsInResponse()
     {
@@ -238,6 +283,9 @@ public sealed class AuthServerExceptionTests
         response.Should().HaveCount(5);
     }
 
+    /// <summary>
+    /// Verifies that when ErrorDescription is null, ToErrorResponse uses the Message property value for the error_description key.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_WithNullErrorDescription_UsesMessage()
     {
@@ -255,6 +303,9 @@ public sealed class AuthServerExceptionTests
         response.Should().ContainKey("error_description").WhoseValue.Should().Be("Internal server error");
     }
 
+    /// <summary>
+    /// Verifies that ToErrorResponse returns the same two-key dictionary when Details is empty, regardless of its emptiness.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_WithEmptyDetails_DoesNotAffectResponse()
     {
@@ -271,6 +322,9 @@ public sealed class AuthServerExceptionTests
         response.Should().HaveCount(2);
     }
 
+    /// <summary>
+    /// Verifies that calling ToErrorResponse multiple times returns equivalent but distinct dictionary instances.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_ReturnsNewDictionaryEachTime()
     {
@@ -289,6 +343,9 @@ public sealed class AuthServerExceptionTests
         response1.Should().BeEquivalentTo(response2);
     }
 
+    /// <summary>
+    /// Verifies that if the Details property contains keys that match standard OAuth2 error response keys ("error" or "error_description"), those values take precedence in the ToErrorResponse output.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_WithDetailsOverwritesStandardKeys()
     {
@@ -308,6 +365,9 @@ public sealed class AuthServerExceptionTests
         response.Should().ContainKey("error_description").WhoseValue.Should().Be("custom_description");
     }
 
+    /// <summary>
+    /// Verifies that the Message property (inherited from Exception) is correctly set by the constructor.
+    /// </summary>
     [Fact]
     public void Message_InheritedFromException_IsCorrect()
     {
@@ -321,6 +381,9 @@ public sealed class AuthServerExceptionTests
         exception.Message.Should().Be(message);
     }
 
+    /// <summary>
+    /// Verifies that the InnerException property is correctly preserved when passed to the constructor.
+    /// </summary>
     [Fact]
     public void InnerException_IsPreserved()
     {
@@ -338,6 +401,9 @@ public sealed class AuthServerExceptionTests
         exception.InnerException.Should().BeSameAs(inner);
     }
 
+    /// <summary>
+    /// Verifies that the ToString() method (inherited from Exception) returns a string containing the exception type and message.
+    /// </summary>
     [Fact]
     public void ToString_IncludesExceptionTypeAndMessage()
     {
@@ -355,6 +421,9 @@ public sealed class AuthServerExceptionTests
         result.Should().Contain("Too many requests");
     }
 
+    /// <summary>
+    /// Verifies that the Details property can be modified after construction by adding, updating, and removing entries.
+    /// </summary>
     [Fact]
     public void Details_CanBeModifiedAfterConstruction()
     {
@@ -373,6 +442,9 @@ public sealed class AuthServerExceptionTests
         exception.Details["key3"].Should().Be(true);
     }
 
+    /// <summary>
+    /// Verifies that constructing an AuthServerException with an empty error code string does not throw and sets the ErrorCode property to empty.
+    /// </summary>
     [Fact]
     public void Constructor_WithEmptyErrorCode_DoesNotThrow()
     {
@@ -386,6 +458,9 @@ public sealed class AuthServerExceptionTests
         exception.ErrorCode.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Verifies that the constructor does not trim whitespace from the errorCode parameter; leading and trailing spaces are preserved.
+    /// </summary>
     [Fact]
     public void Constructor_WithWhitespaceErrorCode_DoesNotTrimErrorCode()
     {
@@ -399,6 +474,9 @@ public sealed class AuthServerExceptionTests
         exception.ErrorCode.Should().Be("  invalid_request  ");
     }
 
+    /// <summary>
+    /// Verifies that constructing an AuthServerException with a null message does not throw and the Message property gets a default value (not null).
+    /// </summary>
     [Fact]
     public void Constructor_WithNullMessage_DoesNotThrow()
     {
@@ -412,6 +490,9 @@ public sealed class AuthServerExceptionTests
         exception.Message.Should().NotBeNull();
     }
 
+    /// <summary>
+    /// Verifies that constructing an AuthServerException with a null error code does not throw and sets the ErrorCode property to null.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullErrorCode_DoesNotThrow()
     {
@@ -425,6 +506,9 @@ public sealed class AuthServerExceptionTests
         exception.ErrorCode.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that ToErrorResponse correctly handles special characters (<, >, &, ", ') in the error description without throwing or altering them.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_HandlesSpecialCharactersInValues()
     {
@@ -441,6 +525,9 @@ public sealed class AuthServerExceptionTests
         response.Should().ContainKey("error_description");
     }
 
+    /// <summary>
+    /// Verifies that ToErrorResponse correctly handles Unicode characters in the error description without throwing or altering them.
+    /// </summary>
     [Fact]
     public void ToErrorResponse_HandlesUnicodeCharacters()
     {
