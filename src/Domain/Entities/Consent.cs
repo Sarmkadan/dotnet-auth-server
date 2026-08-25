@@ -140,4 +140,9 @@ public sealed class Consent
     {
         return GrantedScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
+
+    public override string ToString()
+    {
+        return $"Consent {{ ConsentId = {ConsentId}, UserId = {UserId}, ClientId = {ClientId}, GrantedScopes = {GrantedScopes}, Status = {Status}, ExpiresAt = {ExpiresAt} }}";
+    }
 }
