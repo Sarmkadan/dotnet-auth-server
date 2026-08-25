@@ -8,8 +8,16 @@ using Xunit;
 
 namespace DotnetAuthServer.Tests;
 
+/// <summary>
+/// Unit tests for the ConsentGrantedEvent JSON serialization extension methods, covering compact
+/// and indented output, handling of null, empty, and malformed input, default value population
+/// during deserialization, and round-trip preservation of event data.
+/// </summary>
 public class ConsentGrantedEventJsonExtensionsTests
 {
+    /// <summary>
+    /// A fully populated consent granted event used as the standard input for the serialization tests.
+    /// </summary>
     private static readonly ConsentGrantedEvent SampleEvent = new()
     {
         EventId = "test-event-id",
@@ -22,9 +30,16 @@ public class ConsentGrantedEventJsonExtensionsTests
         ClientIpAddress = "192.168.1.1"
     };
 
+    /// <summary>
+    /// The expected compact JSON representation of the sample event, used as input for the deserialization tests.
+    /// </summary>
     private static readonly string ExpectedJson =
         "{\"eventId\":\"test-event-id\",\"occurredAt\":\"2024-01-01T12:00:00Z\",\"requestId\":\"test-request-id\",\"eventType\":\"consent_granted\",\"userId\":\"user-123\",\"clientId\":\"client-456\",\"grantedScopes\":[\"read\",\"write\",\"profile\"],\"isPermanent\":true,\"clientIpAddress\":\"192.168.1.1\"}";
 
+    /// <summary>
+    /// Verifies that serializing the fully populated sample event produces non-empty JSON containing
+    /// the event id, user id, client id, each granted scope, and the "consent_granted" event type.
+    /// </summary>
     [Fact]
     public void ToJson_WithValidEvent_ReturnsValidJson()
     {
@@ -42,6 +57,10 @@ public class ConsentGrantedEventJsonExtensionsTests
         json.Should().Contain("consent_granted");
     }
 
+    /// <summary>
+    /// Verifies that requesting indented output produces pretty-printed JSON with spaced property
+    /// names such as "eventId": "test-event-id" and embedded newlines between elements.
+    /// </summary>
     [Fact]
     public void ToJson_WithIndentedTrue_ReturnsPrettyPrintedJson()
     {
@@ -55,6 +74,9 @@ public class ConsentGrantedEventJsonExtensionsTests
         json.Should().Contain("\n"); // Should have newlines for pretty printing
     }
 
+    /// <summary>
+    /// Verifies that requesting non-indented output produces compact JSON containing no newline characters.
+    /// </summary>
     [Fact]
     public void ToJson_WithIndentedFalse_ReturnsCompactJson()
     {
@@ -66,6 +88,9 @@ public class ConsentGrantedEventJsonExtensionsTests
         json.Should().NotContain("\n"); // Should not have newlines
     }
 
+    /// <summary>
+    /// Verifies that invoking ToJson through a null event reference throws an ArgumentNullException.
+    /// </summary>
     [Fact]
     public void ToJson_WithNullEvent_ThrowsArgumentNullException()
     {
@@ -79,6 +104,11 @@ public class ConsentGrantedEventJsonExtensionsTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Verifies that deserializing the expected JSON yields an event whose event id, occurrence time,
+    /// request id, user id, client id, granted scopes, permanence flag, client IP address, and
+    /// "consent_granted" event type all match the original sample values.
+    /// </summary>
     [Fact]
     public void FromJson_WithValidJson_ReturnsDeserializedEvent()
     {
@@ -101,6 +131,9 @@ public class ConsentGrantedEventJsonExtensionsTests
         result.EventType.Should().Be("consent_granted");
     }
 
+    /// <summary>
+    /// Verifies that passing an empty string to FromJson throws an ArgumentException.
+    /// </summary>
     [Fact]
     public void FromJson_WithEmptyJson_ThrowsArgumentException()
     {
@@ -114,6 +147,9 @@ public class ConsentGrantedEventJsonExtensionsTests
         act.Should().Throw<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that passing a null string to FromJson throws an ArgumentException.
+    /// </summary>
     [Fact]
     public void FromJson_WithNullJson_ThrowsArgumentException()
     {
@@ -127,6 +163,9 @@ public class ConsentGrantedEventJsonExtensionsTests
         act.Should().Throw<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that malformed JSON causes FromJson to return null rather than throwing an exception.
+    /// </summary>
     [Fact]
     public void FromJson_WithInvalidJson_ReturnsNull()
     {
@@ -140,6 +179,11 @@ public class ConsentGrantedEventJsonExtensionsTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that deserializing minimal JSON keeps the supplied identifiers and empty scope list,
+    /// while populating missing optional fields with their defaults: an occurrence time close to the
+    /// current UTC time and the "consent_granted" event type.
+    /// </summary>
     [Fact]
     public void FromJson_WithMinimalValidJson_ReturnsEventWithDefaults()
     {
@@ -160,6 +204,10 @@ public class ConsentGrantedEventJsonExtensionsTests
         result.EventType.Should().Be("consent_granted");
     }
 
+    /// <summary>
+    /// Verifies that TryFromJson reports success and outputs an event carrying the expected event id
+    /// when given valid JSON.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithValidJson_ReturnsTrueAndDeserializedEvent()
     {
@@ -175,6 +223,9 @@ public class ConsentGrantedEventJsonExtensionsTests
         result!.EventId.Should().Be("test-event-id");
     }
 
+    /// <summary>
+    /// Verifies that TryFromJson throws an ArgumentException when given an empty string.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithEmptyJson_ThrowsArgumentException()
     {
@@ -186,6 +237,9 @@ public class ConsentGrantedEventJsonExtensionsTests
             ConsentGrantedEventJsonExtensions.TryFromJson(json, out _));
     }
 
+    /// <summary>
+    /// Verifies that TryFromJson throws an ArgumentException when given a null string.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithNullJson_ThrowsArgumentException()
     {
@@ -199,6 +253,9 @@ public class ConsentGrantedEventJsonExtensionsTests
         act.Should().Throw<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that TryFromJson reports failure and a null result when given malformed JSON.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithInvalidJson_ReturnsFalseAndNull()
     {
@@ -213,6 +270,10 @@ public class ConsentGrantedEventJsonExtensionsTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Verifies that serializing the sample event and deserializing the resulting JSON reproduces an
+    /// event equivalent to the original across all runtime properties.
+    /// </summary>
     [Fact]
     public void RoundTripSerialization_PreservesAllData()
     {
@@ -229,6 +290,10 @@ public class ConsentGrantedEventJsonExtensionsTests
             options.IncludingAllRuntimeProperties());
     }
 
+    /// <summary>
+    /// Verifies that an event with an empty granted-scopes array serializes with a "grantedScopes"
+    /// element and deserializes back to an empty collection.
+    /// </summary>
     [Fact]
     public void EmptyScopesSerialization_WorksCorrectly()
     {
@@ -252,6 +317,10 @@ public class ConsentGrantedEventJsonExtensionsTests
         json.Should().Contain("grantedScopes");
     }
 
+    /// <summary>
+    /// Verifies that null RequestId and ClientIpAddress values are omitted from the serialized JSON
+    /// and remain null after deserialization.
+    /// </summary>
     [Fact]
     public void NullOptionalFieldsSerialization_WorksCorrectly()
     {
