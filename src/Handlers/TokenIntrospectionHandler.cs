@@ -102,6 +102,8 @@ public sealed class TokenIntrospectionHandler
         _logger.LogInformation("IntrospectToken finished with inactive response");
         return new IntrospectionResponse { Active = false };
     }
+
+        public override string ToString() => $"TokenIntrospectionHandler {{ Active = {Active}, Scope = {Scope}, ClientId = {ClientId}, Username = {Username}, TokenType = {TokenType}, Exp = {Exp}, Iat = {Iat}, Sub = {Sub} }}";
 }
 
 /// <summary>
