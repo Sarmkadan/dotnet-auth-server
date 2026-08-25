@@ -26,6 +26,8 @@ public sealed class UserinfoHandler
         _logger = logger;
     }
 
+    public override string ToString() => $"UserinfoHandler {{ Sub = {Sub}, Name = {Name}, GivenName = {GivenName}, FamilyName = {FamilyName}, UpdatedAt = {UpdatedAt}, Email = {Email} }}";
+
     /// <summary>
     /// Retrieves user information based on claims from an access token.
     /// Only returns claims that are allowed by the token's scope.
@@ -130,6 +132,8 @@ public sealed class UserinfoResponse
     // Phone scope
     public string? PhoneNumber { get; set; }
     public bool? PhoneNumberVerified { get; set; }
+
+    public override string ToString() => $"UserinfoHandler {{ Sub = {Sub}, Name = {Name}, GivenName = {GivenName}, FamilyName = {FamilyName}, UpdatedAt = {UpdatedAt}, Email = {Email} }}";
 }
 
 /// <summary>
