@@ -281,6 +281,10 @@ public sealed class DeviceFlowInitiation
     public string VerificationUri { get; set; } = string.Empty;
     public int ExpiresIn { get; set; }
     public int Interval { get; set; }
+    public DeviceFlowStatus Status { get; set; }
+
+    public override string ToString() =>
+        $"DeviceFlowInitiation {{ DeviceCode = {DeviceCode}, UserCode = {UserCode}, VerificationUri = {VerificationUri}, ExpiresIn = {ExpiresIn}, Interval = {Interval}, Status = {Status} }}";
 }
 
 /// <summary>
