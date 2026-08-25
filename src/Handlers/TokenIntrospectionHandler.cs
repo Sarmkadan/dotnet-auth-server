@@ -89,7 +89,7 @@ public sealed class TokenIntrospectionHandler
                         new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds,
                     Sub = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 };
-                
+
                 _logger.LogInformation("IntrospectToken finished successfully for token");
                 return response;
             }
@@ -102,8 +102,6 @@ public sealed class TokenIntrospectionHandler
         _logger.LogInformation("IntrospectToken finished with inactive response");
         return new IntrospectionResponse { Active = false };
     }
-
-        public override string ToString() => $"TokenIntrospectionHandler {{ Active = {Active}, Scope = {Scope}, ClientId = {ClientId}, Username = {Username}, TokenType = {TokenType}, Exp = {Exp}, Iat = {Iat}, Sub = {Sub} }}";
 }
 
 /// <summary>
@@ -119,4 +117,7 @@ public sealed class IntrospectionResponse
     public long? Exp { get; set; }
     public long? Iat { get; set; }
     public string? Sub { get; set; }
+
+    public override string ToString() =>
+        $"IntrospectionResponse {{ Active = {Active}, Scope = {Scope}, ClientId = {ClientId}, Username = {Username}, TokenType = {TokenType}, Exp = {Exp}, Iat = {Iat}, Sub = {Sub} }}";
 }
