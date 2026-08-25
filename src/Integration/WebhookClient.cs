@@ -134,6 +134,9 @@ public sealed class WebhookResult
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
+
+    public override string ToString() =>
+        $"WebhookResult {{ Success = {Success}, Error = {Error} }}";
 }
 
 /// <summary>
@@ -146,6 +149,9 @@ public sealed class WebhookPayload
     public DateTime OccurredAt { get; set; }
     public string? RequestId { get; set; }
     public JsonElement Data { get; set; }
+
+    public override string ToString() =>
+        $"WebhookPayload {{ EventId = {EventId}, EventType = {EventType}, OccurredAt = {OccurredAt}, RequestId = {RequestId} }}";
 }
 
 /// <summary>
