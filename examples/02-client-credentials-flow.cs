@@ -31,6 +31,12 @@ public sealed class ClientCredentialsFlowExample
     }
 
     /// <summary>
+    /// Returns a concise, informative representation of this client credentials flow example
+    /// </summary>
+    public override string ToString() =>
+        $"ClientCredentialsFlowExample {{ AuthServerUrl = {_authServerUrl} }}";
+
+    /// <summary>
     /// Request access token using client credentials (no user needed)
     /// </summary>
     public async Task<TokenResponse?> GetServiceAccessTokenAsync(string scope = "api:read api:write")
