@@ -155,4 +155,9 @@ public sealed class RefreshToken
         var timeSinceLastUse = DateTime.UtcNow - LastUsedAt;
         return timeSinceLastUse < timeWindow && UsageCount > 1;
     }
+
+    /// <summary>
+    /// Returns a concise, informative string representation of the refresh token
+    /// </summary>
+    public override string ToString() => $"RefreshToken {{ TokenId = {TokenId}, TokenHash = {TokenHash}, ClientId = {ClientId}, UserId = {UserId}, GrantedScopes = {GrantedScopes}, Version = {Version} }}";
 }
