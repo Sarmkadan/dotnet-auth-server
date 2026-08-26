@@ -57,4 +57,9 @@ public sealed class TokenResponse
     /// </summary>
     [JsonExtensionData]
     public Dictionary<string, object> CustomProperties { get; set; } = [];
+
+    public override string ToString()
+    {
+        return $"TokenResponse {{ AccessToken = {AccessToken}, TokenType = {TokenType}, ExpiresIn = {ExpiresIn}, RefreshToken = {RefreshToken}, Scope = {Scope}, IdToken = {IdToken} }}";
+    }
 }
