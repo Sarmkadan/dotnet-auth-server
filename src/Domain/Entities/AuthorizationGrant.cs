@@ -185,4 +185,9 @@ public sealed class AuthorizationGrant
 
         return false;
     }
+
+    public override string ToString()
+    {
+        return $"AuthorizationGrant {{ GrantId = {GrantId}, Code = {Code}, ClientId = {ClientId}, UserId = {UserId}, RequestedScopes = {RequestedScopes}, GrantedScopes = {GrantedScopes} }}";
+    }
 }
