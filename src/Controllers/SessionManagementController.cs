@@ -254,4 +254,8 @@ public sealed class SessionSummary
 
     /// <summary>Reason for revocation, if set.</summary>
     public string? RevocationReason { get; set; }
+
+    /// <inheritdoc />
+    public override string ToString() =>
+        $"SessionSummary {{ SessionId = {SessionId}, UserId = {UserId}, ClientId = {ClientId}, IpAddress = {IpAddress}, UserAgent = {UserAgent}, GrantedScopes = {GrantedScopes} }}";
 }
