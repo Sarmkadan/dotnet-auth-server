@@ -15,6 +15,9 @@ public class MemoryCacheServiceTests
         _cacheService = new MemoryCacheService();
     }
 
+    public override string ToString() =>
+        $"MemoryCacheServiceTests {{ CacheService = {_cacheService} }}";
+
     [Fact]
     public async Task GetAsync_WhenKeyDoesNotExist_ReturnsNull()
     {
