@@ -99,4 +99,9 @@ public sealed class ClientRegistrationRequest
 
         return true;
     }
+
+    public override string ToString()
+    {
+        return $"ClientRegistrationRequest {{ ClientName = {ClientName}, GrantTypes = {GrantTypes}, RedirectUris = {RedirectUris}, ResponseTypes = {ResponseTypes}, Scope = {Scope}, TokenEndpointAuthMethod = {TokenEndpointAuthMethod} }}";
+    }
 }
