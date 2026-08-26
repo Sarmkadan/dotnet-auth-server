@@ -107,4 +107,9 @@ public sealed class Scope
         }
         return allClaims;
     }
+
+    public override string ToString()
+    {
+        return $"Scope {{ ScopeId = {ScopeId}, DisplayName = {DisplayName}, Description = {Description}, IsRequired = {IsRequired}, RequiresConsent = {RequiresConsent}, IsOpenIdScope = {IsOpenIdScope} }}";
+    }
 }
