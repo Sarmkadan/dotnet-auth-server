@@ -50,4 +50,8 @@ public sealed class OpaOptions
     /// </summary>
     [Required]
     public bool FailClosedOnError { get; set; } = false;
+
+    /// <inheritdoc />
+    public override string ToString() =>
+        $"OpaOptions {{ Enabled = {Enabled}, BaseUrl = {BaseUrl}, PolicyPath = {PolicyPath}, TimeoutSeconds = {TimeoutSeconds}, FailClosedOnError = {FailClosedOnError} }}";
 }
