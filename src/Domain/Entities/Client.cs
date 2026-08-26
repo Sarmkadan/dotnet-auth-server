@@ -172,4 +172,6 @@ public sealed class Client
     {
         return AllowedScopes.Contains(scope, StringComparer.OrdinalIgnoreCase);
     }
+
+    public override string ToString() => $"Client {{ ClientId = {ClientId}, ClientName = {ClientName}, ClientSecretHash = {ClientSecretHash}, Description = {Description}, IsConfidential = {IsConfidential}, IsActive = {IsActive} }}";
 }
