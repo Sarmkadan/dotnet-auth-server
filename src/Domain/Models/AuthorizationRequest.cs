@@ -128,4 +128,6 @@ public sealed class AuthorizationRequest
     {
         return GetRequestedScopes().Contains("openid", StringComparer.OrdinalIgnoreCase);
     }
+    public override string ToString() => $"AuthorizationRequest {{ ClientId = {ClientId}, ResponseType = {ResponseType}, RedirectUri = {RedirectUri}, Scope = {Scope}, State = {State}, Nonce = {Nonce} }}";
+
 }
