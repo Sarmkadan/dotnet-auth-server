@@ -104,4 +104,6 @@ public sealed class ClientRegistrationResponse
     [JsonPropertyName("contacts")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ICollection<string> Contacts { get; set; } = [];
+
+    public override string ToString() => $"ClientRegistrationResponse {{ ClientId = {ClientId}, ClientSecret = {ClientSecret}, ClientIdIssuedAt = {ClientIdIssuedAt}, ClientSecretExpiresAt = {ClientSecretExpiresAt}, ClientName = {ClientName}, GrantTypes = {GrantTypes} }}";
 }
