@@ -49,6 +49,8 @@ public sealed class ApiResponse<T>
             Timestamp = DateTime.UtcNow
         };
     }
+}
+
 /// <summary>
 /// Non-generic API response for endpoints that don't return data.
 /// </summary>
@@ -83,7 +85,7 @@ public sealed class ApiResponse
         };
     }
 
-    public override string ToString() => $"ApiResponse {{ Success = {Success}, Data = {Data}, Error = {Error}, Message = {Message}, Code = {Code}, TraceId = {TraceId} }}";
+    public override string ToString() => $"ApiResponse {{ Success = {Success}, Error = {Error}, Message = {Message}, Code = {Code}, TraceId = {TraceId} }}";
 }
 
 /// <summary>
@@ -116,5 +118,7 @@ public sealed class PaginatedResponse<T>
             TotalCount = totalCount,
             Timestamp = DateTime.UtcNow
         };
-    public override string ToString() => $"ApiResponse {{ Success = {Success}, Data = {Data}, Error = {Error}, Message = {Message}, Code = {Code}, TraceId = {TraceId} }}";
+    }
+
+    public override string ToString() => $"PaginatedResponse<T> {{ Success = {Success}, Items = {Items?.Count ?? 0}, PageNumber = {PageNumber}, PageSize = {PageSize}, TotalCount = {TotalCount} }}";
 }
