@@ -36,6 +36,11 @@ public sealed class UserSessionService
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
+    public override string ToString()
+    {
+        return $"UserSessionService {{ SessionId = {null}, UserId = {null}, ClientId = {null}, IpAddress = {null}, UserAgent = {null}, CreatedAt = {DateTime.MinValue} }}";
+    }
+
     /// <summary>
     /// Creates and persists a new user session after a successful token grant.
     /// </summary>
@@ -462,6 +467,11 @@ public sealed class UserSessionService
 
         /// <summary>Whether the session has been explicitly revoked.</summary>
         public bool IsRevoked { get; set; }
+
+        public override string ToString()
+        {
+            return $"UserSessionInfo {{ SessionId = {SessionId}, UserId = {UserId}, ClientId = {ClientId}, IpAddress = {IpAddress}, UserAgent = {UserAgent}, CreatedAt = {CreatedAt} }}";
+        }
     }
 
     /// <summary>
