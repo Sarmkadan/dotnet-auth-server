@@ -49,8 +49,6 @@ public sealed class ApiResponse<T>
             Timestamp = DateTime.UtcNow
         };
     }
-}
-
 /// <summary>
 /// Non-generic API response for endpoints that don't return data.
 /// </summary>
@@ -118,5 +116,5 @@ public sealed class PaginatedResponse<T>
             TotalCount = totalCount,
             Timestamp = DateTime.UtcNow
         };
-    }
+    public override string ToString() => $"ApiResponse {{ Success = {Success}, Data = {Data}, Error = {Error}, Message = {Message}, Code = {Code}, TraceId = {TraceId} }}";
 }
