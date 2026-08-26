@@ -20,11 +20,17 @@ public sealed class ErrorHandlingMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
 
+    public string Error { get; private set; } = string.Empty;
+    public string? ErrorDescription { get; private set; }
+    public string? ErrorUri { get; private set; }
+
     public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
+
+    public override string ToString() => $"ErrorHandlingMiddleware {{ Error = {Error}, ErrorDescription = {ErrorDescription}, ErrorUri = {ErrorUri} }}";
 
     public async Task InvokeAsync(HttpContext context)
     {
