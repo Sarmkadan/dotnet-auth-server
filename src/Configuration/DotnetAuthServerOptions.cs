@@ -20,4 +20,7 @@ public sealed class DotnetAuthServerOptions
 
     [Required]
     public OpaOptions Opa { get; set; } = new();
+
+    public override string ToString() =>
+        $"DotnetAuthServerOptions {{ AuthServer = {AuthServer}, Cache = {Cache}, Logging = {Logging}, Opa = {Opa} }}";
 }
