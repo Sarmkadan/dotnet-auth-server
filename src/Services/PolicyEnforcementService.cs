@@ -43,6 +43,11 @@ public sealed class PolicyEnforcementService
         InitializeDefaultPolicies();
     }
 
+    public override string ToString()
+    {
+        return $"PolicyEnforcementService {{ Rules = {null}, CombineWith = {PolicyCombineMode.All}, Type = {PolicyRuleType.Role}, Attribute = {null}, Values = {null}, Match = {PolicyMatchMode.Any} }}";
+    }
+
     /// <summary>
     /// Registers a new policy that can be evaluated against principals.
     /// </summary>
