@@ -65,4 +65,8 @@ public sealed class LoggingOptions
     /// Whether to use structured logging format (JSON).
     /// </summary>
     public bool StructuredLogging { get; set; } = false;
+
+    /// <inheritdoc />
+    public override string ToString() =>
+        $"LoggingOptions {{ MinimumLevel = {MinimumLevel}, LogSensitiveData = {LogSensitiveData}, LogRequestBodies = {LogRequestBodies}, LogRequestTiming = {LogRequestTiming}, MaxBodyLogLength = {MaxBodyLogLength}, ExcludedPaths = {string.Join(", ", ExcludedPaths)} }}";
 }
