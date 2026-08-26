@@ -31,6 +31,10 @@ public sealed class MfaSetupResponse
     /// Each code is usable exactly once if the authenticator device is unavailable.
     /// </summary>
     public IList<string> BackupCodes { get; set; } = [];
+
+    /// <inheritdoc />
+    public override string ToString() =>
+        $"MfaSetupResponse {{ SecretKey = {SecretKey}, ProvisioningUri = {ProvisioningUri}, BackupCodes = {BackupCodes} }}";
 }
 
 /// <summary>
