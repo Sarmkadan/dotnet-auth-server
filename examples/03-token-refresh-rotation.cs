@@ -28,6 +28,11 @@ public sealed class TokenRefreshRotationExample
     private const string ClientId = "mobile-app";
     private const string RedirectUri = "myapp://callback";
 
+    public override string ToString()
+    {
+        return $"TokenRefreshRotationExample {{ AuthServerUrl = {_authServerUrl}, ClientId = {ClientId}, RedirectUri = {RedirectUri} }}";
+    }
+
     public TokenRefreshRotationExample(string authServerUrl)
     {
         ArgumentException.ThrowIfNullOrEmpty(authServerUrl);
@@ -371,6 +376,11 @@ public sealed class TokenResponse
 
     [JsonPropertyName("token_type")]
     public string TokenType { get; set; } = "Bearer";
+
+    public override string ToString()
+    {
+        return $"TokenResponse {{ AccessToken = {AccessToken}, RefreshToken = {RefreshToken}, ExpiresIn = {ExpiresIn}, TokenType = {TokenType} }}";
+    }
 }
 
 /// <summary>
