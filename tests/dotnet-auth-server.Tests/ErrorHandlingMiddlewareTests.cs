@@ -19,12 +19,19 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Tests for the <see cref="ErrorHandlingMiddleware"/> class, verifying that it correctly handles exceptions and returns appropriate error responses.
+/// </summary>
 public sealed class ErrorHandlingMiddlewareTests
 {
     private readonly Mock<ILogger<ErrorHandlingMiddleware>> _loggerMock;
     private readonly RequestDelegate _next;
     private readonly ErrorHandlingMiddleware _middleware;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ErrorHandlingMiddlewareTests"/> class.
+    /// Sets up a mock logger, a throwing next delegate, and the middleware under test.
+    /// </summary>
     public ErrorHandlingMiddlewareTests()
     {
         _loggerMock = new Mock<ILogger<ErrorHandlingMiddleware>>();
@@ -34,15 +41,31 @@ public sealed class ErrorHandlingMiddlewareTests
         _loggerMock.Object.LogInformation("Finished constructor {ConstructorName}", nameof(ErrorHandlingMiddlewareTests));
     }
 
+    /// <summary>
+/// Gets or sets the error code for the test instance (used in <see cref="ToString"/>).
+/// </summary>
     public string? Error { get; init; }
 
+    /// <summary>
+    /// Gets or sets the error description for the test instance (used in <see cref="ToString"/>).
+    /// </summary>
     public string? ErrorDescription { get; init; }
 
+    /// <summary>
+    /// Gets or sets the error URI for the test instance (used in <see cref="ToString"/>).
+    /// </summary>
     public string? ErrorUri { get; init; }
 
+    /// <summary>
+    /// Returns a string representation of the current test instance, displaying the error, error description, and error URI.
+    /// </summary>
+    /// <returns>A formatted string containing the error, error description, and error URI.</returns>
     public override string ToString() =>
         $"ErrorHandlingMiddlewareTests {{ Error = {Error}, ErrorDescription = {ErrorDescription}, ErrorUri = {ErrorUri} }}";
 
+    /// <summary>
+    /// Tests that the ErrorHandlingMiddleware constructor initializes correctly without throwing exceptions.
+    /// </summary>
     [Fact]
     public void Constructor_InitializesProperties()
     {
@@ -53,6 +76,9 @@ public sealed class ErrorHandlingMiddlewareTests
         middleware.Should().NotBeNull();
     }
 
+    /// <summary>
+    /// Tests that when an AuthServerException with 400 status is thrown, the middleware returns the correct error response.
+    /// </summary>
     [Fact]
     public async Task InvokeAsync_AuthServerExceptionWith400Status_ReturnsCorrectErrorResponse()
     {
@@ -75,6 +101,9 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error_uri"].Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that when an AuthServerException with 401 status is thrown, the middleware returns the correct error response.
+    /// </summary>
     [Fact]
     public async Task InvokeAsync_AuthServerExceptionWith401Status_ReturnsCorrectErrorResponse()
     {
@@ -97,6 +126,9 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error_uri"].Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that when an AuthServerException with 500 status is thrown, the middleware returns the correct error response.
+    /// </summary>
     [Fact]
     public async Task InvokeAsync_AuthServerExceptionWith500Status_ReturnsCorrectErrorResponse()
     {
@@ -119,6 +151,9 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error_uri"].Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that when an AuthServerException with a custom error code is thrown, the middleware returns the correct error response with custom error, description, and URI.
+    /// </summary>
     [Fact]
     public async Task InvokeAsync_AuthServerExceptionWithCustomErrorCode_ReturnsCorrectErrorResponse()
     {
@@ -147,6 +182,9 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error_uri"].Should().Be("https://example.com/docs/rate-limiting");
     }
 
+    /// <summary>
+/// Tests that when an InvalidOperationException is thrown, the middleware returns a 400 Bad Request with snake_case error response.
+/// </summary>
     [Fact]
     public async Task InvokeAsync_InvalidOperationException_ReturnsBadRequestWithSnakeCaseResponse()
     {
@@ -169,6 +207,9 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error_uri"].Should().BeNull();
     }
 
+    /// <summary>
+/// Tests that when an unknown exception is thrown, the middleware returns a 500 Internal Server Error without leaking internal details in the error response.
+/// </summary>
     [Fact]
     public async Task InvokeAsync_UnknownException_Returns500WithoutLeakingInternals()
     {
@@ -198,6 +239,9 @@ public sealed class ErrorHandlingMiddlewareTests
         errorDescription.Should().NotContain("abc123");
     }
 
+    /// <summary>
+/// Tests that the middleware sets the response content type to application/json when handling exceptions.
+/// </summary>
     [Fact]
     public async Task InvokeAsync_ResponseContentTypeIsJson()
     {
@@ -212,6 +256,9 @@ public sealed class ErrorHandlingMiddlewareTests
         context.Response.ContentType.Should().StartWith("application/json");
     }
 
+    /// <summary>
+/// Tests that the middleware's error response uses snake_case property names as required by the OAuth 2.0 specification.
+/// </summary>
     [Fact]
     public async Task InvokeAsync_ResponseUsesSnakeCaseNamingPolicy()
     {
