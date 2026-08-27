@@ -16,6 +16,11 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+/// <summary>
+/// Contains unit tests for the <see cref="DynamicClientRegistrationService"/> class.
+/// Tests cover client registration scenarios including validation, scope filtering,
+/// PKCE requirements, and repository persistence.
+/// </summary>
 public sealed class DynamicClientRegistrationServiceTests
 {
     private readonly Mock<IClientRepository> _mockClientRepository;
@@ -41,6 +46,9 @@ public sealed class DynamicClientRegistrationServiceTests
             _mockLogger.Object);
     }
 
+    /// <summary>
+    /// Tests that registering a valid public client returns a registration response without a client secret.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ValidPublicClient_ReturnsRegistrationResponse()
     {
@@ -71,6 +79,9 @@ public sealed class DynamicClientRegistrationServiceTests
         _mockLogger.Verify(x => x.LogInformation(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
     }
 
+    /// <summary>
+    /// Tests that registering a valid confidential client returns a registration response with a client secret.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ValidConfidentialClient_ReturnsRegistrationResponseWithSecret()
     {
@@ -98,6 +109,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.ClientIdIssuedAt.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Tests that registering a client with scopes returns a response with filtered scopes based on server configuration.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientWithScopes_ReturnsFilteredScopes()
     {
@@ -121,6 +135,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.GrantTypes.Should().Contain(Constants.GrantTypes.AuthorizationCode);
     }
 
+    /// <summary>
+    /// Tests that registering a client with contacts and URIs returns a complete response with all provided values.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientWithContactsAndUris_ReturnsCompleteResponse()
     {
@@ -149,6 +166,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.TosUri.Should().Be("https://client.example.com/tos");
     }
 
+    /// <summary>
+    /// Tests that registering a client with multiple redirect URIs returns all URIs in the response.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientWithMultipleRedirectUris_ReturnsAllUris()
     {
@@ -176,6 +196,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.RedirectUris.Should().Contain("https://client.example.com/callback3");
     }
 
+    /// <summary>
+    /// Tests that registering a client with multiple grant types returns all grant types in the response.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientWithMultipleGrantTypes_ReturnsAllGrantTypes()
     {
@@ -203,6 +226,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.GrantTypes.Should().Contain(Constants.GrantTypes.ClientCredentials);
     }
 
+    /// <summary>
+    /// Tests that registering a client with an invalid redirect URI throws an AuthServerException.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_InvalidRedirectUri_ThrowsAuthServerException()
     {
@@ -224,6 +250,9 @@ public sealed class DynamicClientRegistrationServiceTests
             .WithMessage("*redirect_uri*not a valid absolute URI*");
     }
 
+    /// <summary>
+    /// Tests that registering a client with an empty redirect URI list throws an AuthServerException.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_EmptyRedirectUri_ThrowsAuthServerException()
     {
@@ -244,7 +273,10 @@ public sealed class DynamicClientRegistrationServiceTests
             .Where(e => e.ErrorCode == Constants.ErrorCodes.InvalidRequest);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that registering a client with an invalid grant type throws an AuthServerException.
+/// </summary>
+[Fact]
     public async Task RegisterAsync_InvalidGrantType_ThrowsAuthServerException()
     {
         // Arrange
@@ -265,6 +297,9 @@ public sealed class DynamicClientRegistrationServiceTests
             .WithMessage("*not supported*");
     }
 
+    /// <summary>
+    /// Tests that registering a client with an invalid token endpoint auth method throws an AuthServerException.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_InvalidAuthMethod_ThrowsAuthServerException()
     {
@@ -286,6 +321,9 @@ public sealed class DynamicClientRegistrationServiceTests
             .WithMessage("*token_endpoint_auth_method*not supported*");
     }
 
+    /// <summary>
+    /// Tests that registering a client with a missing client name throws an AuthServerException.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_MissingClientName_ThrowsAuthServerException()
     {
@@ -307,6 +345,9 @@ public sealed class DynamicClientRegistrationServiceTests
             .WithMessage("*client_name is required*");
     }
 
+    /// <summary>
+    /// Tests that registering a client with implicit grant type but no redirect URI throws an AuthServerException.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ImplicitGrantWithoutRedirectUri_ThrowsAuthServerException()
     {
@@ -327,6 +368,9 @@ public sealed class DynamicClientRegistrationServiceTests
             .Where(e => e.ErrorCode == Constants.ErrorCodes.InvalidRequest);
     }
 
+    /// <summary>
+    /// Tests that registering a client saves the client to the repository.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientSavedToRepository()
     {
@@ -358,6 +402,9 @@ public sealed class DynamicClientRegistrationServiceTests
         createdClient.RequirePkce.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that registering a public client always requires PKCE regardless of server configuration.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_PublicClientPkceAlwaysRequired()
     {
@@ -379,6 +426,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.ClientId.Should().NotBeNullOrWhiteSpace();
     }
 
+    /// <summary>
+    /// Tests that registering a confidential client respects the server's PKCE requirement configuration.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ConfidentialClientPkceBasedOnServerConfig()
     {
@@ -401,6 +451,9 @@ public sealed class DynamicClientRegistrationServiceTests
         // RequirePkceForAllClients is true by default, so confidential clients should also require PKCE
     }
 
+    /// <summary>
+    /// Tests that registering a client with no scopes uses the default scopes from server configuration.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientWithNoScopes_UsesDefaultScopes()
     {
@@ -423,6 +476,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.Scope.Should().Contain("openid"); // Should use default scopes
     }
 
+    /// <summary>
+    /// Tests that the client ID in the registration response is a valid 32-character hexadecimal string.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientIdIsValidGuidFormat()
     {
@@ -444,6 +500,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.ClientId.Should().MatchRegex("^[a-f0-9]{32}$");
     }
 
+    /// <summary>
+    /// Tests that the client secret in the registration response is URL-safe base64 encoded.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ClientSecretIsUrlSafeBase64()
     {
@@ -466,6 +525,9 @@ public sealed class DynamicClientRegistrationServiceTests
         response.ClientSecret.Should().MatchRegex("^[a-zA-Z0-9_-]+$");
     }
 
+    /// <summary>
+    /// Tests that the response types from the registration request are preserved in the registration response.
+    /// </summary>
     [Fact]
     public async Task RegisterAsync_ResponseTypesPreservedInResponse()
     {
