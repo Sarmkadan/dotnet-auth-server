@@ -11,8 +11,14 @@ using DotnetAuthServer.Exceptions;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Contains unit tests for the <see cref="ValidationException"/> class.
+/// </summary>
 public sealed class ValidationExceptionTests
 {
+    /// <summary>
+    /// Tests that the default constructor creates a ValidationException with the default message.
+    /// </summary>
     [Fact]
     public void DefaultConstructor_CreatesExceptionWithDefaultMessage()
     {
@@ -27,6 +33,9 @@ public sealed class ValidationExceptionTests
         exception.Errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that the constructor with message and errorDescription sets the message correctly and leaves Errors empty.
+    /// </summary>
     [Fact]
     public void DefaultConstructorWithErrorDescription_CreatesExceptionWithCustomDescription()
     {
@@ -44,6 +53,9 @@ public sealed class ValidationExceptionTests
         exception.Errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that the constructor with innerException sets the InnerException correctly.
+    /// </summary>
     [Fact]
     public void DefaultConstructorWithInnerException_CreatesExceptionWithInnerException()
     {
@@ -65,6 +77,9 @@ public sealed class ValidationExceptionTests
         exception.Errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that the constructor with fieldName, fieldValue, and validationRule creates a formatted message.
+    /// </summary>
     [Fact]
     public void ParameterizedConstructor_WithFieldNameValueAndRule_CreatesExceptionWithFormattedMessage()
     {
@@ -83,6 +98,9 @@ public sealed class ValidationExceptionTests
         exception.Errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that the constructor with fieldName, fieldValue, validationRule, and innerException sets the InnerException and formatted message.
+    /// </summary>
     [Fact]
     public void ParameterizedConstructor_WithInnerException_CreatesExceptionWithInnerException()
     {
@@ -105,6 +123,9 @@ public sealed class ValidationExceptionTests
         exception.Errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that the Errors property is initialized as an empty dictionary.
+    /// </summary>
     [Fact]
     public void Errors_Property_IsInitializedAsEmptyDictionary()
     {
@@ -117,6 +138,9 @@ public sealed class ValidationExceptionTests
         exception.Errors.Should().BeOfType<Dictionary<string, object>>();
     }
 
+    /// <summary>
+    /// Tests that AddError adds an error to the Errors dictionary.
+    /// </summary>
     [Fact]
     public void AddError_AddsErrorToErrorsDictionary()
     {
@@ -132,6 +156,9 @@ public sealed class ValidationExceptionTests
         exception.Errors.Should().HaveCount(1);
     }
 
+    /// <summary>
+    /// Tests that multiple calls to AddError store multiple errors.
+    /// </summary>
     [Fact]
     public void AddError_MultipleErrors_AreStoredInDictionary()
     {
@@ -150,6 +177,9 @@ public sealed class ValidationExceptionTests
         exception.Errors["username"].Should().Be("Username must be unique");
     }
 
+    /// <summary>
+    /// Tests that AddError overwrites the error for the same field name.
+    /// </summary>
     [Fact]
     public void AddError_OverwritesExistingError_WhenSameFieldNameUsed()
     {
@@ -165,6 +195,9 @@ public sealed class ValidationExceptionTests
         exception.Errors["email"].Should().Be("Email format is invalid");
     }
 
+    /// <summary>
+    /// Tests that AddError throws when fieldName is null.
+    /// </summary>
     [Fact]
     public void AddError_WithNullFieldName_ThrowsArgumentNullException()
     {
@@ -178,6 +211,9 @@ public sealed class ValidationExceptionTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Tests that AddError allows an empty string as a field name.
+    /// </summary>
     [Fact]
     public void AddError_WithEmptyFieldName_StoresEmptyStringAsKey()
     {
@@ -192,6 +228,9 @@ public sealed class ValidationExceptionTests
         exception.Errors[string.Empty].Should().Be("Error message");
     }
 
+    /// <summary>
+    /// Tests that AddError allows a null error message.
+    /// </summary>
     [Fact]
     public void AddError_WithNullErrorMessage_StoresNullValue()
     {
@@ -206,6 +245,9 @@ public sealed class ValidationExceptionTests
         exception.Errors["email"].Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that the Errors dictionary is accessible and contains the added errors.
+    /// </summary>
     [Fact]
     public void ErrorsDictionary_IsAccessibleAfterAddingErrors()
     {
@@ -223,6 +265,9 @@ public sealed class ValidationExceptionTests
         errors.Should().ContainKeys("field1", "field2");
     }
 
+    /// <summary>
+    /// Tests that ValidationException inherits from AuthServerException.
+    /// </summary>
     [Fact]
     public void Inheritance_ValidationException_InheritsFromAuthServerException()
     {
@@ -233,6 +278,9 @@ public sealed class ValidationExceptionTests
         exception.Should().BeAssignableTo<AuthServerException>();
     }
 
+    /// <summary>
+    /// Tests that the ErrorCode property is always "invalid_request".
+    /// </summary>
     [Fact]
     public void ErrorCode_IsAlwaysInvalidRequest()
     {
@@ -245,6 +293,9 @@ public sealed class ValidationExceptionTests
         exception2.ErrorCode.Should().Be("invalid_request");
     }
 
+    /// <summary>
+    /// Tests that the StatusCode property is always 400.
+    /// </summary>
     [Fact]
     public void StatusCode_IsAlways400()
     {
