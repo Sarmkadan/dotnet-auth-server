@@ -9,7 +9,7 @@ namespace DotnetAuthServer.Domain.Entities;
 /// <summary>
 /// Represents an authorization grant (authorization code) in OAuth2
 /// </summary>
-public sealed class AuthorizationGrant
+public sealed class AuthorizationGrant : IEquatable<AuthorizationGrant>
 {
     /// <summary>
     /// Unique grant identifier
@@ -189,5 +189,38 @@ public sealed class AuthorizationGrant
     public override string ToString()
     {
         return $"AuthorizationGrant {{ GrantId = {GrantId}, Code = {Code}, ClientId = {ClientId}, UserId = {UserId}, RequestedScopes = {RequestedScopes}, GrantedScopes = {GrantedScopes} }}";
+    }
+
+    public bool Equals(AuthorizationGrant? other)
+    {
+        if (other is null) return false;
+        return GrantId == other.GrantId &&
+               Code == other.Code &&
+               ClientId == other.ClientId &&
+               UserId == other.UserId &&
+               RequestedScopes == other.RequestedScopes &&
+               GrantedScopes == other.GrantedScopes &&
+               RedirectUri == other.RedirectUri &&
+               State == other.State;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as AuthorizationGrant);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(GrantId, Code, ClientId, UserId, RequestedScopes, GrantedScopes, RedirectUri, State);
+    }
+
+    public static bool operator ==(AuthorizationGrant? left, AuthorizationGrant? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(AuthorizationGrant? left, AuthorizationGrant? right)
+    {
+        return !Equals(left, right);
     }
 }
