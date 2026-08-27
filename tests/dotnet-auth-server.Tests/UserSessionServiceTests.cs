@@ -19,6 +19,10 @@ using Xunit;
 
 namespace DotnetAuthServer.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="UserSessionService"/> class.
+/// Tests cover session creation, retrieval, and revocation scenarios.
+/// </summary>
 public sealed class UserSessionServiceTests
 {
     private readonly Mock<IUserSessionRepository> _sessionRepositoryMock;
@@ -41,6 +45,10 @@ public sealed class UserSessionServiceTests
         _service = new UserSessionService(_sessionRepositoryMock.Object, _loggerMock.Object, _options);
     }
 
+    /// <summary>
+    /// Tests that creating a session with valid parameters successfully creates a user session
+    /// with the correct properties set.
+    /// </summary>
     [Fact]
     public async Task CreateSessionAsync_ValidParams_CreatesSession()
     {
@@ -65,6 +73,9 @@ public sealed class UserSessionServiceTests
         session.UserAgent.Should().Be(userAgent);
     }
 
+    /// <summary>
+    /// Tests that getting active sessions for a valid user ID returns all active sessions for that user.
+    /// </summary>
     [Fact]
     public async Task GetActiveSessionsAsync_ValidUserId_ReturnsActiveSessions()
     {
@@ -87,6 +98,10 @@ public sealed class UserSessionServiceTests
         activeSessions.Should().Contain(session2);
     }
 
+    /// <summary>
+    /// Tests that getting active sessions for a user with an expired session still returns the session
+    /// (since the repository's GetActiveByUserIdAsync method doesn't filter by expiration).
+    /// </summary>
     [Fact]
     public async Task GetActiveSessionsAsync_ExpiredSession_ReturnsNoSessions()
     {
@@ -105,6 +120,9 @@ public sealed class UserSessionServiceTests
         activeSessions.Should().Contain(session);
     }
 
+    /// <summary>
+    /// Tests that revoking a session with a valid session ID successfully marks the session as revoked.
+    /// </summary>
     [Fact]
     public async Task RevokeSessionAsync_ValidSessionId_RevokeSession()
     {
@@ -124,6 +142,9 @@ public sealed class UserSessionServiceTests
         session.IsRevoked.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that revoking a session with an invalid session ID throws an AuthServerException.
+    /// </summary>
     [Fact]
     public async Task RevokeSessionAsync_InvalidSessionId_ThrowsAuthServerException()
     {
@@ -138,6 +159,9 @@ public sealed class UserSessionServiceTests
         await Assert.ThrowsAsync<AuthServerException>(() => _service.RevokeSessionAsync(sessionId));
     }
 
+    /// <summary>
+    /// Tests that revoking all sessions for a valid user ID successfully revokes all sessions and returns the count.
+    /// </summary>
     [Fact]
     public async Task RevokeAllUserSessionsAsync_ValidUserId_RevokeSessions()
     {
@@ -160,6 +184,9 @@ public sealed class UserSessionServiceTests
         session2.IsRevoked.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that revoking all other sessions for a user (excluding a specific session) successfully revokes only the other sessions.
+    /// </summary>
     [Fact]
     public async Task RevokeAllOtherUserSessionsAsync_ValidUserIdAndSessionId_RevokeSessions()
     {
