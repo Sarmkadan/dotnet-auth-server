@@ -5,10 +5,16 @@ using Xunit;
 
 namespace DotnetAuthServer.Tests.Security;
 
+/// <summary>
+/// Test suite for the RevokedTokenStore class.
+/// </summary>
 public class RevokedTokenStoreTests
 {
     private readonly RevokedTokenStore _store = new();
 
+    /// <summary>
+    /// Tests that IsRevoked returns false for a token that has never been revoked.
+    /// </summary>
     [Fact]
     public void IsRevoked_ReturnsFalse_ForUnknownToken()
     {
@@ -22,6 +28,9 @@ public class RevokedTokenStoreTests
         isRevoked.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that IsRevoked returns true after revoking a token with a future expiration time.
+    /// </summary>
     [Fact]
     public void Revoke_ThenIsRevoked_ReturnsTrue_ForRevokedToken()
     {
@@ -37,6 +46,9 @@ public class RevokedTokenStoreTests
         isRevoked.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that calling Revoke twice with the same JTI is idempotent and doesn't cause issues.
+    /// </summary>
     [Fact]
     public void Revoke_Twice_IsIdempotent()
     {
@@ -54,6 +66,9 @@ public class RevokedTokenStoreTests
         isRevoked.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that IsRevoked returns false for a token that has already expired at the time of revocation.
+    /// </summary>
     [Fact]
     public void IsRevoked_ReturnsFalse_WhenTokenHasExpired()
     {
@@ -69,6 +84,9 @@ public class RevokedTokenStoreTests
         isRevoked.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that IsRevoked returns true after manual purge when the token has not yet expired.
+    /// </summary>
     [Fact]
     public void IsRevoked_ReturnsFalse_AfterManualPurge()
     {
@@ -86,6 +104,9 @@ public class RevokedTokenStoreTests
         _store.IsRevoked(jti).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that PurgeExpired removes expired entries from the store.
+    /// </summary>
     [Fact]
     public void PurgeExpired_RemovesExpiredEntries()
     {
@@ -105,6 +126,9 @@ public class RevokedTokenStoreTests
         _store.IsRevoked(validJti).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that RemoveExpired removes expired entries from the store.
+    /// </summary>
     [Fact]
     public void RemoveExpired_RemovesExpiredEntries()
     {
@@ -124,6 +148,9 @@ public class RevokedTokenStoreTests
         _store.IsRevoked(validJti).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that IsRevoked performs case-insensitive comparison of JTI values.
+    /// </summary>
     [Fact]
     public void IsRevoked_CaseInsensitiveComparison()
     {
@@ -139,6 +166,9 @@ public class RevokedTokenStoreTests
         _store.IsRevoked(jti).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that calling Revoke with the same JTI updates the expiration time.
+    /// </summary>
     [Fact]
     public void Revoke_UpdatesExpirationTime()
     {
@@ -157,6 +187,9 @@ public class RevokedTokenStoreTests
         _store.IsRevoked(jti).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that PurgeExpired removes multiple expired entries while keeping valid ones.
+    /// </summary>
     [Fact]
     public void PurgeExpired_WithMultipleExpiredEntries()
     {
@@ -182,6 +215,9 @@ public class RevokedTokenStoreTests
         _store.IsRevoked(validJti).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that IsRevoked returns false after a token's expiry time has passed.
+    /// </summary>
     [Fact]
     public void IsRevoked_ReturnsFalse_AfterTokenExpiryTimePasses()
     {
@@ -200,6 +236,9 @@ public class RevokedTokenStoreTests
         isRevoked.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that Revoke throws ArgumentNullException when JTI is null.
+    /// </summary>
     [Fact]
     public void Revoke_ThrowsArgumentNullException_WhenJtiIsNull()
     {
@@ -214,6 +253,9 @@ public class RevokedTokenStoreTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Tests that IsRevoked throws ArgumentNullException when JTI is null.
+    /// </summary>
     [Fact]
     public void IsRevoked_ThrowsArgumentNullException_WhenJtiIsNull()
     {
@@ -227,6 +269,9 @@ public class RevokedTokenStoreTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    /// <summary>
+    /// Tests that Revoke handles an empty string JTI without throwing an exception.
+    /// </summary>
     [Fact]
     public void Revoke_HandlesEmptyStringJti()
     {
@@ -241,6 +286,9 @@ public class RevokedTokenStoreTests
         _store.IsRevoked(emptyJti).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that IsRevoked returns false for an empty string JTI when the store is empty.
+    /// </summary>
     [Fact]
     public void IsRevoked_ReturnsFalse_ForEmptyStringJti()
     {
@@ -254,6 +302,9 @@ public class RevokedTokenStoreTests
         isRevoked.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that PurgeExpired does not throw an exception when the store is empty.
+    /// </summary>
     [Fact]
     public void PurgeExpired_DoesNotThrow_WhenStoreIsEmpty()
     {
@@ -266,6 +317,9 @@ public class RevokedTokenStoreTests
         act.Should().NotThrow();
     }
 
+    /// <summary>
+    /// Tests that RemoveExpired does not throw an exception when the store is empty.
+    /// </summary>
     [Fact]
     public void RemoveExpired_DoesNotThrow_WhenStoreIsEmpty()
     {
@@ -279,6 +333,9 @@ public class RevokedTokenStoreTests
         act.Should().NotThrow();
     }
 
+    /// <summary>
+    /// Tests that the store can handle the maximum number of tokens without issues.
+    /// </summary>
     [Fact]
     public void Revoke_MultipleTokens_WithinMaxSize()
     {
@@ -302,6 +359,9 @@ public class RevokedTokenStoreTests
         }
     }
 
+    /// <summary>
+    /// Tests that adding a token beyond the maximum store size triggers an automatic purge of expired entries.
+    /// </summary>
     [Fact]
     public void Revoke_ExceedsMaxSize_TriggersAutomaticPurge()
     {
