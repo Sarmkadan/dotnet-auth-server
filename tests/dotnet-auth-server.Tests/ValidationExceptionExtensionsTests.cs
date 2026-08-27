@@ -8,8 +8,15 @@ using DotnetAuthServer.Exceptions;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Contains unit tests for the ValidationExceptionExtensions class.
+/// Tests cover methods for adding, merging, and checking validation errors.
+/// </summary>
 public sealed class ValidationExceptionExtensionsTests
 {
+    /// <summary>
+    /// Tests that AddErrors method correctly adds multiple errors to a ValidationException instance.
+    /// </summary>
     [Fact]
     public void AddErrors_AddsMultipleErrorsToException()
     {
@@ -33,6 +40,9 @@ public sealed class ValidationExceptionExtensionsTests
         exception.Errors["password"].Should().Be("Password must be at least 8 characters");
     }
 
+    /// <summary>
+    /// Tests that AddErrors method does not add errors when provided with an empty dictionary.
+    /// </summary>
     [Fact]
     public void AddErrors_WithEmptyDictionary_DoesNotAddErrors()
     {
@@ -48,6 +58,9 @@ public sealed class ValidationExceptionExtensionsTests
         exception.Errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Tests that AddErrors method throws ArgumentNullException when the exception parameter is null.
+    /// </summary>
     [Fact]
     public void AddErrors_WithNullException_ThrowsArgumentNullException()
     {
@@ -58,6 +71,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => ValidationExceptionExtensions.AddErrors(null!, errors));
     }
 
+    /// <summary>
+    /// Tests that AddErrors method throws ArgumentNullException when the errors dictionary parameter is null.
+    /// </summary>
     [Fact]
     public void AddErrors_WithNullErrorsDictionary_ThrowsArgumentNullException()
     {
@@ -68,6 +84,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => exception.AddErrors(null!));
     }
 
+    /// <summary>
+    /// Tests that AddErrors method throws ArgumentNullException when any error message in the dictionary is null.
+    /// </summary>
     [Fact]
     public void AddErrors_WithNullErrorMessage_ThrowsArgumentNullException()
     {
@@ -82,6 +101,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => exception.AddErrors(errors));
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method correctly adds an error with associated context data to a ValidationException.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_AddsErrorWithContextData()
     {
@@ -103,6 +125,9 @@ public sealed class ValidationExceptionExtensionsTests
         exception.Errors["password"].Should().Be(contextData);
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method throws ArgumentNullException when the exception parameter is null.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_WithNullException_ThrowsArgumentNullException()
     {
@@ -113,6 +138,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => ValidationExceptionExtensions.AddErrorWithContext(null!, "field", "error", contextData));
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method throws ArgumentNullException when the field name parameter is null.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_WithNullFieldName_ThrowsArgumentNullException()
     {
@@ -124,6 +152,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => exception.AddErrorWithContext(null!, "error", contextData));
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method throws ArgumentException when the field name is an empty string.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_WithEmptyFieldName_ThrowsArgumentException()
     {
@@ -135,6 +166,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentException>(() => exception.AddErrorWithContext(string.Empty, "error", contextData));
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method does not throw when the field name contains only whitespace.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_WithWhitespaceFieldName_DoesNotThrow()
     {
@@ -150,6 +184,9 @@ public sealed class ValidationExceptionExtensionsTests
         exception.Errors.Should().ContainKey("   ");
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method throws ArgumentNullException when the error message parameter is null.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_WithNullErrorMessage_ThrowsArgumentNullException()
     {
@@ -161,6 +198,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => exception.AddErrorWithContext("field", null!, contextData));
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method throws ArgumentNullException when the context data parameter is null.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_WithNullContextData_ThrowsArgumentNullException()
     {
@@ -171,6 +211,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => exception.AddErrorWithContext("field", "error", null!));
     }
 
+    /// <summary>
+    /// Tests that MergeErrors method correctly merges errors from source ValidationException to target ValidationException.
+    /// </summary>
     [Fact]
     public void MergeErrors_MergesErrorsFromSourceToTarget()
     {
@@ -195,6 +238,9 @@ public sealed class ValidationExceptionExtensionsTests
         target.Errors["field4"].Should().Be("error4");
     }
 
+    /// <summary>
+    /// Tests that MergeErrors method overwrites existing errors when source and target have overlapping field names.
+    /// </summary>
     [Fact]
     public void MergeErrors_WithOverlappingFields_OverwritesExistingErrors()
     {
@@ -218,6 +264,9 @@ public sealed class ValidationExceptionExtensionsTests
         target.Errors["password"].Should().Be("Password is too weak"); // added
     }
 
+    /// <summary>
+    /// Tests that MergeErrors method does not modify the target when the source ValidationException has no errors.
+    /// </summary>
     [Fact]
     public void MergeErrors_WithEmptySource_DoesNotModifyTarget()
     {
@@ -236,6 +285,9 @@ public sealed class ValidationExceptionExtensionsTests
         target.Errors["field1"].Should().Be("error1");
     }
 
+    /// <summary>
+    /// Tests that MergeErrors method throws ArgumentNullException when the target parameter is null.
+    /// </summary>
     [Fact]
     public void MergeErrors_WithNullTarget_ThrowsArgumentNullException()
     {
@@ -246,6 +298,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => ValidationExceptionExtensions.MergeErrors(null!, source));
     }
 
+    /// <summary>
+    /// Tests that MergeErrors method throws ArgumentNullException when the source parameter is null.
+    /// </summary>
     [Fact]
     public void MergeErrors_WithNullSource_ThrowsArgumentNullException()
     {
@@ -256,6 +311,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => target.MergeErrors(null!));
     }
 
+    /// <summary>
+    /// Tests that HasError method returns true when the specified field has an error.
+    /// </summary>
     [Fact]
     public void HasError_ReturnsTrue_WhenFieldHasError()
     {
@@ -270,6 +328,9 @@ public sealed class ValidationExceptionExtensionsTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that HasError method returns false when the specified field does not have an error.
+    /// </summary>
     [Fact]
     public void HasError_ReturnsFalse_WhenFieldDoesNotHaveError()
     {
@@ -284,6 +345,9 @@ public sealed class ValidationExceptionExtensionsTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that HasError method throws ArgumentNullException when the exception parameter is null.
+    /// </summary>
     [Fact]
     public void HasError_WithNullException_ThrowsArgumentNullException()
     {
@@ -291,6 +355,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => ValidationExceptionExtensions.HasError(null!, "field"));
     }
 
+    /// <summary>
+    /// Tests that HasError method throws ArgumentNullException when the field name parameter is null.
+    /// </summary>
     [Fact]
     public void HasError_WithNullFieldName_ThrowsArgumentNullException()
     {
@@ -301,6 +368,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentNullException>(() => exception.HasError(null!));
     }
 
+    /// <summary>
+    /// Tests that HasError method throws ArgumentException when the field name is an empty string.
+    /// </summary>
     [Fact]
     public void HasError_WithEmptyFieldName_ThrowsArgumentException()
     {
@@ -311,6 +381,9 @@ public sealed class ValidationExceptionExtensionsTests
         Assert.Throws<ArgumentException>(() => exception.HasError(string.Empty));
     }
 
+    /// <summary>
+    /// Tests that HasError method does not throw when the field name contains only whitespace.
+    /// </summary>
     [Fact]
     public void HasError_WithWhitespaceFieldName_DoesNotThrow()
     {
@@ -325,6 +398,9 @@ public sealed class ValidationExceptionExtensionsTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that AddErrors method returns the same exception instance for method chaining.
+    /// </summary>
     [Fact]
     public void AddErrors_ChainsCorrectly()
     {
@@ -339,6 +415,9 @@ public sealed class ValidationExceptionExtensionsTests
         result.Should().BeSameAs(exception);
     }
 
+    /// <summary>
+    /// Tests that AddErrorWithContext method returns the same exception instance for method chaining.
+    /// </summary>
     [Fact]
     public void AddErrorWithContext_ChainsCorrectly()
     {
@@ -353,6 +432,9 @@ public sealed class ValidationExceptionExtensionsTests
         result.Should().BeSameAs(exception);
     }
 
+    /// <summary>
+    /// Tests that MergeErrors method returns the same target exception instance for method chaining.
+    /// </summary>
     [Fact]
     public void MergeErrors_ChainsCorrectly()
     {
