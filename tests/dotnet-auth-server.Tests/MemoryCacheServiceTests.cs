@@ -6,19 +6,34 @@ using Xunit;
 
 namespace DotnetAuthServer.Tests.Caching;
 
+/// <summary>
+/// Tests for the <see cref="MemoryCacheService"/> class.
+/// </summary>
 public class MemoryCacheServiceTests
 {
     private readonly MemoryCacheService _cacheService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MemoryCacheServiceTests"/> class.
+    /// Creates a new MemoryCacheService instance for testing.
+    /// </summary>
     public MemoryCacheServiceTests()
     {
         _cacheService = new MemoryCacheService();
     }
 
-    public override string ToString() =>
+    /// <summary>
+/// Returns a string representation of the test instance.
+/// </summary>
+/// <returns>A string containing the cache service information.</returns>
+public override string ToString() =>
         $"MemoryCacheServiceTests {{ CacheService = {_cacheService} }}";
 
-    [Fact]
+    /// <summary>
+/// Tests that GetAsync returns null when the key does not exist in the cache.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetAsync_WhenKeyDoesNotExist_ReturnsNull()
     {
         // Act
@@ -28,7 +43,11 @@ public class MemoryCacheServiceTests
         result.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetAsync returns null when the key is null, empty, or whitespace.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetAsync_WhenKeyIsNullOrEmpty_ReturnsNull()
     {
         // Act
@@ -42,7 +61,11 @@ public class MemoryCacheServiceTests
         result3.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetAsync returns the cached value when the key exists in the cache.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetAsync_WhenKeyExists_ReturnsCachedValue()
     {
         // Arrange
@@ -57,7 +80,11 @@ public class MemoryCacheServiceTests
         result.Should().Be(expectedValue);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetAsync correctly returns values of different types from the cache.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetAsync_WithDifferentTypes_ReturnsCorrectlyTypedValue()
     {
         // Arrange
@@ -83,7 +110,11 @@ public class MemoryCacheServiceTests
         customResult.Should().BeEquivalentTo(customValue);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that SetAsync does not throw when the key is null, empty, or whitespace.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task SetAsync_WhenKeyIsNullOrEmpty_DoesNotThrow()
     {
         // Act
@@ -97,7 +128,11 @@ public class MemoryCacheServiceTests
         await action3.Should().NotThrowAsync();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that SetAsync stores a value with no expiration in the cache.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task SetAsync_StoresValueWithNoExpiration()
     {
         // Arrange
@@ -112,7 +147,11 @@ public class MemoryCacheServiceTests
         result.Should().Be(value);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that SetAsync stores a value with expiration and it becomes inaccessible after expiration.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task SetAsync_StoresValueWithExpiration()
     {
         // Arrange
@@ -133,7 +172,11 @@ public class MemoryCacheServiceTests
         afterExpiry.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that SetAsync correctly stores and retrieves reference types with expiration.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task SetAsync_WithReferenceType_WrapsIntValue()
     {
         // Arrange
@@ -154,7 +197,11 @@ public class MemoryCacheServiceTests
         afterExpiry.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that RemoveAsync does not throw when attempting to remove a non-existent key.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task RemoveAsync_WhenKeyDoesNotExist_DoesNotThrow()
     {
         // Act
@@ -164,7 +211,11 @@ public class MemoryCacheServiceTests
         await action.Should().NotThrowAsync();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that RemoveAsync does not throw when the key is null, empty, or whitespace.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task RemoveAsync_WhenKeyIsNullOrEmpty_DoesNotThrow()
     {
         // Act
@@ -178,7 +229,11 @@ public class MemoryCacheServiceTests
         await action3.Should().NotThrowAsync();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that RemoveAsync successfully removes an existing key from the cache.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task RemoveAsync_RemovesExistingKey()
     {
         // Arrange
@@ -197,7 +252,11 @@ public class MemoryCacheServiceTests
         afterRemove.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that RemoveByPatternAsync does not throw when the pattern is null, empty, or whitespace.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task RemoveByPatternAsync_WhenPatternIsNullOrEmpty_DoesNotThrow()
     {
         // Arrange
@@ -216,7 +275,11 @@ public class MemoryCacheServiceTests
         await action3.Should().NotThrowAsync();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that RemoveByPatternAsync removes keys matching the specified pattern.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task RemoveByPatternAsync_RemovesMatchingKeys()
     {
         // Arrange
@@ -240,7 +303,11 @@ public class MemoryCacheServiceTests
         otherKey.Should().Be("value4"); // Should not be removed
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that RemoveByPatternAsync removes keys matching a wildcard pattern.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task RemoveByPatternAsync_WithWildcardPattern_RemovesMatchingKeys()
     {
         // Arrange
@@ -264,7 +331,11 @@ public class MemoryCacheServiceTests
         otherUser.Should().Be("value4"); // Should not be removed
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that RemoveByPatternAsync removes keys matching a question mark wildcard pattern.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task RemoveByPatternAsync_WithQuestionMarkPattern_RemovesMatchingKeys()
     {
         // Arrange
@@ -288,7 +359,11 @@ public class MemoryCacheServiceTests
         admin1.Should().Be("value4"); // Should not be removed (different prefix)
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that ClearAsync removes all keys from the cache.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task ClearAsync_RemovesAllKeys()
     {
         // Arrange
@@ -310,7 +385,11 @@ public class MemoryCacheServiceTests
         (await _cacheService.GetAsync<string>("key3")).Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetOrSetAsync sets and returns a value when the key does not exist in the cache.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetOrSetAsync_WhenKeyDoesNotExist_SetsAndReturnsValue()
     {
         // Arrange
@@ -337,7 +416,11 @@ public class MemoryCacheServiceTests
         cachedResult.Should().Be("computed_value");
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetOrSetAsync returns the cached value when the key exists without calling the factory.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetOrSetAsync_WhenKeyExists_ReturnsCachedValueWithoutCallingFactory()
     {
         // Arrange
@@ -363,7 +446,11 @@ public class MemoryCacheServiceTests
         callCount.Should().Be(0); // Factory should not be called
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetOrSetAsync sets expiration on a value when an expiration time is provided.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetOrSetAsync_WithExpiration_SetsExpirationOnValue()
     {
         // Arrange
@@ -396,7 +483,11 @@ public class MemoryCacheServiceTests
         afterExpiry.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetOrSetAsync correctly handles reference types with expiration.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetOrSetAsync_WithReferenceType_WrapsIntValue()
     {
         // Arrange
@@ -429,7 +520,11 @@ public class MemoryCacheServiceTests
         afterExpiry.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetOrSetAsync only calls the factory once when multiple concurrent accesses occur for the same key.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetOrSetAsync_WithConcurrentAccess_OnlyCallsFactoryOnce()
     {
         // Arrange
@@ -463,7 +558,11 @@ public class MemoryCacheServiceTests
         cachedResult.Should().Be("concurrent_value");
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that GetOrSetAsync does not cache null values returned by the factory.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetOrSetAsync_WithNullFactoryResult_DoesNotCacheValue()
     {
         // Arrange
@@ -490,7 +589,11 @@ public class MemoryCacheServiceTests
         cachedResult.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that expired entries are automatically removed from the cache when accessed.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task GetAsync_ExpiredEntry_IsRemovedFromCache()
     {
         // Arrange
@@ -513,7 +616,11 @@ public class MemoryCacheServiceTests
         secondAttempt.Should().BeNull();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that the cache service is thread-safe when multiple operations are performed concurrently.
+/// </summary>
+/// <returns>A task representing the asynchronous operation.</returns>
+[Fact]
     public async Task MultipleOperations_ThreadSafety_Test()
     {
         // Arrange
