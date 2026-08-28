@@ -5037,4 +5037,57 @@ await tests.HasConsentAsync_ValidConsent_ReturnsTrue();
 // Task<Consent> UpdateAsync(Consent entity);
 ```
 
+## PasswordValidationService
+
+The `PasswordValidationService` enforces a configurable password policy and returns human-readable error messages for every violated rule. It validates minimum/maximum length, character-class requirements (lowercase, uppercase, digit, special), username equality and common variations, common patterns, and password history. `ValidatePassword` returns a list of error messages (empty when valid), while `ValidateAndThrow` throws an `AuthServerException` with all messages joined when the password fails.
+
+```csharp
+using DotnetAuthServer.Configuration;
+using DotnetAuthServer.Services;
+
+// Configure the password policy
+var policy = new PasswordPolicyOptions
+{
+    RequireMinimumLength = true,
+    MinimumLength = 10,
+    RequireMaximumLength = true,
+    MaximumLength = 64,
+    RequireLowercase = true,
+    RequireUppercase = true,
+    RequireDigit = true,
+    RequireSpecialChar = true,
+    RequireNotEqualToUsername = true,
+    CheckUsernameVariations = true,
+    CheckCommonPatterns = true,
+    CheckAgainstHistory = true,
+    HistoryCheckPassword = "PreviousPass123!",
+    CommonPatterns = new List<string> { "password", "123456", "qwerty" }
+};
+
+var validator = new PasswordValidationService(new AuthServerOptions(), policy);
+
+// Validate a password and inspect the returned errors
+var errors = validator.ValidatePassword("weak", username: "johndoe");
+if (errors.Count == 0)
+{
+    Console.WriteLine("Password is valid");
+}
+else
+{
+    foreach (var error in errors)
+    {
+        Console.WriteLine(error);
+    }
+}
+
+// Validate and throw on failure (e.g. during registration)
+try
+{
+    validator.ValidateAndThrow("P@ssw0rd123", username: "johndoe");
+    Console.WriteLine("Password accepted");
+}
+catch (AuthServerException ex)
+{
+    Console.WriteLine($"Rejected: {ex.Message}");
+}
 ```
