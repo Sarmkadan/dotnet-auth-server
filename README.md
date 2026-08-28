@@ -5115,3 +5115,29 @@ catch (AuthServerException ex)
     Console.WriteLine($"Rejected: {ex.Message}");
 }
 ```
+
+## AuthServerExceptionTests
+
+The `AuthServerExceptionTests` class provides comprehensive unit tests for the `AuthServerException` class, which is a custom exception type used throughout the authorization server for OAuth 2.0 and OpenID Connect error responses. It verifies constructor behavior, property mutability, and the `ToErrorResponse` method that converts exceptions to OAuth 2.0 error response dictionaries.
+
+```csharp
+using DotnetAuthServer.Tests;
+using DotnetAuthServer.Exceptions;
+using FluentAssertions;
+using Xunit;
+
+// Example usage of AuthServerExceptionTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunAuthServerExceptionTest()
+    {
+        // Instantiate the test class
+        var tests = new AuthServerExceptionTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.Constructor_WithRequiredParameters_SetsPropertiesCorrectly();
+    }
+}
+```
