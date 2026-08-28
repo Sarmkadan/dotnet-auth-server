@@ -2226,6 +2226,30 @@ await userManagementService.DeleteUserAsync(newUser.UserId);
 
 The `SecretsServiceTests` class provides unit tests for the `SecretsService` class, which handles secure secret generation, hashing, verification, and masking operations. It verifies that secrets are generated with the correct length, hashing produces valid results, verification correctly identifies valid and invalid secrets, and masking properly obfuscates secret values for display purposes.
 
+## UserSessionServiceTests
+
+The `UserSessionServiceTests` class provides unit tests for the `UserSessionService` class, covering session creation, retrieval, and revocation scenarios. It verifies that user sessions are properly created, retrieved, and revoked according to the authorization server's session management logic.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of UserSessionServiceTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunUserSessionServiceTests()
+    {
+        // Instantiate the test class
+        var tests = new UserSessionServiceTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.CreateSessionAsync_ValidParams_CreatesSession().GetAwaiter().GetResult();
+    }
+}
+
+
 ## AuditLoggingServiceTests
 
 The `AuditLoggingServiceTests` class provides unit tests for the `AuditLoggingService` class, which logs security-related events such as token issuance, authentication attempts, authorization decisions, and administrative actions. It verifies that audit log entries are correctly created, stored, retrieved, and cleared, ensuring comprehensive security auditing capabilities.
