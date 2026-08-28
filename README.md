@@ -5141,3 +5141,37 @@ public class ExampleTests
     }
 }
 ```
+
+## TotpServiceTests
+
+The `TotpServiceTests` class provides comprehensive unit tests for the `TotpService` class, which handles Time-based One-Time Password (TOTP) multi-factor authentication functionality. It verifies TOTP code validation with various window tolerances, MFA enrollment and confirmation flows, backup code usage, and credential status checks.
+
+```csharp
+using DotnetAuthServer.Tests;
+using DotnetAuthServer.Services;
+using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Exceptions;
+using DotnetAuthServer.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq;
+using FluentAssertions;
+using Xunit;
+using System.Security.Cryptography;
+using System;
+
+// Example usage of TotpServiceTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunTotpServiceTest()
+    {
+        // Instantiate the test class
+        var tests = new TotpServiceTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.VerifyTotpCode_Deterministic_ReturnsTrue();
+    }
+}
+```
