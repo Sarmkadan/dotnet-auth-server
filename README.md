@@ -5175,3 +5175,36 @@ public class ExampleTests
     }
 }
 ```
+
+
+## DynamicClientRegistrationServiceTests
+
+The `DynamicClientRegistrationServiceTests` class provides comprehensive unit tests for the `DynamicClientRegistrationService` class, which handles the OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591). It tests client registration scenarios including validation, scope filtering, PKCE requirements, and repository persistence.
+
+```csharp
+using DotnetAuthServer.Services;
+using DotnetAuthServer.Configuration;
+using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Domain.Entities;
+using DotnetAuthServer.Domain.Models;
+using DotnetAuthServer.Exceptions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using FluentAssertions;
+using Xunit;
+
+// Example usage of DynamicClientRegistrationServiceTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunDynamicClientRegistrationServiceTest()
+    {
+        // Instantiate the test class
+        var tests = new DynamicClientRegistrationServiceTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.RegisterAsync_ValidPublicClient_ReturnsRegistrationResponse();
+    }
+}
+```
