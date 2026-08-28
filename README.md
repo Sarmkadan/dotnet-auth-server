@@ -4588,6 +4588,30 @@ public class AuthorizationController
 }
 ```
 
+## ScopeServiceTests
+
+The `ScopeServiceTests` class provides comprehensive unit tests for the `ScopeService` class, verifying scope creation, validation, claim management, role assignment, and scope retrieval functionality. It tests various scenarios including valid and invalid inputs, duplicate handling, and edge cases.
+
+```csharp
+using DotnetAuthServer.Tests.Services;
+using Xunit;
+
+// Example usage of ScopeServiceTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunCreateScopeTest()
+    {
+        // Instantiate the test class
+        var tests = new ScopeServiceTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        // tests.CreateScopeAsync_ValidParameters_CreatesScope();
+    }
+}
+```
+
 ## ClientValidationService
 
 The `ClientValidationService` provides comprehensive validation for OAuth 2.0 clients during authorization flows. It validates client credentials, redirect URIs, allowed scopes, and grant types while leveraging caching to reduce database queries and improve performance. The service handles both confidential and public clients, ensuring proper security checks are applied based on client type.
