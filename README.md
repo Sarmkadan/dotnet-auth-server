@@ -5255,3 +5255,27 @@ public class ExampleTests
     }
 }
 ```
+
+## LoginRateLimiterTests
+
+The `LoginRateLimiterTests` class provides unit tests for the `LoginRateLimiter` class, verifying that it correctly enforces rate limits based on username and IP address, records failures and successes, and handles edge cases such as empty or whitespace inputs.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of LoginRateLimiterTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunLoginRateLimiterTests()
+    {
+        // Instantiate the test class
+        var tests = new LoginRateLimiterTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.ThrowIfBlocked_NoAttempts_DoesNotThrow();
+    }
+}
+```
