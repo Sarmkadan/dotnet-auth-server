@@ -5443,3 +5443,28 @@ public class ExampleTests
     }
 }
 
+```
+
+## ValidationExceptionExtensionsTests
+
+The `ValidationExceptionExtensionsTests` class provides unit tests for the `ValidationExceptionExtensions` class, covering methods for adding, merging, and checking validation errors. It tests scenarios such as adding multiple errors, handling null parameters, merging errors from source to target exceptions, and checking if specific fields have errors.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of ValidationExceptionExtensionsTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunValidationExceptionExtensionsTests()
+    {
+        // Instantiate the test class
+        var tests = new ValidationExceptionExtensionsTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.AddErrors_AddsMultipleErrorsToException();
+    }
+}
+```
