@@ -1085,6 +1085,29 @@ public async Task<IActionResult> GetProtectedResource()
 }
 ```
 
+## ErrorHandlingMiddlewareTests
+
+The `ErrorHandlingMiddlewareTests` class provides unit tests for the `ErrorHandlingMiddleware` class, verifying that it correctly handles exceptions and returns appropriate error responses. It tests various exception types including AuthServerException with different status codes, InvalidOperationException, and unknown exceptions, ensuring proper error formatting and prevention of internal detail leakage.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of ErrorHandlingMiddlewareTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunErrorHandlingMiddlewareTests()
+    {
+        // Instantiate the test class
+        var tests = new ErrorHandlingMiddlewareTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.Constructor_InitializesProperties();
+    }
+}
+
 ## ApiResponse
 
 The `ApiResponse<T>` and `ApiResponse` classes provide a standardized wrapper for API responses across all endpoints in the authorization server. They support both success and error responses with consistent metadata including success status, optional data payload, error messages, status codes, trace identifiers, and timestamps. These types are used throughout the application to ensure a uniform response format.
