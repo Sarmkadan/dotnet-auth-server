@@ -5375,3 +5375,26 @@ public class ExampleTests
     }
 }
 ```
+
+## ValidationExceptionTests
+
+The `ValidationExceptionTests` class provides unit tests for the `ValidationException` class, verifying that the exception is correctly constructed, that errors can be added and retrieved, and that the exception inherits from `AuthServerException` with fixed error code and status code.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of ValidationExceptionTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunValidationExceptionTests()
+    {
+        // Instantiate the test class
+        var tests = new ValidationExceptionTests();
+
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.DefaultConstructor_CreatesExceptionWithDefaultMessage();
+    }
+}
