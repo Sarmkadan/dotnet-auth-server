@@ -5351,3 +5351,27 @@ public class ExampleTests
         tests.IsRevoked_ReturnsFalse_ForUnknownToken();
     }
 }
+
+## TokenIssuedEventTests
+
+The `TokenIssuedEventTests` class provides unit tests for the `TokenIssuedEvent` domain event, verifying that the event is correctly initialized and that its properties can be set and modified as expected.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of TokenIssuedEventTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunTokenIssuedEventTests()
+    {
+        // Instantiate the test class
+        var tests = new TokenIssuedEventTests();
+
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.Constructor_NewInstance_GeneratesValidEventId();
+    }
+}
+```
