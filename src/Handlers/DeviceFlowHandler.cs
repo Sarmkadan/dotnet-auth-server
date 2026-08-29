@@ -103,7 +103,14 @@ public sealed class DeviceFlowHandler
         ArgumentException.ThrowIfNullOrEmpty(userCode);
         ArgumentException.ThrowIfNullOrEmpty(userId);
 
-        var session = _sessions.Values.FirstOrDefault(s => s.UserCode == userCode);
+        var normalizedUserCode = NormalizeUserCode(userCode);
+        if (normalizedUserCode == null)
+        {
+            _logger.LogWarning("Device flow approval failed: user code contains invalid characters");
+            return false;
+        }
+
+        var session = _sessions.Values.FirstOrDefault(s => s.UserCode == normalizedUserCode);
         if (session is null)
         {
             _logger.LogWarning("Device flow approval failed: user code not found");
@@ -137,7 +144,14 @@ public sealed class DeviceFlowHandler
     {
         ArgumentException.ThrowIfNullOrEmpty(userCode);
 
-        var session = _sessions.Values.FirstOrDefault(s => s.UserCode == userCode);
+        var normalizedUserCode = NormalizeUserCode(userCode);
+        if (normalizedUserCode == null)
+        {
+            _logger.LogWarning("Device flow denial failed: user code contains invalid characters");
+            return false;
+        }
+
+        var session = _sessions.Values.FirstOrDefault(s => s.UserCode == normalizedUserCode);
         if (session is null)
             return false;
 
@@ -268,6 +282,42 @@ public sealed class DeviceFlowHandler
         }
 
         return new string(buffer);
+    }
+
+    /// <summary>
+    /// Normalizes a user code input per RFC 8628 section 6.1 for comparison with the stored user code.
+    /// Trims, uppercases (invariant), removes spaces and hyphens, and validates that all characters
+    /// belong to the UserCodeAlphabet. Returns null if the input contains invalid characters.
+    /// </summary>
+    /// <param name="input">The user code as entered by the user (may contain spaces, hyphens, and lowercase letters).</param>
+    /// <returns>
+    /// The normalized user code (uppercase, no spaces/hyphens, and only containing characters from the UserCodeAlphabet)
+    /// if the input is valid; otherwise, null.
+    /// </returns>
+    private static string? NormalizeUserCode(string input)
+    {
+        if (input == null)
+            return null;
+
+        // Trim
+        var trimmed = input.Trim();
+        if (trimmed.Length == 0)
+            return null;
+
+        // Uppercase invariant
+        var upper = trimmed.ToUpperInvariant();
+
+        // Remove spaces and hyphens
+        var withoutSeparators = upper.Replace(" ", "").Replace("-", "");
+
+        // Check that every character is in the UserCodeAlphabet
+        foreach (char c in withoutSeparators)
+        {
+            if (UserCodeAlphabet.IndexOf(c) == -1)
+                return null;
+        }
+
+        return withoutSeparators;
     }
 }
 
