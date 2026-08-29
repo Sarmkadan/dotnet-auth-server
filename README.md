@@ -5248,6 +5248,30 @@ public class ExampleTests
 ```
 
 
+## TotpServiceTests_Rfc6238Compliant
+
+The `TotpServiceTests_Rfc6238Compliant` class provides unit tests for the `TotpService` class that verify compliance with RFC 6238 standards for Time-based One-Time Password (TOTP) algorithms. These tests validate HMAC-SHA1 usage, 6-digit numeric codes, Base32 encoding/decoding, window tolerance, and provisioning URI generation according to the RFC specifications.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of TotpServiceTests_Rfc6238Compliant
+public class ExampleTests
+{
+    [Fact]
+    public void RunTotpServiceTests_Rfc6238Compliant()
+    {
+        // Instantiate the test class
+        var tests = new TotpServiceTests_Rfc6238Compliant();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.TotpAlgorithm_UsesHmacSha1_AsRequiredByRfc6238();
+    }
+}
+```
+
 ## DynamicClientRegistrationServiceTests
 
 The `DynamicClientRegistrationServiceTests` class provides comprehensive unit tests for the `DynamicClientRegistrationService` class, which handles the OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591). It tests client registration scenarios including validation, scope filtering, PKCE requirements, and repository persistence.
