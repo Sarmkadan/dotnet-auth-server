@@ -611,6 +611,30 @@ Console.WriteLine($"Cache entries: {stats.EntryCount}, Size: {stats.ApproximateS
 }
 ```
 
+## MemoryCacheServiceTests
+
+The `MemoryCacheServiceTests` class provides unit tests for the `MemoryCacheService` class, covering get/set/remove operations, expiration handling, pattern-based removal, and thread safety. It verifies that the in-memory caching implementation works correctly for various data types and concurrent access scenarios.
+
+```csharp
+using DotnetAuthServer.Tests.Caching;
+using Xunit;
+
+// Example usage of MemoryCacheServiceTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunMemoryCacheServiceTests()
+    {
+        // Instantiate the test class
+        var tests = new MemoryCacheServiceTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.GetAsync_WhenKeyDoesNotExist_ReturnsNull().GetAwaiter().GetResult();
+    }
+}
+```
+
 ## LoggingOptions
 
 The `LoggingOptions` class provides configuration for the authorization server's logging system. It controls log verbosity, formatting, and what information is included in logs, making it essential for debugging, security auditing, and performance monitoring while protecting sensitive data.
