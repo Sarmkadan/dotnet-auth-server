@@ -5376,7 +5376,51 @@ public class ExampleTests
 }
 ```
 
+## PolicyEnforcementServiceTests
+
+The `PolicyEnforcementServiceTests` class provides unit tests for the `PolicyEnforcementService` class, covering policy evaluation for role-based, scope-based, attribute-based, and claim-based rules, as well as multiple rule combinations.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of PolicyEnforcementServiceTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunPolicyEnforcementServiceTests()
+    {
+        // Instantiate the test class
+        var tests = new PolicyEnforcementServiceTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.Constructor_InitializesWithDefaultPolicies();
+    }
+}
 ## ValidationExceptionTests
+## PolicyEnforcementServiceTests
+
+The `PolicyEnforcementServiceTests` class provides unit tests for the `PolicyEnforcementService` class, covering policy evaluation for role-based, scope-based, attribute-based, and claim-based rules, as well as multiple rule combinations.
+
+```csharp
+using DotnetAuthServer.Tests;
+using Xunit;
+
+// Example usage of PolicyEnforcementServiceTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunPolicyEnforcementServiceTests()
+    {
+        // Instantiate the test class
+        var tests = new PolicyEnforcementServiceTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.Constructor_InitializesWithDefaultPolicies();
+    }
+}
 
 The `ValidationExceptionTests` class provides unit tests for the `ValidationException` class, verifying that the exception is correctly constructed, that errors can be added and retrieved, and that the exception inherits from `AuthServerException` with fixed error code and status code.
 
@@ -5398,3 +5442,4 @@ public class ExampleTests
         tests.DefaultConstructor_CreatesExceptionWithDefaultMessage();
     }
 }
+
