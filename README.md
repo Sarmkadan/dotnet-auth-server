@@ -5303,3 +5303,27 @@ public class ExampleTests
     }
 }
 ```
+
+
+## RevokedTokenStoreTests
+
+The `RevokedTokenStoreTests` class provides unit tests for the `RevokedTokenStore` class, covering token revocation, expiration, case-insensitive comparison, and automatic purging of expired tokens.
+
+```csharp
+using DotnetAuthServer.Tests.Security;
+using Xunit;
+
+// Example usage of RevokedTokenStoreTests
+public class ExampleTests
+{
+    [Fact]
+    public void RunRevokedTokenStoreTests()
+    {
+        // Instantiate the test class
+        var tests = new RevokedTokenStoreTests();
+        
+        // Execute a specific test case
+        // Note: These methods are designed to be run by a test runner like XUnit
+        tests.IsRevoked_ReturnsFalse_ForUnknownToken();
+    }
+}
