@@ -11,7 +11,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
-using System.Threading;
 
 /// <summary>
 /// In‑memory store for revoked JWT IDs (jti claims) and refresh‑token families.
@@ -30,7 +29,7 @@ public sealed class RevokedTokenStore
     private readonly ConcurrentDictionary<string, (DateTime expiresAt, string familyId)> _tokenInfo =
         new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private readonly object _compoundOperationLock = new();
     private readonly int _maxSize = 10_000;
     private readonly Counter<long> _revokedTokenCount;
     private readonly Histogram<long> _revokedTokenLifetime;
@@ -69,15 +68,7 @@ public sealed class RevokedTokenStore
         ArgumentException.ThrowIfNullOrEmpty(jti);
         ArgumentException.ThrowIfNullOrEmpty(familyId);
 
-        _semaphore.Wait();
-        try
-        {
-            _tokenInfo[jti] = (expiresAt, familyId);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        _tokenInfo[jti] = (expiresAt, familyId);
     }
 
     /// <summary>
@@ -93,29 +84,25 @@ public sealed class RevokedTokenStore
         ArgumentException.ThrowIfNullOrEmpty(jti);
         ArgumentException.ThrowIfNullOrEmpty(familyId);
 
-        _semaphore.Wait();
-        try
-        {
-            // Ensure the token is known; if not, register it so family information is retained.
-            if (!_tokenInfo.ContainsKey(jti))
-            {
-                _tokenInfo[jti] = (tokenExpiresAt, familyId);
-            }
+        // Ensure the token is known; if not, register it so family information is retained.
+        _tokenInfo.TryAdd(jti, (tokenExpiresAt, familyId));
 
-            var lifetimeSeconds = (long)(tokenExpiresAt - DateTime.UtcNow).TotalSeconds;
-            _revokedJtis[jti] = (tokenExpiresAt, null);
-            _revokedTokenLifetime.Record(lifetimeSeconds);
-            UpdateMetrics();
+        var lifetimeSeconds = (long)(tokenExpiresAt - DateTime.UtcNow).TotalSeconds;
+        _revokedJtis[jti] = (tokenExpiresAt, null);
+        _revokedTokenLifetime.Record(lifetimeSeconds);
+        UpdateMetrics();
 
-            // Opportunistic cleanup
-            if (_revokedJtis.Count > _maxSize)
-            {
-                PurgeExpired();
-            }
-        }
-        finally
+        if (_revokedJtis.Count > _maxSize)
         {
-            _semaphore.Release();
+            // Coordinate the count recheck and full sweep so concurrent threshold crossings
+            // do not start overlapping size-bound pruning passes.
+            lock (_compoundOperationLock)
+            {
+                if (_revokedJtis.Count > _maxSize)
+                {
+                    PurgeExpired();
+                }
+            }
         }
     }
 
@@ -141,8 +128,9 @@ public sealed class RevokedTokenStore
     {
         ArgumentNullException.ThrowIfNull(familyId);
 
-        _semaphore.Wait();
-        try
+        // Keep the family snapshot and its revocation sweep together so other
+        // family-wide sweeps cannot interleave and double-record revocations.
+        lock (_compoundOperationLock)
         {
             var now = DateTime.UtcNow;
             var tokensInFamily = _tokenInfo
@@ -163,10 +151,6 @@ public sealed class RevokedTokenStore
 
             UpdateMetrics();
         }
-        finally
-        {
-            _semaphore.Release();
-        }
     }
 
     /// <summary>
@@ -183,32 +167,24 @@ public sealed class RevokedTokenStore
     {
         ArgumentNullException.ThrowIfNull(jti);
 
-        _semaphore.Wait();
-        try
+        if (!_revokedJtis.TryGetValue(jti, out var expiresAt))
         {
-            if (!_revokedJtis.TryGetValue(jti, out var expiresAt))
-            {
-                familyId = null;
-                return false;
-            }
-
-            // The underlying token has expired naturally — clean up the entry
-            if (DateTime.UtcNow > expiresAt.tokenExpiresAt)
-            {
-                _revokedJtis.TryRemove(jti, out _);
-                UpdateMetrics();
-                familyId = null;
-                return false;
-            }
-
-            // Retrieve family identifier from the token‑info dictionary if available.
-            familyId = _tokenInfo.TryGetValue(jti, out var info) ? info.familyId : null;
-            return true;
+            familyId = null;
+            return false;
         }
-        finally
+
+        // The underlying token has expired naturally — clean up the entry
+        if (DateTime.UtcNow > expiresAt.tokenExpiresAt)
         {
-            _semaphore.Release();
+            _revokedJtis.TryRemove(jti, out _);
+            UpdateMetrics();
+            familyId = null;
+            return false;
         }
+
+        // Retrieve family identifier from the token‑info dictionary if available.
+        familyId = _tokenInfo.TryGetValue(jti, out var info) ? info.familyId : null;
+        return true;
     }
 
     /// <summary>
@@ -304,15 +280,7 @@ public sealed class RevokedTokenStore
     /// <returns>The count of revoked tokens.</returns>
     public int Count()
     {
-        _semaphore.Wait();
-        try
-        {
-            return _revokedJtis.Count;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        return _revokedJtis.Count;
     }
 
     private void UpdateMetrics()
