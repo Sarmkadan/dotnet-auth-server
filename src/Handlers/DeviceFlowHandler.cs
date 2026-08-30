@@ -78,10 +78,11 @@ public sealed class DeviceFlowHandler
         _sessions.TryAdd(deviceCode, session);
 
         _logger.LogInformation(
-            "Device flow initiated: device_code={DeviceCode} user_code={UserCode} client={ClientId}",
-            deviceCode,
+            "Device flow initiated: user_code={UserCode} device_code_prefix={DeviceCodePrefix} client={ClientId} expires_in={ExpiresIn}s",
             userCode,
-            clientId);
+            deviceCode.Substring(0, Math.Min(4, deviceCode.Length)),
+            clientId,
+            ExpirationSeconds);
 
         return new DeviceFlowInitiation
         {
@@ -177,6 +178,9 @@ public sealed class DeviceFlowHandler
     {
         ArgumentException.ThrowIfNullOrEmpty(deviceCode);
 
+        _logger.LogDebug("Device flow poll received: device_code_prefix={DeviceCodePrefix}",
+            deviceCode.Substring(0, Math.Min(4, deviceCode.Length)));
+
         if (!_sessions.TryGetValue(deviceCode, out var session))
         {
             return new DeviceFlowPollResult
@@ -191,6 +195,11 @@ public sealed class DeviceFlowHandler
         if (session.ExpiresAt < now)
         {
             _sessions.TryRemove(deviceCode, out _);
+            _logger.LogInformation("Expired device flow removed: user_code={UserCode} device_code_prefix={DeviceCodePrefix} client={ClientId}. Active sessions: {Count}",
+                session.UserCode,
+                session.DeviceCode.Substring(0, Math.Min(4, session.DeviceCode.Length)),
+                session.ClientId,
+                _sessions.Count);
             return new DeviceFlowPollResult
             {
                 Status = DeviceFlowStatus.Expired,
@@ -204,6 +213,7 @@ public sealed class DeviceFlowHandler
             var elapsed = now - new DateTime(previousPoll, DateTimeKind.Utc);
             if (elapsed.TotalSeconds < MinPollIntervalSeconds)
             {
+                _logger.LogWarning("Device flow poll too fast: client={ClientId}. Returning slow_down.", session.ClientId);
                 return new DeviceFlowPollResult
                 {
                     Status = session.Status,
@@ -225,7 +235,10 @@ public sealed class DeviceFlowHandler
                 };
             }
 
-            _logger.LogInformation("Device flow redeemed: device_code={DeviceCode}", deviceCode);
+            _logger.LogInformation("Device flow redeemed: user_code={UserCode} device_code_prefix={DeviceCodePrefix} client={ClientId}",
+                removedSession.UserCode,
+                removedSession.DeviceCode.Substring(0, Math.Min(4, removedSession.DeviceCode.Length)),
+                removedSession.ClientId);
 
             return new DeviceFlowPollResult
             {
