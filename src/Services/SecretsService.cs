@@ -16,6 +16,21 @@ using System.Text;
 /// </summary>
 public sealed class SecretsService
 {
+    // 32 bytes provides a 256-bit random secret by default.
+    private const int SecretByteLength = 32;
+
+    // 16 bytes provides a 128-bit unique salt for each secret hash.
+    private const int SaltByteLength = 16;
+
+    // 32 bytes produces a 256-bit derived key matching SHA-256.
+    private const int Pbkdf2OutputByteLength = 32;
+
+    // 10,000 iterations preserves the established PBKDF2 work factor.
+    private const int Pbkdf2Iterations = 10000;
+
+    // SHA-256 is the established digest used by stored secret hashes.
+    private static readonly HashAlgorithmName Pbkdf2HashAlgorithm = HashAlgorithmName.SHA256;
+
     private readonly ILogger<SecretsService> _logger;
 
     public SecretsService(ILogger<SecretsService> logger)
@@ -28,7 +43,7 @@ public sealed class SecretsService
     /// Generates a cryptographically secure random secret.
     /// Suitable for client secrets, API keys, and tokens.
     /// </summary>
-    public string GenerateSecureSecret(int length = 32)
+    public string GenerateSecureSecret(int length = SecretByteLength)
     {
         if (length < 16 || length > 256)
         {
@@ -56,21 +71,21 @@ public sealed class SecretsService
     /// Suitable for storing secrets securely in database.
     /// Uses unique salt per secret to prevent rainbow tables.
     /// </summary>
-    public SecretHash HashSecret(string secret, int iterations = 10000)
+    public SecretHash HashSecret(string secret, int iterations = Pbkdf2Iterations)
     {
         ArgumentException.ThrowIfNullOrEmpty(secret);
 
         // Generate unique salt
-        var salt = new byte[16];
+        var salt = new byte[SaltByteLength];
         using (var rng = RandomNumberGenerator.Create())
         {
             rng.GetBytes(salt);
         }
 
         // Hash with PBKDF2
-        using (var pbkdf2 = new Rfc2898DeriveBytes(secret, salt, iterations, HashAlgorithmName.SHA256))
+        using (var pbkdf2 = new Rfc2898DeriveBytes(secret, salt, iterations, Pbkdf2HashAlgorithm))
         {
-            var hash = pbkdf2.GetBytes(32);
+            var hash = pbkdf2.GetBytes(Pbkdf2OutputByteLength);
 
             return new SecretHash
             {
@@ -98,9 +113,9 @@ public sealed class SecretsService
                 secret,
                 salt,
                 hash.Iterations,
-                HashAlgorithmName.SHA256))
+                Pbkdf2HashAlgorithm))
             {
-                var computedHash = pbkdf2.GetBytes(32);
+                var computedHash = pbkdf2.GetBytes(Pbkdf2OutputByteLength);
                 var storedHash = Convert.FromBase64String(hash.Hash);
 
                 // Constant-time comparison to prevent timing attacks
@@ -136,7 +151,7 @@ public sealed class SecretsService
     /// Generates a secure random token with specified length.
     /// Base64url encoded for safe transmission.
     /// </summary>
-    public string GenerateToken(int length = 32)
+    public string GenerateToken(int length = SecretByteLength)
     {
         return GenerateSecureSecret(length);
     }
