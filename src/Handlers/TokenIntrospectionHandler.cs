@@ -21,7 +21,9 @@ using DotnetAuthServer.Security;
 /// </summary>
 public sealed class TokenIntrospectionHandler
 {
-    private readonly AuthServerOptions _options;
+    private readonly JwtSecurityTokenHandler _tokenHandler;
+    private readonly SymmetricSecurityKey _signingKey;
+    private readonly TokenValidationParameters _validationParameters;
     private readonly RevokedTokenStore _revokedTokenStore;
     private readonly ILogger<TokenIntrospectionHandler> _logger;
 
@@ -30,7 +32,18 @@ public sealed class TokenIntrospectionHandler
         RevokedTokenStore revokedTokenStore,
         ILogger<TokenIntrospectionHandler> logger)
     {
-        _options = options;
+        _tokenHandler = new JwtSecurityTokenHandler();
+        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.JwtSigningKey));
+        _validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = _signingKey,
+            ValidateIssuer = true,
+            ValidIssuer = options.IssuerUrl,
+            ValidateAudience = false, // Audience varies by client
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(5)
+        };
         _revokedTokenStore = revokedTokenStore;
         _logger = logger;
     }
@@ -41,7 +54,7 @@ public sealed class TokenIntrospectionHandler
     /// </summary>
     public IntrospectionResponse IntrospectToken(string? token)
     {
-        _logger.LogInformation("IntrospectToken called with token length: {Length}", token?.Length ?? 0);
+        _logger.LogDebug("IntrospectToken called with token length: {Length}", token?.Length ?? 0);
         if (string.IsNullOrWhiteSpace(token))
         {
             _logger.LogWarning("Introspection request with missing token");
@@ -50,21 +63,7 @@ public sealed class TokenIntrospectionHandler
 
         try
         {
-            var handler = new JwtSecurityTokenHandler();
-            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.JwtSigningKey));
-
-            var validationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = signingKey,
-                ValidateIssuer = true,
-                ValidIssuer = _options.IssuerUrl,
-                ValidateAudience = false, // Audience varies by client
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(5)
-            };
-
-            var principal = handler.ValidateToken(token, validationParameters, out var validatedToken);
+            var principal = _tokenHandler.ValidateToken(token, _validationParameters, out var validatedToken);
 
             if (validatedToken is JwtSecurityToken jwtToken)
             {
