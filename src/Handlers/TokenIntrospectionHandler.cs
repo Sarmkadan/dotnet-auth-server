@@ -27,11 +27,24 @@ public sealed class TokenIntrospectionHandler
     private readonly RevokedTokenStore _revokedTokenStore;
     private readonly ILogger<TokenIntrospectionHandler> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TokenIntrospectionHandler"/> class.
+    /// </summary>
+    /// <param name="options">The authentication server options.</param>
+    /// <param name="revokedTokenStore">The store used to check for revoked tokens.</param>
+    /// <param name="logger">The logger used by the handler.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="options"/>, <paramref name="revokedTokenStore"/>, or <paramref name="logger"/> is <see langword="null"/>.
+    /// </exception>
     public TokenIntrospectionHandler(
         AuthServerOptions options,
         RevokedTokenStore revokedTokenStore,
         ILogger<TokenIntrospectionHandler> logger)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(revokedTokenStore);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _tokenHandler = new JwtSecurityTokenHandler();
         _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.JwtSigningKey));
         _validationParameters = new TokenValidationParameters
