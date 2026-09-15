@@ -12,6 +12,20 @@ swapped for a real database.
 dotnet run --project dotnet-auth-server.csproj
 ```
 
+## Rate limiting
+
+`src/Middleware/RateLimitingMiddleware.cs` applies an in-memory token-bucket limit to requests whose paths start with one of the configured sensitive endpoints. Buckets are keyed by the first 20 characters of the `Authorization` header when present, then by the `client_id` query parameter, and finally by the remote IP address. A rejected request receives HTTP 429, a `Retry-After: 60` header, and a `rate_limit_exceeded` JSON error.
+
+`src/Middleware/RateLimitingOptions.cs` defines these defaults:
+
+- `RequestsPerMinute`: `60`, the token refill rate per client.
+- `BurstSize`: `10`, the maximum token-bucket capacity.
+- `SensitiveEndpoints`: `/oauth/token`, `/oauth/authorize`, `/oauth/introspect`, and `/oauth/revoke` (matched case-insensitively).
+
+`src/Security/LoginRateLimiter.cs` separately tracks failed password-login attempts in sliding windows for usernames and IP addresses, clears a username's attempts after a successful login, and includes a global circuit breaker for aggregate failures. Its thresholds and window length come from `AuthServerOptions`.
+
+`src/Security/TotpRateLimiter.cs` tracks TOTP verification attempts per user in a sliding window and rejects users who reach the configured threshold with HTTP 429 and retry timing in the error message. Both successful and failed TOTP attempts are recorded; its threshold and window length also come from `AuthServerOptions`.
+
 Swagger UI is available at `/swagger` in development. Discovery documents live at
 `/.well-known/oauth-authorization-server` and `/.well-known/openid-configuration`.
 
