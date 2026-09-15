@@ -1,106 +1,136 @@
 # IConsentRepository
 
-Defines the contract for a repository that manages user consent records in the authentication server, enabling storage, retrieval, updating, and revocation of consent grants between users and OAuth clients.
+`IConsentRepository` defines asynchronous persistence and lookup operations for `Consent` entities. It extends `IRepository<Consent, string>`, so consent identifiers are strings and the interface includes the inherited CRUD operations as well as consent-specific queries and revocation operations.
 
-## API
+Namespace: `DotnetAuthServer.Data.Repositories`
 
-### `Task<Consent?> GetByIdAsync(Guid id)`
-Retrieves a single consent record by its unique identifier.
-- **Parameters**: `id` – The unique identifier of the consent record.
-- **Returns**: The `Consent` instance if found; otherwise, `null`.
-- **Throws**: `ArgumentNullException` if `id` is `null`.
+## Inherited CRUD operations
 
-### `Task<IEnumerable<Consent>> GetAllAsync()`
-Retrieves all consent records stored in the repository.
-- **Returns**: An enumerable of all `Consent` records.
-- **Throws**: No documented exceptions.
+```csharp
+Task<Consent?> GetByIdAsync(
+    string id,
+    CancellationToken cancellationToken = default);
 
-### `Task<Consent> CreateAsync(Consent consent)`
-Creates a new consent record in the repository.
-- **Parameters**: `consent` – The consent record to be created.
-- **Returns**: The created `Consent` instance, including any assigned identifiers.
-- **Throws**: `ArgumentNullException` if `consent` is `null`.
+Task<IEnumerable<Consent>> GetAllAsync(
+    CancellationToken cancellationToken = default);
 
-### `Task<Consent> UpdateAsync(Consent consent)`
-Updates an existing consent record in the repository.
-- **Parameters**: `consent` – The consent record containing updated values.
-- **Returns**: The updated `Consent` instance.
-- **Throws**: `ArgumentNullException` if `consent` is `null`.
+Task<Consent> CreateAsync(
+    Consent entity,
+    CancellationToken cancellationToken = default);
 
-### `Task DeleteAsync(Consent consent)`
-Deletes an existing consent record from the repository.
-- **Parameters**: `consent` – The consent record to be deleted.
-- **Throws**: `ArgumentNullException` if `consent` is `null`.
+Task<Consent> UpdateAsync(
+    Consent entity,
+    CancellationToken cancellationToken = default);
 
-### `Task DeleteByIdAsync(Guid id)`
-Deletes a consent record by its unique identifier.
-- **Parameters**: `id` – The unique identifier of the consent record.
-- **Throws**: `ArgumentNullException` if `id` is `null`.
+Task DeleteAsync(
+    Consent entity,
+    CancellationToken cancellationToken = default);
 
-### `Task<bool> ExistsAsync(Guid id)`
-Checks whether a consent record with the specified identifier exists.
-- **Parameters**: `id` – The unique identifier of the consent record.
-- **Returns**: `true` if the record exists; otherwise, `false`.
-- **Throws**: `ArgumentNullException` if `id` is `null`.
+Task DeleteByIdAsync(
+    string id,
+    CancellationToken cancellationToken = default);
 
-### `Task<Consent?> GetByUserAndClientAsync(string userId, string clientId)`
-Retrieves a consent record for a specific user and client.
-- **Parameters**:
-  - `userId` – The identifier of the user.
-  - `clientId` – The identifier of the OAuth client.
-- **Returns**: The `Consent` instance if found; otherwise, `null`.
-- **Throws**: `ArgumentNullException` if `userId` or `clientId` is `null`.
+Task<bool> ExistsAsync(
+    string id,
+    CancellationToken cancellationToken = default);
+```
 
-### `Task<IEnumerable<Consent>> GetByUserIdAsync(string userId)`
-Retrieves all consent records associated with a specific user.
-- **Parameters**: `userId` – The identifier of the user.
-- **Returns**: An enumerable of `Consent` records for the user.
-- **Throws**: `ArgumentNullException` if `userId` is `null`.
+These members are inherited from `IRepository<Consent, string>`:
 
-### `Task<IEnumerable<Consent>> GetByClientIdAsync(string clientId)`
-Retrieves all consent records associated with a specific OAuth client.
-- **Parameters**: `clientId` – The identifier of the OAuth client.
-- **Returns**: An enumerable of `Consent` records for the client.
-- **Throws**: `ArgumentNullException` if `clientId` is `null`.
+- `GetByIdAsync` returns the consent with the specified `ConsentId`, or `null` when it is not found.
+- `GetAllAsync` returns all stored consent records.
+- `CreateAsync` stores a consent and returns the stored entity. The in-memory implementation generates a string identifier when `ConsentId` is null, empty, or whitespace.
+- `UpdateAsync` replaces an existing consent and returns the updated entity.
+- `DeleteAsync` removes the supplied consent entity.
+- `DeleteByIdAsync` removes the consent with the specified identifier.
+- `ExistsAsync` reports whether the specified identifier is present.
 
-### `Task RevokeAllUserConsentsAsync(string userId)`
-Revokes all consent records associated with a specific user.
-- **Parameters**: `userId` – The identifier of the user whose consents are to be revoked.
-- **Throws**: `ArgumentNullException` if `userId` is `null`.
+## Consent-specific operations
 
-### `ConsentService`
-A service component responsible for managing consent lifecycle operations. This member is likely a factory or dependency injection registration point rather than a runtime method.
+### GetByUserIdAsync
 
-### `Task<bool> HasConsentAsync(string userId, string clientId)`
-Checks whether a consent record exists for a specific user and client.
-- **Parameters**:
-  - `userId` – The identifier of the user.
-  - `clientId` – The identifier of the OAuth client.
-- **Returns**: `true` if a consent record exists; otherwise, `false`.
-- **Throws**: `ArgumentNullException` if `userId` or `clientId` is `null`.
+```csharp
+Task<IEnumerable<Consent>> GetByUserIdAsync(
+    string userId,
+    CancellationToken cancellationToken = default);
+```
 
-### `Task<Consent> RecordConsentAsync(string userId, string clientId, IEnumerable<string> scopes)`
-Records a new consent grant for a user and client with the specified scopes.
-- **Parameters**:
-  - `userId` – The identifier of the user.
-  - `clientId` – The identifier of the OAuth client.
-  - `scopes` – The set of scopes being consented to.
-- **Returns**: The newly created `Consent` record.
-- **Throws**: `ArgumentNullException` if `userId`, `clientId`, or `scopes` is `null`.
+Returns all consent records belonging to `userId`. An empty sequence indicates that the user has no stored consents.
 
-### `Task<IEnumerable<string>> GetEffectiveScopesAsync(string userId, string clientId)`
-Retrieves the effective set of scopes consented to by a user for a specific client.
-- **Parameters**:
-  - `userId` – The identifier of the user.
-  - `clientId` – The identifier of the OAuth client.
-- **Returns**: An enumerable of scope strings representing the effective consent.
-- **Throws**: `ArgumentNullException` if `userId` or `clientId` is `null`.
+### GetByUserAndClientAsync
 
-### `Task RevokeConsentAsync(string userId, string clientId)`
-Revokes the consent record for a specific user and client.
-- **Parameters**:
-  - `userId` – The identifier of the user.
-  - `clientId` – The identifier of the OAuth client.
-- **Throws**: `ArgumentNullException` if `userId` or `clientId` is `null`.
+```csharp
+Task<Consent?> GetByUserAndClientAsync(
+    string userId,
+    string clientId,
+    CancellationToken cancellationToken = default);
+```
+
+Returns the consent associated with the specified user and OAuth client, or `null` when no matching relationship exists.
+
+### GetByClientIdAsync
+
+```csharp
+Task<IEnumerable<Consent>> GetByClientIdAsync(
+    string clientId,
+    CancellationToken cancellationToken = default);
+```
+
+Returns all consent records associated with `clientId`, across all users. An empty sequence indicates that the client has no stored consents.
+
+### RevokeUserConsentsAsync
+
+```csharp
+Task<int> RevokeUserConsentsAsync(
+    string userId,
+    CancellationToken cancellationToken = default);
+```
+
+Revokes all consent records belonging to `userId` and returns the number successfully revoked. In the in-memory implementation, revocation removes the matching records from the repository.
+
+### RevokeConsentAsync
+
+```csharp
+Task<bool> RevokeConsentAsync(
+    string userId,
+    string clientId,
+    CancellationToken cancellationToken = default);
+```
+
+Revokes the consent relationship for the specified user and client. Returns `true` when a matching record was revoked and `false` when no match was found. In the in-memory implementation, revocation removes the record from the repository.
 
 ## Usage
+
+```csharp
+IConsentRepository repository = new ConsentRepository();
+
+var consent = new Consent
+{
+    UserId = "user-123",
+    ClientId = "reporting-app",
+    GrantedScopes = "openid profile",
+    Status = ConsentStatus.Approved
+};
+
+Consent created = await repository.CreateAsync(consent, cancellationToken);
+
+Consent? stored = await repository.GetByUserAndClientAsync(
+    created.UserId,
+    created.ClientId,
+    cancellationToken);
+
+bool revoked = await repository.RevokeConsentAsync(
+    created.UserId,
+    created.ClientId,
+    cancellationToken);
+```
+
+The example requires `DotnetAuthServer.Domain.Entities` and `DotnetAuthServer.Domain.Enums` in addition to the repository namespace.
+
+## Implementation notes
+
+- All methods accept an optional `CancellationToken`. Implementations that perform I/O should observe it; the current in-memory implementation completes synchronously and does not inspect the token.
+- The interface does not define validation or exception behavior. The current `ConsentRepository` throws `ArgumentNullException` when `CreateAsync` receives `null`, `ArgumentException` when an update has no valid identifier, and `InvalidOperationException` when the consent being updated does not exist.
+- The current in-memory implementation uses exact, case-sensitive comparisons for user IDs, client IDs, and consent IDs.
+- The current implementation stores and returns entity references. Callers can therefore mutate an entity after it has been stored; persistent implementations may behave differently.
+- Revocation in `ConsentRepository` is a physical removal. It does not call `Consent.Revoke` or retain an expired consent as an audit record.
