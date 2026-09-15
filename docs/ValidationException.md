@@ -1,102 +1,95 @@
 # ValidationException
 
-Represents an exception that occurs when request validation fails, carrying a dictionary of field-level or global error details. It is designed to be thrown by validators and caught by middleware or controllers to produce structured error responses.
+`ValidationException` is a sealed `AuthServerException` used when request input fails validation. It represents the OAuth 2.0 `invalid_request` error with HTTP status code `400`.
 
-## API
+## Error response
 
-### Constructors
+| Property | Value |
+|---|---|
+| OAuth 2.0 error code | `invalid_request` |
+| HTTP status code | `400 Bad Request` |
+| Default message | `Validation failed` |
+| Default error description | The exception message |
+| Error URI | `null` |
+
+## Constructors
+
+### General validation failure
 
 ```csharp
-public ValidationException()
+public ValidationException(
+    string message = "Validation failed",
+    string? errorDescription = null,
+    Exception? innerException = null)
 ```
-Initializes a new instance with an empty `Errors` dictionary. Use this when no specific field errors are available at construction time, or when errors will be added afterward via `AddError`.
+
+- `message` sets the inherited exception message. It must not be `null` or empty.
+- `errorDescription` sets the OAuth 2.0 `error_description`. When it is `null`, the message is used.
+- `innerException` preserves the exception that caused the validation failure.
+
+The constructor throws `ArgumentNullException` for a `null` message and `ArgumentException` for an empty message.
+
+### Field-specific validation failure
 
 ```csharp
-public ValidationException(Dictionary<string, object> errors)
+public ValidationException(
+    string fieldName,
+    string fieldValue,
+    string validationRule,
+    Exception? innerException = null)
 ```
-Initializes a new instance with a pre-populated dictionary of errors.
 
-| Parameter | Type                        | Description                                      |
-|-----------|-----------------------------|--------------------------------------------------|
-| `errors`  | `Dictionary<string, object>`| The error details keyed by field name or a global key. |
+This overload builds the message and error description in the following form:
 
-**Remarks:** The provided dictionary is stored directly; no defensive copy is made. Passing `null` will result in a `NullReferenceException` when `Errors` is accessed later.
+```text
+Validation failed for {fieldName}: '{fieldValue}'. {validationRule}
+```
 
-### Properties
+Each string argument must not be `null` or empty. A `null` argument causes `ArgumentNullException`; an empty argument causes `ArgumentException`. The values are included in the message but are not automatically added to `Errors`.
+
+## Errors property
 
 ```csharp
 public Dictionary<string, object> Errors { get; }
 ```
-Gets the dictionary of validation errors. Keys are typically field names (e.g., `"email"`, `"password"`) or a global identifier (e.g., `"_"` or `"summary"`). Values are objects that describe the error; common types include `string` messages, `List<string>` for multiple messages per field, or complex error detail objects.
 
-**Return value:** The dictionary instance held by this exception. Modifications to the returned dictionary affect the exception’s state.
+`Errors` is initialized as an empty, mutable dictionary for every exception instance. Callers can inspect or modify the returned dictionary. The field-specific constructor does not populate it.
 
-### Methods
-
-```csharp
-public void AddError(string key, object value)
-```
-Adds or updates an error entry in the `Errors` dictionary.
-
-| Parameter | Type   | Description                                           |
-|-----------|--------|-------------------------------------------------------|
-| `key`     | `string`| The error key, typically a field name or global identifier. |
-| `value`   | `object`| The error detail to associate with the key.           |
-
-**Remarks:** If `key` already exists, its value is overwritten. Passing a `null` key throws `ArgumentNullException`. Passing a `null` value is allowed and stores `null` as the error detail.
-
-## Usage
-
-### Example 1: Throwing with pre-built errors
+## AddError method
 
 ```csharp
-public void ValidateUserRegistration(RegisterRequest request)
-{
-    var errors = new Dictionary<string, object>();
-
-    if (string.IsNullOrWhiteSpace(request.Email))
-        errors["email"] = "Email is required.";
-    else if (!IsValidEmail(request.Email))
-        errors["email"] = "Email format is invalid.";
-
-    if (string.IsNullOrWhiteSpace(request.Password))
-        errors["password"] = "Password is required.";
-    else if (request.Password.Length < 8)
-        errors["password"] = new List<string> { "Password must be at least 8 characters.", "Password must include a digit." };
-
-    if (errors.Count > 0)
-        throw new ValidationException(errors);
-}
+public void AddError(string fieldName, string errorMessage)
 ```
 
-### Example 2: Incremental construction with AddError
+Adds a string error message under the specified field name. Both arguments must not be `null` or empty. If the field already exists, its value is replaced.
+
+## Examples
+
+Create a general validation error and add field details:
 
 ```csharp
-public void ValidateOrderSubmission(OrderRequest request)
-{
-    var exception = new ValidationException();
+var exception = new ValidationException("The request contains invalid values");
+exception.AddError("email", "Email must be a valid address");
+exception.AddError("displayName", "Display name is required");
 
-    if (request.Quantity <= 0)
-        exception.AddError("quantity", "Quantity must be greater than zero.");
-
-    if (request.Quantity > 100)
-        exception.AddError("quantity", "Quantity exceeds maximum allowed.");
-
-    if (request.ShippingAddress == null)
-        exception.AddError("shippingAddress", "Shipping address is required.");
-
-    if (!IsValidPostalCode(request.ShippingAddress?.PostalCode))
-        exception.AddError("shippingAddress.postalCode", "Invalid postal code.");
-
-    if (exception.Errors.Count > 0)
-        throw exception;
-}
+throw exception;
 ```
 
-## Notes
+Create an exception whose message identifies one failed value and rule:
 
-- **Dictionary ownership:** The `Errors` dictionary is a direct reference to the instance passed to the constructor or created internally. Callers who pass a dictionary can still mutate it externally after the exception is constructed, which may lead to unexpected behavior. Consider passing a copy if external mutation is a concern.
-- **Key overwrites:** `AddError` overwrites existing keys without warning. If multiple errors per field are needed, store a `List<object>` or `List<string>` as the value and append to it manually before calling `AddError`.
-- **Thread safety:** This type is not thread-safe. Concurrent calls to `AddError` or concurrent reads of `Errors` while another thread is modifying the dictionary will result in undefined behavior. Instances are typically constructed and thrown on a single thread within a request scope, so this is rarely a practical concern.
-- **Serialization:** When this exception is caught and its `Errors` property is serialized to JSON (e.g., in an exception-handling middleware), ensure that the values stored in the dictionary are serializable by the chosen serializer. Complex objects or circular references may cause serialization failures.
-- **Inheritance:** This type derives from `Exception`. The standard exception properties (`Message`, `StackTrace`, etc.) are inherited but not populated with validation-specific information by default. Set `Message` explicitly via the base constructor if a summary message is desired.
+```csharp
+throw new ValidationException(
+    fieldName: "age",
+    fieldValue: "16",
+    validationRule: "Age must be at least 18");
+```
+
+The second example produces this exception message:
+
+```text
+Validation failed for age: '16'. Age must be at least 18
+```
+
+## Response serialization
+
+The inherited `ToErrorResponse()` method serializes the OAuth error code and error description. The `Errors` dictionary is separate from the inherited `Details` dictionary, so entries added with `AddError` are not automatically included by `ToErrorResponse()`.
