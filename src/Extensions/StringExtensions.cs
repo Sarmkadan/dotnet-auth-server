@@ -67,6 +67,17 @@ public static class StringExtensions
     }
 
     /// <summary>
+    /// Determines whether a redirect URI is an absolute URI that uses HTTPS.
+    /// </summary>
+    /// <param name="redirectUri">The redirect URI to inspect.</param>
+    /// <returns><see langword="true"/> when the redirect URI is absolute and uses HTTPS; otherwise, <see langword="false"/>.</returns>
+    public static bool UsesHttps(this string? redirectUri)
+    {
+        return Uri.TryCreate(redirectUri, UriKind.Absolute, out var result) &&
+            result.Scheme == Uri.UriSchemeHttps;
+    }
+
+    /// <summary>
     /// Safely compares two URIs for equality, accounting for trailing slashes and normalization.
     /// </summary>
     /// <param name="uri1">The first URI string to compare.</param>
