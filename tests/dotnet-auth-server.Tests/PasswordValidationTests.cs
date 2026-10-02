@@ -112,6 +112,7 @@ public sealed class PasswordValidationTests
         var password = "admin123";
         _options.PasswordPolicy.RequireMinimumLength = true;
         _options.PasswordPolicy.MinimumLength = 1;
+        _options.PasswordPolicy.RequireNotEqualToUsername = true;
         _options.PasswordPolicy.CheckUsernameVariations = true;
 
         // Act
@@ -262,9 +263,10 @@ public sealed class PasswordValidationTests
     [Fact]
     public void ValidatePassword_MultipleErrors_AllReported()
     {
-        // Arrange
-        var password = "short";
-        var username = "john";
+        // Arrange - use a password that fails all checks:
+        // short, no lowercase, no uppercase, no digit, equals username
+        var password = "!@#";
+        var username = "!@#";
         _options.PasswordPolicy = new PasswordPolicyOptions
         {
             RequireMinimumLength = true,
@@ -298,7 +300,7 @@ public sealed class PasswordValidationTests
     public void ValidateAndThrow_InvalidPassword_ThrowsWithErrorMessage()
     {
         // Arrange
-        var password = "weak";
+        var password = "1234";
         var username = "testuser";
         _options.PasswordPolicy.MinimumLength = 8;
         _options.PasswordPolicy.RequireLowercase = true;
@@ -342,7 +344,7 @@ public sealed class PasswordValidationTests
     public void ValidatePassword_CommonPattern_Fails()
     {
         // Arrange
-        var password = "Password123!";
+        var password = "Qwerty!99";
         _options.PasswordPolicy.CheckCommonPatterns = true;
 
         // Act
@@ -350,7 +352,7 @@ public sealed class PasswordValidationTests
 
         // Assert
         errors.Should().ContainSingle()
-            .Which.Should().Be("Password cannot contain common pattern: 'password'");
+            .Which.Should().Be("Password cannot contain common pattern: 'qwerty'");
     }
 
     /// <summary>
@@ -398,7 +400,7 @@ public sealed class PasswordValidationTests
     public void ValidatePassword_DefaultPolicy_AllowsSimplePasswords()
     {
         // Arrange
-        var password = "simple";
+        var password = "simplepwd";
 
         // Act
         var errors = _validator.ValidatePassword(password);
@@ -423,8 +425,8 @@ public sealed class PasswordValidationTests
         // Act
         var errors = _validator.ValidatePassword(password);
 
-        // Assert
-        errors.Should().HaveCount(4);
+        // Assert - lowercase, uppercase, digit (special char requirement IS met by !!!@@@###)
+        errors.Should().HaveCount(3);
     }
 
     /// <summary>

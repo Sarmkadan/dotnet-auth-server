@@ -144,7 +144,7 @@ public sealed class Client
     public bool IsRedirectUriValid(string? redirectUri)
     {
         if (string.IsNullOrWhiteSpace(redirectUri)) return false;
-        return RedirectUris.Contains(redirectUri, StringComparer.Ordinal);
+        return RedirectUris.Contains(redirectUri, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -162,6 +162,7 @@ public sealed class Client
     /// </summary>
     public bool IsGrantTypeAllowed(string grantType)
     {
+        ArgumentNullException.ThrowIfNull(grantType);
         return AllowedGrantTypes.Contains(grantType, StringComparer.OrdinalIgnoreCase);
     }
 
@@ -170,6 +171,7 @@ public sealed class Client
     /// </summary>
     public bool IsScopeAllowed(string scope)
     {
+        ArgumentNullException.ThrowIfNull(scope);
         return AllowedScopes.Contains(scope, StringComparer.OrdinalIgnoreCase);
     }
 

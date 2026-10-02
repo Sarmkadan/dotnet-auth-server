@@ -45,7 +45,8 @@ public static class ClientValidationServiceJsonExtensions
     /// <exception cref="NotSupportedException">Thrown when attempting to deserialize a service with injected dependencies.</exception>
     public static ClientValidationService? FromJson(string json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        if (string.IsNullOrEmpty(json))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(json));
 
         throw new NotSupportedException(
             "ClientValidationService instances with injected dependencies cannot be deserialized. " +
@@ -61,7 +62,8 @@ public static class ClientValidationServiceJsonExtensions
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out ClientValidationService? value)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        if (string.IsNullOrEmpty(json))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(json));
 
         value = null;
         return false;

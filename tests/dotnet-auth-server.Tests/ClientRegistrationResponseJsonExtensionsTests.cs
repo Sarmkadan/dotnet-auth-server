@@ -34,7 +34,7 @@ public class ClientRegistrationResponseJsonExtensionsTests
     public void ToJson_ThrowsArgumentNullException_WhenClientRegistrationResponseIsNull()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => (new ClientRegistrationResponse()).ToJson());
+        Assert.Throws<ArgumentNullException>(() => ((ClientRegistrationResponse)null!).ToJson());
     }
 
     [Fact]

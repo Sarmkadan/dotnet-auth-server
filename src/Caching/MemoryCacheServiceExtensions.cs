@@ -106,9 +106,8 @@ public static class MemoryCacheServiceExtensions
 
         foreach (var key in keyList)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (key is null || string.IsNullOrWhiteSpace(key))
             {
-                result[key] = null;
                 continue;
             }
 
@@ -232,7 +231,8 @@ public static class MemoryCacheServiceExtensions
 
         // Use reflection to access the internal _cache field
         var field = typeof(MemoryCacheService).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (field?.GetValue(cache) is ConcurrentDictionary<string, object> internalCache)
+        var cacheObj = field?.GetValue(cache);
+        if (cacheObj is System.Collections.IDictionary dict)
         {
             // Manually convert wildcard pattern to regex
             var regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
@@ -243,7 +243,7 @@ public static class MemoryCacheServiceExtensions
                 regexPattern,
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-            var matchingKeys = internalCache.Keys.Where(k => regex.IsMatch(k)).ToList();
+            var matchingKeys = dict.Keys.Cast<string>().Where(k => regex.IsMatch(k)).ToList();
             return matchingKeys.AsReadOnly();
         }
 
@@ -267,19 +267,19 @@ public static class MemoryCacheServiceExtensions
         var cacheField = typeof(MemoryCacheService).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         var locksField = typeof(MemoryCacheService).GetField("_locks", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
-        var cacheCount = cacheField?.GetValue(cache) is ConcurrentDictionary<string, object> cacheDict ? cacheDict.Count : 0;
-        var locksCount = locksField?.GetValue(cache) is ConcurrentDictionary<string, SemaphoreSlim> locksDict ? locksDict.Count : 0;
+        var cacheObj = cacheField?.GetValue(cache);
+        var locksObj = locksField?.GetValue(cache);
+        var cacheCount = cacheObj is System.Collections.IDictionary cacheDict ? cacheDict.Count : 0;
+        var locksCount = locksObj is System.Collections.IDictionary locksDict2 ? locksDict2.Count : 0;
 
         // Calculate total size of all cached values more accurately
         var totalSizeBytes = 0L;
-        if (cacheField?.GetValue(cache) is ConcurrentDictionary<string, object> internalCache)
+        if (cacheObj is System.Collections.IDictionary internalCache)
         {
             foreach (var entry in internalCache.Values)
             {
                 if (entry is not null)
                 {
-                    // Use MemorySizeOf for more accurate size calculation
-                    // For primitive types and common objects, use approximate size
                     totalSizeBytes += GetApproximateSize(entry);
                 }
             }

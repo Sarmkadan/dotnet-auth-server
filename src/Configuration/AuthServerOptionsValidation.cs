@@ -181,7 +181,11 @@ public static class AuthServerOptionsValidation
     /// <param name="value">The options to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this AuthServerOptions value) => value is not null && Validate(value).Count == 0;
+    public static bool IsValid(this AuthServerOptions value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return Validate(value).Count == 0;
+    }
 
     /// <summary>
     /// Ensures that the specified <see cref="AuthServerOptions"/> instance is valid.

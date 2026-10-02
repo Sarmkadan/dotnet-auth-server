@@ -322,8 +322,8 @@ public sealed class TotpService
     [Obsolete("Use VerifyTotpCodeAsync for replay prevention and constant-time comparison.")]
     public bool VerifyTotpCode(string base32Secret, string code, int windowSteps = 1)
     {
-        ArgumentException.ThrowIfNullOrEmpty(base32Secret);
-        ArgumentException.ThrowIfNullOrEmpty(code);
+        if (string.IsNullOrWhiteSpace(base32Secret) || string.IsNullOrWhiteSpace(code))
+            return false;
 
         if (code.Length != TotpDigits || !int.TryParse(code, out var inputValue))
             return false;

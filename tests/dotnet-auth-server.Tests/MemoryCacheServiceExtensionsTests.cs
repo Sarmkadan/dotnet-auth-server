@@ -94,11 +94,8 @@ public sealed class MemoryCacheServiceExtensionsTests
         var keys = new[] { "valid", "", "   ", null! };
         var result = await _cache.GetMultipleAsync<string>(keys);
 
-        Assert.Equal(4, result.Count);
+        Assert.Single(result);
         Assert.Equal("ok", result["valid"]);
-        Assert.Null(result[""]);
-        Assert.Null(result["   "]);
-        Assert.Null(result[null!]);
     }
 
     #endregion

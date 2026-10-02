@@ -62,7 +62,12 @@ namespace DotnetAuthServer.Tests.Formatters
             var response = JsonTokenResponseFormatter.ParseTokenResponse(json);
 
             // Assert
-            Assert.Equal(expectedResponse, response);
+            Assert.NotNull(response);
+            Assert.Equal(expectedResponse.AccessToken, response!.AccessToken);
+            Assert.Equal(expectedResponse.TokenType, response.TokenType);
+            Assert.Equal(expectedResponse.ExpiresIn, response.ExpiresIn);
+            Assert.Equal(expectedResponse.RefreshToken, response.RefreshToken);
+            Assert.Equal(expectedResponse.Scope, response.Scope);
         }
 
         [Fact]

@@ -36,6 +36,7 @@ public sealed class PasswordValidationService
     /// <returns>A list of validation error messages (empty if valid)</returns>
     public IReadOnlyList<string> ValidatePassword(string password, string? username = null)
     {
+        ArgumentNullException.ThrowIfNull(password);
         var errors = new List<string>();
 
         // Check minimum length

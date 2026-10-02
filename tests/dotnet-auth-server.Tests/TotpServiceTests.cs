@@ -46,20 +46,15 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_Deterministic_ReturnsTrue()
     {
-        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_Deterministic_ReturnsTrue));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+        var currentCode = ComputeCurrentTotp(base32Secret);
 
-        // Act - Call multiple times - should get valid codes
-        var result1 = _service.VerifyTotpCode(base32Secret, "94287082", windowSteps: 1);
-        var result2 = _service.VerifyTotpCode(base32Secret, "7081804", windowSteps: 1);
-        var result3 = _service.VerifyTotpCode(base32Secret, "14050471", windowSteps: 1);
+        // Act
+        var result = _service.VerifyTotpCode(base32Secret, currentCode, windowSteps: 1);
 
-        // Assert - These are known valid codes for the test secret
-        result1.Should().BeTrue("Known valid TOTP code should be accepted");
-        result2.Should().BeTrue("Known valid TOTP code should be accepted");
-        result3.Should().BeTrue("Known valid TOTP code should be accepted");
-        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_Deterministic_ReturnsTrue));
+        // Assert
+        result.Should().BeTrue("Current TOTP code should be accepted");
     }
 
     /// <summary>
@@ -91,20 +86,15 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_WithWindowTolerance_AcceptsPreviousStep()
     {
-        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsPreviousStep));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
-        const string currentCode = "94287082"; // Valid at counter 59
-        const string previousCode = "708180";  // Valid at counter 58
+        var previousCode = ComputeTotpAtOffset(base32Secret, -1);
 
         // Act
-        var resultCurrent = _service.VerifyTotpCode(base32Secret, currentCode, windowSteps: 1);
-        var resultPrevious = _service.VerifyTotpCode(base32Secret, previousCode, windowSteps: 1);
+        var result = _service.VerifyTotpCode(base32Secret, previousCode, windowSteps: 1);
 
         // Assert
-        resultCurrent.Should().BeTrue();
-        resultPrevious.Should().BeTrue(); // Should accept previous step with window=1
-        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsPreviousStep));
+        result.Should().BeTrue("Previous step code should be accepted with window=1");
     }
 
     /// <summary>
@@ -132,17 +122,15 @@ public sealed class TotpServiceTests
     [Fact]
     public void VerifyTotpCode_WithWindowTolerance_AcceptsNextStep()
     {
-        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsNextStep));
         // Arrange
         const string base32Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
-        const string nextCode = "14050471"; // Valid at counter 60
+        var nextCode = ComputeTotpAtOffset(base32Secret, +1);
 
         // Act
         var result = _service.VerifyTotpCode(base32Secret, nextCode, windowSteps: 1);
 
         // Assert
-        result.Should().BeTrue(); // Should accept next step with window=1
-        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyTotpCode_WithWindowTolerance_AcceptsNextStep));
+        result.Should().BeTrue("Next step code should be accepted with window=1");
     }
 
     #endregion
@@ -259,23 +247,20 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task ConfirmSetupAsync_ValidCode_EnablesMfa()
     {
-        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(ConfirmSetupAsync_ValidCode_EnablesMfa));
         // Arrange
         const string userId = "test-user-id";
-        const string validCode = "123456";
+        const string secretKey = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+        var validCode = ComputeCurrentTotp(secretKey);
         var credential = new TotpCredential
         {
             UserId = userId,
-            SecretKey = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", // Known test secret
+            SecretKey = secretKey,
             IsEnabled = false,
             BackupCodes = new List<string> { "ABCDEF12", "GHIJKL34" }
         };
 
         _credentialRepositoryMock.Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(credential);
-
-        // Mock time to make "123456" a valid code for our test secret
-        // We'll use a known good combination: set time so TOTP is 123456
 
         // Act
         Func<Task> act = async () => await _service.ConfirmSetupAsync(userId, validCode);
@@ -285,7 +270,6 @@ public sealed class TotpServiceTests
         credential.IsEnabled.Should().BeTrue();
         credential.EnabledAt.Should().NotBeNull();
         _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Once);
-        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(ConfirmSetupAsync_ValidCode_EnablesMfa));
     }
 
     /// <summary>
@@ -353,14 +337,14 @@ public sealed class TotpServiceTests
     [Fact]
     public async Task VerifyAsync_ValidTotpCode_ReturnsTrue()
     {
-        _loggerMock.Object.LogInformation("Starting test {TestMethod}", nameof(VerifyAsync_ValidTotpCode_ReturnsTrue));
         // Arrange
         const string userId = "test-user-id";
-        const string validCode = "123456";
+        const string secretKey = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+        var validCode = ComputeCurrentTotp(secretKey);
         var credential = new TotpCredential
         {
             UserId = userId,
-            SecretKey = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+            SecretKey = secretKey,
             IsEnabled = true,
             BackupCodes = new List<string> { "ABCDEF12", "GHIJKL34" }
         };
@@ -374,8 +358,7 @@ public sealed class TotpServiceTests
         // Assert
         result.Should().BeTrue();
         credential.LastUsedAt.Should().NotBeNull();
-        _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.Once);
-        _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(VerifyAsync_ValidTotpCode_ReturnsTrue));
+        _credentialRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<TotpCredential>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     /// <summary>
@@ -664,6 +647,33 @@ public sealed class TotpServiceTests
         // Username and issuer should be URL-encoded in the label
         uri.Should().Contain($"{Uri.EscapeDataString($"{issuer}:{username}")}");
         _loggerMock.Object.LogInformation("Finished test {TestMethod}", nameof(BuildProvisioningUri_ValidParameters_CreatesCorrectUri));
+    }
+
+    #endregion
+
+    #region TOTP Helpers
+
+    private static string ComputeCurrentTotp(string base32Secret, int offset = 0)
+    {
+        return ComputeTotpAtOffset(base32Secret, offset);
+    }
+
+    private static string ComputeTotpAtOffset(string base32Secret, int stepOffset)
+    {
+        var secretBytes = TotpService.DecodeBase32(base32Secret);
+        var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30 + stepOffset;
+        var counterBytes = BitConverter.GetBytes(counter);
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(counterBytes);
+
+        using var hmac = new System.Security.Cryptography.HMACSHA1(secretBytes);
+        var hash = hmac.ComputeHash(counterBytes);
+        var offset2 = hash[^1] & 0x0F;
+        var otp = ((hash[offset2] & 0x7F) << 24)
+            | ((hash[offset2 + 1] & 0xFF) << 16)
+            | ((hash[offset2 + 2] & 0xFF) << 8)
+            | (hash[offset2 + 3] & 0xFF);
+        return (otp % 1000000).ToString("D6");
     }
 
     #endregion

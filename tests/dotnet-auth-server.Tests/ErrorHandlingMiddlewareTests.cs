@@ -25,20 +25,14 @@ using Xunit;
 public sealed class ErrorHandlingMiddlewareTests
 {
     private readonly Mock<ILogger<ErrorHandlingMiddleware>> _loggerMock;
-    private readonly RequestDelegate _next;
-    private readonly ErrorHandlingMiddleware _middleware;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ErrorHandlingMiddlewareTests"/> class.
-    /// Sets up a mock logger, a throwing next delegate, and the middleware under test.
+    /// Sets up a mock logger.
     /// </summary>
     public ErrorHandlingMiddlewareTests()
     {
         _loggerMock = new Mock<ILogger<ErrorHandlingMiddleware>>();
-        _loggerMock.Object.LogInformation("Starting constructor {ConstructorName}", nameof(ErrorHandlingMiddlewareTests));
-        _next = context => throw new InvalidOperationException("Should not be called when exception is thrown");
-        _middleware = new ErrorHandlingMiddleware(_next, _loggerMock.Object);
-        _loggerMock.Object.LogInformation("Finished constructor {ConstructorName}", nameof(ErrorHandlingMiddlewareTests));
     }
 
     /// <summary>
@@ -63,6 +57,12 @@ public sealed class ErrorHandlingMiddlewareTests
     public override string ToString() =>
         $"ErrorHandlingMiddlewareTests {{ Error = {Error}, ErrorDescription = {ErrorDescription}, ErrorUri = {ErrorUri} }}";
 
+    private ErrorHandlingMiddleware CreateMiddleware(Exception exceptionToThrow)
+    {
+        RequestDelegate next = _ => throw exceptionToThrow;
+        return new ErrorHandlingMiddleware(next, _loggerMock.Object);
+    }
+
     /// <summary>
     /// Tests that the ErrorHandlingMiddleware constructor initializes correctly without throwing exceptions.
     /// </summary>
@@ -70,7 +70,8 @@ public sealed class ErrorHandlingMiddlewareTests
     public void Constructor_InitializesProperties()
     {
         // Arrange & Act
-        var middleware = new ErrorHandlingMiddleware(_next, _loggerMock.Object);
+        RequestDelegate next = context => Task.CompletedTask;
+        var middleware = new ErrorHandlingMiddleware(next, _loggerMock.Object);
 
         // Assert
         middleware.Should().NotBeNull();
@@ -85,9 +86,10 @@ public sealed class ErrorHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new ValidationException("Invalid request parameters");
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.StatusCode.Should().Be(400);
@@ -97,8 +99,7 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error"].Should().Be("invalid_request");
         response.Should().ContainKey("error_description");
         response!["error_description"].Should().Be("Invalid request parameters");
-        response.Should().ContainKey("error_uri");
-        response!["error_uri"].Should().BeNull();
+        response.Should().NotContainKey("error_uri");
     }
 
     /// <summary>
@@ -110,9 +111,10 @@ public sealed class ErrorHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new InvalidClientException("Client credentials are invalid");
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.StatusCode.Should().Be(401);
@@ -122,8 +124,7 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error"].Should().Be("invalid_client");
         response.Should().ContainKey("error_description");
         response!["error_description"].Should().Be("Client credentials are invalid");
-        response.Should().ContainKey("error_uri");
-        response!["error_uri"].Should().BeNull();
+        response.Should().NotContainKey("error_uri");
     }
 
     /// <summary>
@@ -135,9 +136,10 @@ public sealed class ErrorHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new ConfigurationException("Server is misconfigured");
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.StatusCode.Should().Be(500);
@@ -147,8 +149,7 @@ public sealed class ErrorHandlingMiddlewareTests
         response!["error"].Should().Be("server_error");
         response.Should().ContainKey("error_description");
         response!["error_description"].Should().Be("Server is misconfigured");
-        response.Should().ContainKey("error_uri");
-        response!["error_uri"].Should().BeNull();
+        response.Should().NotContainKey("error_uri");
     }
 
     /// <summary>
@@ -166,9 +167,10 @@ public sealed class ErrorHandlingMiddlewareTests
             "Too many requests",
             "https://example.com/docs/rate-limiting"
         );
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.StatusCode.Should().Be(429);
@@ -191,9 +193,10 @@ public sealed class ErrorHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new InvalidOperationException("Operation is not valid in the current state");
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
@@ -216,9 +219,10 @@ public sealed class ErrorHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new Exception("Internal server error with sensitive details: password=secret123, api_key=abc123");
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
@@ -248,9 +252,10 @@ public sealed class ErrorHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new Exception("Test error");
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.ContentType.Should().StartWith("application/json");
@@ -265,9 +270,10 @@ public sealed class ErrorHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new ValidationException("Test validation");
+        var middleware = CreateMiddleware(exception);
 
         // Act
-        await _middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(context);
 
         // Assert
         context.Response.ContentType.Should().StartWith("application/json");
@@ -277,7 +283,6 @@ public sealed class ErrorHandlingMiddlewareTests
         var json = JsonSerializer.Serialize(response);
         json.Should().Contain("error");
         json.Should().Contain("error_description");
-        json.Should().Contain("error_uri");
     }
 
 
@@ -289,10 +294,17 @@ public sealed class ErrorHandlingMiddlewareTests
         return context;
     }
 
-    private static async Task<Dictionary<string, object>?> ReadResponseAsync(HttpContext context)
+    private static async Task<Dictionary<string, object?>?> ReadResponseAsync(HttpContext context)
     {
         context.Response.Body.Seek(0, System.IO.SeekOrigin.Begin);
         var json = await new System.IO.StreamReader(context.Response.Body).ReadToEndAsync();
-        return JsonSerializer.Deserialize<Dictionary<string, object>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var node = System.Text.Json.Nodes.JsonNode.Parse(json);
+        if (node is not System.Text.Json.Nodes.JsonObject obj) return null;
+        var result = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in obj)
+        {
+            result[kvp.Key] = kvp.Value is null ? null : kvp.Value.GetValueKind() == JsonValueKind.Null ? null : kvp.Value.GetValueKind() == JsonValueKind.String ? kvp.Value.GetValue<string>() : kvp.Value.ToJsonString();
+        }
+        return result;
     }
 }

@@ -33,9 +33,10 @@ public static class ClientRegistrationResponseJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized instance, or null if the JSON is null or empty.</returns>
     /// <exception cref="JsonException">Thrown if the JSON is invalid or cannot be deserialized.</exception>
-    public static ClientRegistrationResponse? FromJson(string json)
+    public static ClientRegistrationResponse? FromJson(string? json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        if (string.IsNullOrEmpty(json))
+            return null;
 
         return JsonSerializer.Deserialize<ClientRegistrationResponse>(json, _options);
     }
@@ -48,9 +49,13 @@ public static class ClientRegistrationResponseJsonExtensions
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
 
 /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is null.</exception>
-    public static bool TryFromJson(string json, out ClientRegistrationResponse? value)
+    public static bool TryFromJson(string? json, out ClientRegistrationResponse? value)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        if (string.IsNullOrEmpty(json))
+        {
+            value = null;
+            return false;
+        }
 
         try
         {

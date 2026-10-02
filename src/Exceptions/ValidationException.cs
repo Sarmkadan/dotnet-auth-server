@@ -86,10 +86,9 @@ public sealed class ValidationException : AuthServerException
     /// </summary>
     /// <param name="fieldName">The field name.</param>
     /// <param name="errorMessage">The error message.</param>
-    public void AddError(string fieldName, string errorMessage)
+    public void AddError(string fieldName, string? errorMessage)
     {
-        ArgumentException.ThrowIfNullOrEmpty(fieldName);
-        ArgumentException.ThrowIfNullOrEmpty(errorMessage);
-        Errors[fieldName] = errorMessage;
+        ArgumentNullException.ThrowIfNull(fieldName);
+        Errors[fieldName] = errorMessage!;
     }
 }

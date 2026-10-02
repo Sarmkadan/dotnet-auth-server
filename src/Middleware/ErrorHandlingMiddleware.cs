@@ -20,9 +20,15 @@ public sealed class ErrorHandlingMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
 
-    public string Error { get; private set; } = string.Empty;
-    public string? ErrorDescription { get; private set; }
-    public string? ErrorUri { get; private set; }
+    #pragma warning disable IDE0044
+    private string? _error;
+    private string? _errorDescription;
+    private string? _errorUri;
+    #pragma warning restore IDE0044
+
+    public string? Error => _error;
+    public string? ErrorDescription => _errorDescription;
+    public string? ErrorUri => _errorUri;
 
     public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
     {
@@ -71,10 +77,11 @@ public sealed class ErrorHandlingMiddleware
         else if (exception is InvalidOperationException)
         {
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            var errorResponse = new Dictionary<string, object>
+            var errorResponse = new Dictionary<string, object?>
             {
                 { "error", "invalid_request" },
-                { "error_description", exception.Message }
+                { "error_description", exception.Message },
+                { "error_uri", null }
             };
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
             return context.Response.WriteAsJsonAsync(errorResponse, options);
@@ -82,10 +89,11 @@ public sealed class ErrorHandlingMiddleware
         else
         {
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-            var errorResponse = new Dictionary<string, object>
+            var errorResponse = new Dictionary<string, object?>
             {
                 { "error", "server_error" },
-                { "error_description", "An internal server error occurred" }
+                { "error_description", "An internal server error occurred" },
+                { "error_uri", null }
             };
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
             return context.Response.WriteAsJsonAsync(errorResponse, options);

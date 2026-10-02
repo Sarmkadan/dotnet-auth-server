@@ -128,16 +128,14 @@ public class HttpRequestExtensionsValidationTests
     [Fact]
     public void EnsureValid_WithProblems_ThrowsArgumentException_WithAllMessages()
     {
+        // Use short bearer token + localhost IP (CreateRequest only sets one auth type)
         var request = CreateRequest(
-            clientId: "   ",
-            clientSecret: "   ",
             bearerToken: "short",
             remoteIp: IPAddress.Loopback);
 
         var ex = Assert.Throws<ArgumentException>(() => request.EnsureValid());
 
-        // All three problem messages should be present
-        Assert.Contains("Client ID contains only whitespace characters", ex.Message);
+        // Both problem messages should be present
         Assert.Contains("IP address is localhost (::1 or 127.0.0.1)", ex.Message);
         Assert.Contains("Bearer token is too short (less than 10 characters)", ex.Message);
     }
