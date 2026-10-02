@@ -67,7 +67,7 @@ public class AuthorizationServiceTests
 
         // Example from RFC 7636
         var verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
-        var challenge = "E9Melhoa2OwvFrEMTJgu9Q9cGz6j6x5ZK0Z6x0a0a0U";
+        var challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 
         var result = service.ValidatePkceCodeVerifier(challenge, verifier, "S256");
 

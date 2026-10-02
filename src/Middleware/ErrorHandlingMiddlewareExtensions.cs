@@ -82,7 +82,7 @@ public static class ErrorHandlingMiddlewareExtensions
         {
             case AuthServerException authException:
                 _errorField.SetValue(middleware, authException.ErrorCode);
-                _errorDescriptionField.SetValue(middleware, authException.Message);
+                _errorDescriptionField.SetValue(middleware, authException.ErrorDescription);
                 _errorUriField.SetValue(middleware, authException.ErrorUri);
                 break;
 

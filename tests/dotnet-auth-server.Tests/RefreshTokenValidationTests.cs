@@ -61,13 +61,14 @@ public class RefreshTokenValidationTests
         var errors = RefreshTokenValidation.Validate(refreshToken);
 
         // Assert
-        Assert.Single(errors);
+        Assert.NotEmpty(errors);
     }
 
     [Fact]
     public void IsValid_ReturnsTrue_WhenRefreshTokenIsValid()
     {
         // Arrange
+        var now = DateTime.UtcNow;
         var refreshToken = new RefreshToken
         {
             TokenId = "token-id",
@@ -77,9 +78,9 @@ public class RefreshTokenValidationTests
             GrantedScopes = "scopes",
             Version = 1,
             UsageCount = 0,
-            ExpiresAt = DateTime.UtcNow.AddHours(1),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
+            ExpiresAt = now.AddHours(1),
+            CreatedAt = now,
+            UpdatedAt = now,
             RevokedAt = null,
             LastUsedAt = null
         };

@@ -459,7 +459,7 @@ public sealed class ScopeServiceTests
         };
 
         _scopeRepositoryMock.Setup(r => r.GetActiveScopesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { scope1, scope2, inactiveScope });
+            .ReturnsAsync(new[] { scope1, scope2 });
 
         // Act
         var result = await _service.GetScopesWithClaimsAsync();

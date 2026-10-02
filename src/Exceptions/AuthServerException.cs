@@ -62,7 +62,7 @@ public class AuthServerException : Exception
             { "error_description", ErrorDescription ?? Message }
         };
 
-        if (!string.IsNullOrWhiteSpace(ErrorUri))
+        if (ErrorUri is not null)
             response["error_uri"] = ErrorUri;
 
         foreach (var detail in Details)

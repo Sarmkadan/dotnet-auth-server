@@ -58,7 +58,7 @@ public class ApiResponseTests
         Assert.Equal(error, response.Error);
         Assert.Equal(message, response.Message);
         Assert.Equal(code, response.Code);
-        Assert.Null(response.Data);
+        Assert.Equal(default, response.Data);
         Assert.Null(response.TraceId);
         Assert.InRange(response.Timestamp, DateTime.UtcNow.AddSeconds(-1), DateTime.UtcNow);
     }

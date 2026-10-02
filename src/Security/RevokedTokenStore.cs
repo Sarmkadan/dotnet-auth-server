@@ -115,7 +115,25 @@ public sealed class RevokedTokenStore
     /// <param name="tokenExpiresAt">The UTC expiry time of the original token.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="jti"/> is <c>null</c>.</exception>
     public void Revoke(string jti, DateTime tokenExpiresAt)
-        => Revoke(jti, tokenExpiresAt, string.Empty);
+    {
+        ArgumentNullException.ThrowIfNull(jti);
+
+        _revokedJtis[jti] = (tokenExpiresAt, null);
+        var lifetimeSeconds = (long)(tokenExpiresAt - DateTime.UtcNow).TotalSeconds;
+        _revokedTokenLifetime.Record(lifetimeSeconds);
+        UpdateMetrics();
+
+        if (_revokedJtis.Count > _maxSize)
+        {
+            lock (_compoundOperationLock)
+            {
+                if (_revokedJtis.Count > _maxSize)
+                {
+                    PurgeExpired();
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Revokes every token that belongs to the specified family.
@@ -242,7 +260,7 @@ public sealed class RevokedTokenStore
     /// Removes all entries whose original tokens have already expired.
     /// </summary>
     /// <param name="now">The current UTC time to use for comparison.</param>
-    public void RemoveExpired(DateTimeOffset now)
+    public void RemoveExpired(DateTime now)
     {
         var removedCount = 0;
 

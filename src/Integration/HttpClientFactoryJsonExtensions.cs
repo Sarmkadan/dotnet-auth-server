@@ -69,8 +69,6 @@ public static class HttpClientFactoryJsonExtensions
     {
         value = null;
 
-        ArgumentNullException.ThrowIfNull(json);
-
         if (string.IsNullOrEmpty(json))
         {
             return false;

@@ -45,7 +45,9 @@ public static class EnumExtensions
     public static T FromString<T>(string value) where T : struct, Enum
     {
         ArgumentNullException.ThrowIfNull(value);
-        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException($"Value '{value}' is not a valid value for enum type {typeof(T).Name}.");
 
         if (Enum.TryParse<T>(value, ignoreCase: true, out var result))
             return result;

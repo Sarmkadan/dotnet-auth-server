@@ -71,11 +71,11 @@ public sealed class TotpRateLimiter : IDisposable
     /// </summary>
     public void RecordSuccess(string userId)
     {
-        // Success attempts don't count against the limit, but we still track them
-        // for monitoring purposes
+        // Success attempts don't count against the limit.
+        // We clear the user's failed attempts on success so they start fresh.
         if (!string.IsNullOrWhiteSpace(userId))
         {
-            Append(userId, DateTime.UtcNow);
+            _attempts.TryRemove(userId, out _);
         }
     }
 

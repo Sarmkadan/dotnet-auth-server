@@ -15,10 +15,11 @@ public class DotnetAuthServerOptionsExtensionsTests
             AuthServer = new AuthServerOptions
             {
                 IssuerUrl = "https://example.com",
-                JwtSigningKey = "secret",
+                JwtSigningKey = "secretkeysecretkeysecretkeysecretkey",
                 AccessTokenLifetimeSeconds = 3600,
                 RefreshTokenLifetimeSeconds = 7200,
-                JwtAlgorithm = null,
+                JwtAlgorithm = "HS256",
+                DatabaseConnectionString = "Data Source=test.db",
                 SupportedScopes = new List<string> { "read", "write" },
                 SupportedGrantTypes = new List<string> { "authorization_code", "client_credentials" }
             },
@@ -99,8 +100,8 @@ public class DotnetAuthServerOptionsExtensionsTests
     {
         var options = CreateValidOptions();
 
-        Assert.Throws<ArgumentException>(() => options.SupportsScope(null!));
-        Assert.Throws<ArgumentException>(() => options.SupportsScope(" "));
+        Assert.ThrowsAny<ArgumentException>(() => options.SupportsScope(null!));
+        Assert.ThrowsAny<ArgumentException>(() => options.SupportsScope(" "));
     }
 
     [Fact]

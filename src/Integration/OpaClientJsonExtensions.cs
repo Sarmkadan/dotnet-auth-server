@@ -82,7 +82,7 @@ public static class OpaClientJsonExtensions
             value = JsonSerializer.Deserialize<OpaClient>(json, _jsonOptions);
             return true;
         }
-        catch (JsonException)
+        catch (Exception) when (true)
         {
             return false;
         }

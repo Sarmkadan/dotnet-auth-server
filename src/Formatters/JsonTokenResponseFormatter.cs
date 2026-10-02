@@ -28,8 +28,9 @@ public sealed class JsonTokenResponseFormatter
     /// Serializes a token response to JSON following OAuth2 specification.
     /// Includes only non-null fields to minimize response size.
     /// </summary>
-    public static string FormatTokenResponse(TokenResponse response)
+    public static string? FormatTokenResponse(TokenResponse? response)
     {
+        if (response is null) return null;
         var dto = new TokenResponseDto
         {
             AccessToken = response.AccessToken,

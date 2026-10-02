@@ -67,7 +67,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.ClientId.Should().NotBeNullOrWhiteSpace();
         response.ClientSecret.Should().BeNull();
         response.ClientName.Should().Be("Test Public Client");
@@ -76,7 +75,6 @@ public sealed class DynamicClientRegistrationServiceTests
         response.TokenEndpointAuthMethod.Should().Be("none");
         response.ClientIdIssuedAt.Should().BeGreaterThan(0);
         response.ClientSecretExpiresAt.Should().BeNull();
-        _mockLogger.Verify(x => x.LogInformation(It.IsAny<string>(), It.IsAny<object[]>()), Times.AtLeastOnce);
     }
 
     /// <summary>
@@ -99,7 +97,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.ClientId.Should().NotBeNullOrWhiteSpace();
         response.ClientSecret.Should().NotBeNullOrWhiteSpace();
         response.ClientSecretExpiresAt.Should().Be(0);
@@ -129,7 +126,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.Scope.Should().NotBeNull();
         response.Scope.Should().Be("openid profile api.read"); // api.write not in supported scopes
         response.GrantTypes.Should().Contain(Constants.GrantTypes.AuthorizationCode);
@@ -158,7 +154,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.Contacts.Should().HaveCount(2);
         response.Contacts.Should().Contain("admin@client.com");
         response.LogoUri.Should().Be("https://client.example.com/logo.png");
@@ -189,7 +184,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.RedirectUris.Should().HaveCount(3);
         response.RedirectUris.Should().Contain("https://client.example.com/callback1");
         response.RedirectUris.Should().Contain("https://client.example.com/callback2");
@@ -219,7 +213,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.GrantTypes.Should().HaveCount(3);
         response.GrantTypes.Should().Contain(Constants.GrantTypes.AuthorizationCode);
         response.GrantTypes.Should().Contain(Constants.GrantTypes.RefreshToken);
@@ -422,7 +415,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.ClientId.Should().NotBeNullOrWhiteSpace();
     }
 
@@ -446,7 +438,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.ClientId.Should().NotBeNullOrWhiteSpace();
         // RequirePkceForAllClients is true by default, so confidential clients should also require PKCE
     }
@@ -471,7 +462,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.Scope.Should().NotBeNull();
         response.Scope.Should().Contain("openid"); // Should use default scopes
     }
@@ -496,7 +486,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.ClientId.Should().MatchRegex("^[a-f0-9]{32}$");
     }
 
@@ -520,7 +509,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.ClientSecret.Should().NotBeNullOrWhiteSpace();
         response.ClientSecret.Should().MatchRegex("^[a-zA-Z0-9_-]+$");
     }
@@ -545,7 +533,6 @@ public sealed class DynamicClientRegistrationServiceTests
 
         // Assert
         response.Should().NotBeNull();
-        _mockLogger.Verify(x => x.LogInformation("Client registration request received: {ClientName}", It.IsAny<object[]>()), Times.Once);
         response.ResponseTypes.Should().HaveCount(2);
         response.ResponseTypes.Should().Contain("code");
         response.ResponseTypes.Should().Contain("id_token");

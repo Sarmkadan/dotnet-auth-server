@@ -14,7 +14,7 @@ public class AuthServerOptionsValidationTests
         var options = new AuthServerOptions
         {
             IssuerUrl = "https://example.com",
-            JwtSigningKey = "secretkey",
+            JwtSigningKey = "secretkeysecretkeysecretkeysecretkey",
             JwtAlgorithm = "HS256",
             AccessTokenLifetimeSeconds = 3600,
             RefreshTokenLifetimeSeconds = 3600,
@@ -42,7 +42,7 @@ public class AuthServerOptionsValidationTests
         var options = new AuthServerOptions
         {
             IssuerUrl = "https://example.com",
-            JwtSigningKey = "secretkey",
+            JwtSigningKey = "secretkeysecretkeysecretkeysecretkey",
             JwtAlgorithm = "HS256",
             AccessTokenLifetimeSeconds = 3600,
             RefreshTokenLifetimeSeconds = 3600,
@@ -70,7 +70,7 @@ public class AuthServerOptionsValidationTests
         var options = new AuthServerOptions
         {
             IssuerUrl = "https://example.com",
-            JwtSigningKey = "secretkey",
+            JwtSigningKey = "secretkeysecretkeysecretkeysecretkey",
             JwtAlgorithm = "HS256",
             AccessTokenLifetimeSeconds = 3600,
             RefreshTokenLifetimeSeconds = 3600,
@@ -116,7 +116,7 @@ public class AuthServerOptionsValidationTests
         var options = new AuthServerOptions
         {
             IssuerUrl = string.Empty,
-            JwtSigningKey = "secretkey",
+            JwtSigningKey = "secretkeysecretkeysecretkeysecretkey",
             JwtAlgorithm = "HS256",
             AccessTokenLifetimeSeconds = 3600,
             RefreshTokenLifetimeSeconds = 3600,

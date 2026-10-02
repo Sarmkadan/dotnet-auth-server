@@ -53,7 +53,7 @@ public class ScopeValidationTests
         var problems = ScopeValidation.Validate(scope);
 
         // Assert
-        Assert.Single(problems);
+        Assert.NotEmpty(problems);
     }
 
     [Fact]

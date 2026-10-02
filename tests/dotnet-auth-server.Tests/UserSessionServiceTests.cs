@@ -167,21 +167,16 @@ public sealed class UserSessionServiceTests
     {
         // Arrange
         var userId = "user1";
-        var session1 = new UserSession { UserId = userId, ClientId = "client1", GrantedScopes = "openid" };
-        var session2 = new UserSession { UserId = userId, ClientId = "client2", GrantedScopes = "profile" };
 
-        _sessionRepositoryMock.Setup(repo => repo.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { session1, session2 });
+        _sessionRepositoryMock.Setup(repo => repo.RevokeAllUserSessionsAsync(userId, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(2);
 
         // Act
-        _loggerMock.Object.LogInformation("Revoking all sessions for user {UserId}", userId);
         var count = await _service.RevokeAllUserSessionsAsync(userId);
-        _loggerMock.Object.LogInformation("Successfully revoked {Count} sessions for user {UserId}", count, userId);
 
         // Assert
         count.Should().Be(2);
-        session1.IsRevoked.Should().BeTrue();
-        session2.IsRevoked.Should().BeTrue();
+        _sessionRepositoryMock.Verify(repo => repo.RevokeAllUserSessionsAsync(userId, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     /// <summary>
@@ -193,20 +188,15 @@ public sealed class UserSessionServiceTests
         // Arrange
         var userId = "user1";
         var keepSessionId = "session1";
-        var session1 = new UserSession { UserId = userId, ClientId = "client1", GrantedScopes = "openid", SessionId = keepSessionId };
-        var session2 = new UserSession { UserId = userId, ClientId = "client2", GrantedScopes = "profile" };
 
-        _sessionRepositoryMock.Setup(repo => repo.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { session1, session2 });
+        _sessionRepositoryMock.Setup(repo => repo.RevokeAllOtherUserSessionsAsync(userId, keepSessionId, It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
 
         // Act
-        _loggerMock.Object.LogInformation("Revoking all sessions for user {UserId} except {KeepSessionId}", userId, keepSessionId);
         var count = await _service.RevokeAllOtherUserSessionsAsync(userId, keepSessionId);
-        _loggerMock.Object.LogInformation("Successfully revoked {Count} sessions for user {UserId}", count, userId);
 
         // Assert
         count.Should().Be(1);
-        session1.IsRevoked.Should().BeFalse();
-        session2.IsRevoked.Should().BeTrue();
+        _sessionRepositoryMock.Verify(repo => repo.RevokeAllOtherUserSessionsAsync(userId, keepSessionId, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

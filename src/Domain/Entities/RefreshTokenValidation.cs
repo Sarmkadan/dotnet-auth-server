@@ -35,10 +35,13 @@ public static class RefreshTokenValidation
         ValidateNonEmptyString(value.UserId, nameof(value.UserId), errors);
         ValidateNonEmptyString(value.GrantedScopes, nameof(value.GrantedScopes), errors);
 
-        // Validate optional string properties
-        ValidateNonEmptyString(value.PreviousTokenHash, nameof(value.PreviousTokenHash), errors);
-        ValidateNonEmptyString(value.RevocationReason, nameof(value.RevocationReason), errors);
-        ValidateNonEmptyString(value.IssuedToDeviceId, nameof(value.IssuedToDeviceId), errors);
+        // Validate optional string properties (only if not null)
+        if (value.PreviousTokenHash is not null)
+            ValidateNonEmptyString(value.PreviousTokenHash, nameof(value.PreviousTokenHash), errors);
+        if (value.RevocationReason is not null)
+            ValidateNonEmptyString(value.RevocationReason, nameof(value.RevocationReason), errors);
+        if (value.IssuedToDeviceId is not null)
+            ValidateNonEmptyString(value.IssuedToDeviceId, nameof(value.IssuedToDeviceId), errors);
 
         // Validate Version (must be positive)
         if (value.Version <= 0)

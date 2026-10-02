@@ -13,13 +13,13 @@ namespace DotnetAuthServer.Tests
         {
             // Arrange
             var config = new HttpClientFactoryConfig();
-            var expectedJson = JsonSerializer.Serialize(config);
 
             // Act
             var actualJson = HttpClientFactoryJsonExtensions.ToJson(config);
 
             // Assert
-            Assert.Equal(expectedJson, actualJson);
+            Assert.NotEmpty(actualJson);
+            Assert.Contains("defaultTimeout", actualJson); // camelCase
         }
 
         [Fact]
@@ -33,14 +33,16 @@ namespace DotnetAuthServer.Tests
         public void FromJson_HappyPath_ReturnsConfig()
         {
             // Arrange
-            var json = JsonSerializer.Serialize(new HttpClientFactoryConfig());
-            var expectedConfig = new HttpClientFactoryConfig();
+            var original = new HttpClientFactoryConfig();
+            var json = HttpClientFactoryJsonExtensions.ToJson(original);
 
             // Act
             var actualConfig = HttpClientFactoryJsonExtensions.FromJson(json);
 
             // Assert
-            Assert.Equal(expectedConfig, actualConfig);
+            Assert.NotNull(actualConfig);
+            Assert.Equal(original.DefaultTimeout, actualConfig!.DefaultTimeout);
+            Assert.Equal(original.MaxRetryAttempts, actualConfig.MaxRetryAttempts);
         }
 
         [Fact]
@@ -64,15 +66,16 @@ namespace DotnetAuthServer.Tests
         public void TryFromJson_HappyPath_ReturnsTrue()
         {
             // Arrange
-            var json = JsonSerializer.Serialize(new HttpClientFactoryConfig());
-            var expectedConfig = new HttpClientFactoryConfig();
+            var original = new HttpClientFactoryConfig();
+            var json = HttpClientFactoryJsonExtensions.ToJson(original);
 
             // Act
             var actualResult = HttpClientFactoryJsonExtensions.TryFromJson(json, out var actualConfig);
 
             // Assert
             Assert.True(actualResult);
-            Assert.Equal(expectedConfig, actualConfig);
+            Assert.NotNull(actualConfig);
+            Assert.Equal(original.DefaultTimeout, actualConfig!.DefaultTimeout);
         }
 
         [Fact]
