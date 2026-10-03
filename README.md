@@ -271,6 +271,184 @@ environment in anything but local development.
 | `api/users`, `api/sessions`, `api/users/{id}/mfa` | Management APIs |
 | `GET /health` | Health check |
 
+## Protecting a resource API and enabling MFA
+
+This section shows how to protect an ASP.NET Core API using tokens issued by this authorization server and how to enable TOTP MFA for users.
+
+### 1. Protecting a Resource API with JWT Bearer Authentication
+
+To protect a separate ASP.NET Core API that accepts tokens issued by this server, configure JWT Bearer authentication to validate tokens against the server's issuer and JWKS endpoint:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+// Add authentication with JWT Bearer
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    // Metadata address points to the authorization server's OIDC discovery document
+    options.MetadataAddress = "https://localhost:7001/.well-known/openid-configuration";
+    
+    // Optional: Validate token lifetime and issuer
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = false, // Adjust based on your requirements
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true
+    };
+});
+
+var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Protect your endpoints with the [Authorize] attribute
+app.MapGet("/api/protected", [Authorize] () =>
+{
+    return Results.Ok(new { message = "This is a protected resource", user = User.Identity?.Name });
+});
+
+app.Run();
+```
+
+This configuration automatically:
+- Fetches the signing keys from the JWKS endpoint (`/.well-known/jwks.json`)
+- Validates the token signature
+- Checks the token expiration
+- Validates the issuer against the metadata document
+- Sets up the user principal for `[Authorize]` attributes
+
+### 2. Enrolling a User in TOTP MFA
+
+To enable TOTP MFA for a user, follow this three-step process using the MFA management endpoints:
+
+#### Step 1: Initiate MFA Setup
+Generate a secret key, QR code provisioning URI, and backup codes:
+
+```bash
+curl -X POST "https://localhost:7001/api/users/user-123/mfa/setup" \
+  -H "Content-Type: application/json"
+```
+
+Example response:
+```json
+{
+  "secretKey": "JBSWY3DPEHPK3PXP",
+  "provisioningUri": "otpauth://totp/localhost:7001:alice?secret=JBSWY3DPEHPK3PXP&issuer=localhost:7001&algorithm=SHA1&digits=6&period=30",
+  "backupCodes": [
+    "A1B2C3D4",
+    "E5F6G7H8",
+    "I9J0K1L2",
+    "M3N4O5P6",
+    "Q7R8S9T0",
+    "U1V2W3X4",
+    "Y5Z6A7B8",
+    "C9D0E1F2"
+  ]
+}
+```
+
+**Important**: Display the `provisioningUri` as a QR code for the user to scan with their authenticator app (Google Authenticator, Authy, etc.), or provide the `secretKey` for manual entry. Show the backup codes only once and instruct the user to store them securely.
+
+#### Step 2: Confirm MFA Setup
+After the user scans the QR code and generates a 6-digit TOTP code, confirm the setup:
+
+```bash
+curl -X POST "https://localhost:7001/api/users/user-123/mfa/confirm" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "123456"}'
+```
+
+Example response:
+```json
+{
+  "message": "MFA has been enabled for your account"
+}
+```
+
+#### Step 3: Verify MFA During Login
+When MFA is enabled, the login flow requires an additional verification step:
+
+1. User completes primary authentication (username/password)
+2. Server responds with MFA challenge
+3. User provides TOTP code from authenticator app
+4. Server grants access upon successful verification
+
+Example MFA verification request:
+```bash
+curl -X POST "https://localhost:7001/api/users/user-123/mfa/verify" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "654321"}'
+```
+
+Example success response:
+```json
+{
+  "message": "MFA verification successful"
+}
+```
+
+Example failure response:
+```json
+{
+  "error": "invalid_grant",
+  "error_description": "Invalid or expired MFA code"
+}
+```
+
+### 3. Login Flow Changes When MFA is Enabled
+
+When a user has MFA enabled, the authentication flow modifies as follows:
+
+#### Standard Login (MFA Disabled)
+1. User sends credentials to `/oauth/token` (password grant)
+2. Server validates credentials
+3. Server returns access token immediately
+
+#### Login with MFA Enabled
+1. User sends credentials to `/oauth/token` (password grant)
+2. Server validates credentials and detects MFA is required
+3. Server returns HTTP 401 with MFA challenge:
+   ```json
+   {
+     "error": "mfa_required",
+     "error_description": "Multi-factor authentication is required",
+     "mfa_token": "temporary-mfa-session-token"
+   }
+   ```
+4. User sends MFA verification request with the temporary token:
+   ```bash
+   curl -X POST "https://localhost:7001/api/users/user-123/mfa/verify" \
+     -H "Content-Type: application/json" \
+     -d '{"code": "123456", "mfa_token": "temporary-mfa-session-token"}'
+   ```
+5. Upon successful MFA verification, server returns access token:
+   ```json
+   {
+     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+     "token_type": "Bearer",
+     "expires_in": 3600,
+     "refresh_token": "refresh-token-456",
+     "scope": "openid profile email api:read"
+   }
+   ```
+
+#### Using Backup Codes
+If the user loses access to their authenticator app, they can use a backup code:
+```bash
+curl -X POST "https://localhost:7001/api/users/user-123/mfa/verify" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "A1B2C3D4"}'  # 8-character backup code
+```
+
+Backup codes are single-use and automatically removed after successful verification.
+
 ## Architecture
 
 The solution is a thin ASP.NET Core host (`Program.cs`) over a self-contained
