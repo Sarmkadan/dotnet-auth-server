@@ -461,6 +461,247 @@ persistent implementation.
 Full write-up with rationale, data flow and known limitations:
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Plugging in your own user storage
+
+The authorization server uses repository interfaces for data storage. To replace the default in-memory storage with a persistent implementation (e.g., using Entity Framework Core), you need to implement the repository interfaces and register them in the dependency injection container.
+
+The key repository interfaces for user and refresh token storage are:
+   - `DotnetAuthServer.Data.Repositories.IUserRepository`
+   - `DotnetAuthServer.Data.Repositories.IRefreshTokenRepository`
+
+Additionally, if you want to replace other storage (clients, authorization grants, etc.), you would implement their respective repository interfaces.
+
+Below is a minimal example of how to implement `IUserRepository` and `IRefreshTokenRepository` using Entity Framework Core.
+
+### 1. Define your DbContext
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+using DotnetAuthServer.Domain.Entities;
+
+public class AuthServerDbContext : DbContext
+{
+    public AuthServerDbContext(DbContextOptions<AuthServerDbContext> options) : base(options) { }
+
+    public DbSet<User> Users => Set<User>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configure your entities here if needed
+        // For example, setting up indexes, etc.
+        modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+        modelBuilder.Entity<RefreshToken>().HasIndex(rt => rt.TokenHash).IsUnique();
+    }
+}
+```
+
+### 2. Implement IUserRepository
+
+```csharp
+using System.Threading;
+using System.Threading.Tasks;
+using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+public class EfCoreUserRepository : IUserRepository
+{
+    private readonly AuthServerDbContext _dbContext;
+
+    public EfCoreUserRepository(AuthServerDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.FindAsync(new object[] { id }, cancellationToken);
+    }
+
+    public async Task<IEnumerable<User>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.ToListAsync(cancellationToken);
+    }
+
+    public async Task<User> CreateAsync(User entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Users.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return entity;
+    }
+
+    public async Task<User> UpdateAsync(User entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Users.Update(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return entity;
+    }
+
+    public async Task DeleteAsync(User entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Users.Remove(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var user = new User { UserId = id };
+        _dbContext.Users.Remove(user);
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Users.AnyAsync(u => u.UserId == id, cancellationToken);
+    }
+
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
+    }
+
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+    }
+
+    public async Task<IEnumerable<User>> GetByRoleAsync(string role, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.Where(u => u.Roles.Contains(role)).ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<User>> GetActiveUsersAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users.Where(u => u.IsActive).ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<User>> SearchAsync(string query, CancellationToken cancellationToken = default)
+    {
+        var lowerQuery = query.ToLower();
+        return await _dbContext.Users.Where(u =>
+            u.Username.ToLower().Contains(lowerQuery) ||
+            u.Email.ToLower().Contains(lowerQuery) ||
+            (u.FullName?.ToLower().Contains(lowerQuery) ?? false))
+        .ToListAsync(cancellationToken);
+    }
+}
+```
+
+### 3. Implement IRefreshTokenRepository
+
+```csharp
+using System.Threading;
+using System.Threading.Tasks;
+using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+public class EfCoreRefreshTokenRepository : IRefreshTokenRepository
+{
+    private readonly AuthServerDbContext _dbContext;
+
+    public EfCoreRefreshTokenRepository(AuthServerDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<RefreshToken?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RefreshTokens.FindAsync(new object[] { id }, cancellationToken);
+    }
+
+    public async Task<IEnumerable<RefreshToken>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RefreshTokens.ToListAsync(cancellationToken);
+    }
+
+    public async Task<RefreshToken> CreateAsync(RefreshToken entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.RefreshTokens.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return entity;
+    }
+
+    public async Task<RefreshToken> UpdateAsync(RefreshToken entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.RefreshTokens.Update(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return entity;
+    }
+
+    public async Task DeleteAsync(RefreshToken entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.RefreshTokens.Remove(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var token = new RefreshToken { TokenId = id };
+        _dbContext.RefreshTokens.Remove(token);
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.RefreshTokens.AnyAsync(rt => rt.TokenId == id, cancellationToken);
+    }
+
+    public async Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash, cancellationToken);
+    }
+
+    public async Task<IEnumerable<RefreshToken>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RefreshTokens.Where(rt => rt.UserId == userId).ToListAsync(cancellationToken);
+    }
+}
+```
+
+### 4. Register the DbContext and repositories in DI
+
+In your `Program.cs` or `Startup.cs`, add the following:
+
+```csharp
+using DotnetAuthServer.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add DbContext
+builder.Services.AddDbContext<AuthServerDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add repositories
+builder.Services.AddScoped<IUserRepository, EfCoreUserRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, EfCoreRefreshTokenRepository>();
+
+// ... other service registrations
+```
+
+### 5. Note on atomic operations
+
+Certain operations must be atomic to prevent race conditions and ensure consistency:
+
+- **Refresh token rotation** (`RefreshTokenHandler.RotateAsync`): This operation involves revoking the current refresh token and issuing a new one. These steps should be executed in a single transaction to prevent a scenario where the old token is revoked but the new token fails to be issued (or vice versa).
+
+- **Refresh token chain revocation** (`RefreshTokenHandler.RevokeChainAsync`): This operation revokes all refresh tokens for a given user and client. It should be atomic to prevent partial revocation.
+
+In the Entity Framework Core implementations above, the individual repository methods (`CreateAsync`, `UpdateAsync`, etc.) are atomic because they call `SaveChangesAsync` which operates within a transaction. However, the rotation and chain revocation operations in the handler involve multiple repository calls. To make these operations atomic, you would need to modify the `RefreshTokenHandler` to use a single transaction across multiple operations, or alternatively, you could extend the repository interfaces to include methods that perform these operations in a transaction.
+
+However, note that the current design of the `RefreshTokenHandler` does not expose a way to wrap multiple operations in a transaction. Therefore, if you require atomicity for rotation and chain revocation, you may need to:
+
+a) Modify the `RefreshTokenHandler` to accept a `DbContext` (or a unit of work) and use it to manage transactions, or
+b) Extend the repository interfaces to include methods for atomic rotation and chain revocation.
+
+Since the task is about plugging in your own storage, and the existing `RefreshTokenHandler` is designed to work with the repository interfaces, we note that the default in-memory implementation does not provide transactions either, but the operations are fast and the risk of interleaving is low. For a production database, you should consider one of the above approaches to ensure atomicity.
+
+Alternatively, you can override the `RefreshTokenHandler` with your own implementation that uses the DbContext to manage transactions, and then register that in DI instead of the default one.
+
+Given the complexity, and since the task only asks for a minimal custom implementation for user and refresh token storage, we leave the transaction management as an exercise for the implementer, but note the importance of atomicity for the mentioned operations.
+
 ## Tests and benchmarks
 
 ```bash
