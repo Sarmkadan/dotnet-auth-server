@@ -36,7 +36,7 @@ public sealed class MfaTotpTests
             DatabaseConnectionString = ""
         };
 
-        _service = new TotpService(_credentialRepository, logger, options, new MfaOptions { Issuer = "https://auth.example.com" });
+        _service = new TotpService(_credentialRepository, new Mock<IUserRepository>().Object, logger, options, new MfaOptions { Issuer = "https://auth.example.com" });
     }
 
     // -------------------------------------------------------------------------

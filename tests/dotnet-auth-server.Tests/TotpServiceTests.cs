@@ -33,6 +33,7 @@ public sealed class TotpServiceTests
 
         _service = new TotpService(
             _credentialRepositoryMock.Object,
+            new Mock<IUserRepository>().Object,
             _loggerMock.Object,
             _options,
             new MfaOptions { Issuer = "TestIssuer" });
@@ -678,4 +679,28 @@ public sealed class TotpServiceTests
     }
 
     #endregion
+
+    [Fact]
+    public async Task DisableMfaAsync_UserWithMfaEnabled_ClearsUserMfaFlag()
+    {
+        // Arrange
+        var user = new User { UserId = "user-1", Username = "carol", PasswordHash = "hash", MfaEnabled = true };
+        var userRepositoryMock = new Mock<IUserRepository>();
+        userRepositoryMock
+            .Setup(r => r.GetByIdAsync("user-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        var service = new TotpService(
+            _credentialRepositoryMock.Object,
+            userRepositoryMock.Object,
+            _loggerMock.Object,
+            _options,
+            new MfaOptions { Issuer = "TestIssuer" });
+
+        // Act
+        await service.DisableMfaAsync("user-1");
+
+        // Assert
+        Assert.False(user.MfaEnabled);
+        userRepositoryMock.Verify(r => r.UpdateAsync(user, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

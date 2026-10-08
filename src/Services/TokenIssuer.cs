@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Diagnostics;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
@@ -215,8 +216,14 @@ public sealed class TokenIssuer : ITokenIssuer
             var tokenHash = HashToken(request.RefreshToken!);
             var token = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
 
-            if (token is null || token.IsRevoked)
+            if (token is null)
                 throw new InvalidGrantException("Refresh token is invalid or expired");
+
+            if (token.IsRevoked)
+            {
+                LogRevokedRefreshTokenPresented(token);
+                throw new InvalidGrantException("Refresh token is invalid or expired");
+            }
 
             // Apply clock-skew tolerance: accept tokens that expired within the
             // tolerance window so clients with slightly-behind clocks are not
@@ -228,7 +235,7 @@ public sealed class TokenIssuer : ITokenIssuer
             // Revoke the old token *before* issuing a new one. This is the
             // rotation lock: any concurrent request presenting the same token will
             // find it already revoked and be rejected as a replay.
-            token.Revoke("Refresh token rotation");
+            token.Revoke(RefreshToken.RotationRevocationReason);
             await _refreshTokenRepository.UpdateAsync(token, cancellationToken);
 
             var user = await _userRepository.GetByIdAsync(token.UserId, cancellationToken);
@@ -248,17 +255,10 @@ public sealed class TokenIssuer : ITokenIssuer
             {
                 newRefreshToken = GenerateTokenValue();
                 var newTokenHash = HashToken(newRefreshToken);
-                var newToken = new RefreshToken
-                {
-                    TokenId = Guid.NewGuid().ToString(),
-                    TokenHash = newTokenHash,
-                    ClientId = token.ClientId,
-                    UserId = token.UserId,
-                    GrantedScopes = token.GrantedScopes,
-                    Version = token.Version + 1,
-                    PreviousTokenHash = token.TokenHash,
-                    ExpiresAt = DateTime.UtcNow.AddSeconds(GetRefreshTokenLifetime(client))
-                };
+                var newToken = token.CreateRotatedToken(
+                    Guid.NewGuid().ToString(),
+                    newTokenHash,
+                    DateTime.UtcNow.AddSeconds(GetRefreshTokenLifetime(client)));
                 await _refreshTokenRepository.CreateAsync(newToken, cancellationToken);
             }
 
@@ -291,6 +291,23 @@ public sealed class TokenIssuer : ITokenIssuer
                 null,
                 ex);
         }
+    }
+
+    /// <summary>
+    /// Logs a presented refresh token that is already revoked. A token revoked by rotation is reuse
+    /// (possible theft); any other revocation reason is logged as a revoked token being presented.
+    /// </summary>
+    private void LogRevokedRefreshTokenPresented(RefreshToken token)
+    {
+        if (token.RevocationReason == RefreshToken.RotationRevocationReason)
+        {
+            SecurityEventLog.RefreshTokenReuseDetected(
+                _logger, token.TokenId, token.UserId, token.ClientId, token.FamilyId);
+            return;
+        }
+
+        SecurityEventLog.RevokedRefreshTokenPresented(
+            _logger, token.TokenId, token.UserId, token.ClientId, token.FamilyId, token.RevocationReason ?? "unspecified");
     }
 
     /// <summary>

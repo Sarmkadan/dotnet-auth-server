@@ -27,6 +27,7 @@ public sealed class TotpService
     private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
     private readonly ITotpCredentialRepository _credentialRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger<TotpService> _logger;
     private readonly AuthServerOptions _options;
     private readonly MfaOptions _mfaOptions;
@@ -36,16 +37,19 @@ public sealed class TotpService
     /// </summary>
     public TotpService(
         ITotpCredentialRepository credentialRepository,
+        IUserRepository userRepository,
         ILogger<TotpService> logger,
         AuthServerOptions options,
         MfaOptions mfaOptions)
     {
         ArgumentNullException.ThrowIfNull(credentialRepository);
+        ArgumentNullException.ThrowIfNull(userRepository);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(mfaOptions);
 
         _credentialRepository = credentialRepository;
+        _userRepository = userRepository;
         _logger = logger;
         _options = options;
         _mfaOptions = mfaOptions;
@@ -75,6 +79,7 @@ public sealed class TotpService
 
         // Remove any existing (possibly unconfirmed) credential before re-enrolling.
         await _credentialRepository.DeleteByUserIdAsync(userId, cancellationToken);
+        await SetUserMfaFlagAsync(userId, enabled: false, cancellationToken);
 
         var secretBytes = GenerateRandomBytes(SecretBytesLength);
         var secretKey = EncodeBase32(secretBytes);
@@ -128,6 +133,7 @@ public sealed class TotpService
         credential.Enable();
         credential.RecordVerification();
         await _credentialRepository.UpdateAsync(credential, cancellationToken);
+        await SetUserMfaFlagAsync(userId, enabled: true, cancellationToken);
 
         _logger.LogInformation("TOTP MFA confirmed and enabled for user {UserId}", userId);
     }
@@ -237,7 +243,25 @@ public sealed class TotpService
         ArgumentException.ThrowIfNullOrEmpty(userId);
 
         await _credentialRepository.DeleteByUserIdAsync(userId, cancellationToken);
+        await SetUserMfaFlagAsync(userId, enabled: false, cancellationToken);
         _logger.LogInformation("TOTP MFA disabled for user {UserId}", userId);
+    }
+
+    /// <summary>
+    /// Keeps <see cref="User.MfaEnabled"/> in step with the credential state. A missing user is ignored
+    /// so credential operations for unknown IDs behave as they did before the flag existed.
+    /// </summary>
+    private async Task SetUserMfaFlagAsync(string userId, bool enabled, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null || user.MfaEnabled == enabled)
+        {
+            return;
+        }
+
+        user.MfaEnabled = enabled;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user, cancellationToken);
     }
 
     // -------------------------------------------------------------------------

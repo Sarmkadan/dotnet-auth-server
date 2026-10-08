@@ -8,6 +8,7 @@ namespace DotnetAuthServer.Services;
 
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Diagnostics;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Domain.Models;
 using DotnetAuthServer.Exceptions;
@@ -175,7 +176,7 @@ public sealed class UserManagementService
         user.LockAccount(duration);
         await _userRepository.UpdateAsync(user, cancellationToken);
 
-        _logger.LogWarning("Admin locked user {UserId} for {Duration}", userId, duration);
+        SecurityEventLog.AccountLockedByAdmin(_logger, userId, user.LockedUntil.GetValueOrDefault());
     }
 
     /// <summary>
@@ -190,7 +191,7 @@ public sealed class UserManagementService
         user.FailedLoginAttempts = 0;
         await _userRepository.UpdateAsync(user, cancellationToken);
 
-        _logger.LogInformation("Admin unlocked user {UserId}", userId);
+        SecurityEventLog.AccountUnlockedByAdmin(_logger, userId);
     }
 
     // -------------------------------------------------------------------------

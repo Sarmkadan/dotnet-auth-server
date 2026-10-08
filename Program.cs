@@ -8,6 +8,7 @@ using DotnetAuthServer.BackgroundWorkers;
 using DotnetAuthServer.Caching;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Diagnostics;
 using DotnetAuthServer.Events;
 using DotnetAuthServer.Formatters;
 using DotnetAuthServer.Handlers;
@@ -15,6 +16,8 @@ using DotnetAuthServer.Integration;
 using DotnetAuthServer.Middleware;
 using DotnetAuthServer.Security;
 using DotnetAuthServer.Services;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -133,6 +136,12 @@ if (opaOptions.Enabled)
         });
 }
 
+// Health checks. "live" runs no checks (process is up and serving); "ready" gates traffic on
+// user storage answering and a usable JWT signing key.
+builder.Services.AddHealthChecks()
+    .AddCheck<UserStoreHealthCheck>("user-store", tags: ["ready"])
+    .AddCheck<SigningKeyHealthCheck>("signing-key", tags: ["ready"]);
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -238,6 +247,18 @@ app.MapGet("/health", () =>
 .WithOpenApi()
 .WithName("Health")
 .WithDescription("Health check endpoint");
+
+// Liveness: no dependency checks, so a slow store does not cause the process to be restarted.
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+// Readiness: 503 until user storage responds and the signing key is usable.
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 
 Console.WriteLine($"Authorization Server starting at {authServerOptions.IssuerUrl}");
 app.Run();

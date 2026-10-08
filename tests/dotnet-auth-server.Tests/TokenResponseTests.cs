@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using DotnetAuthServer.Domain.Models;
+using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
 namespace DotnetAuthServer.Tests;
@@ -247,9 +251,62 @@ public class TokenResponseTests
         Assert.Same(expected, tokenResponse.CustomProperties);
     }
 
+    // -------------------------------------------------------------------------
+    // Diagnostics (ToString / DebuggerDisplay)
+    // -------------------------------------------------------------------------
 
+    [Fact]
+    public void ToString_WithJwtAccessToken_ShowsJtiExpiryAndScopesWithoutFullTokens()
+    {
+        // Arrange
+        var jti = "test-jti-123";
+        var accessToken = CreateSignedJwt(jti, DateTime.UtcNow.AddMinutes(10));
+        var response = new TokenResponse
+        {
+            AccessToken = accessToken,
+            ExpiresIn = 600,
+            RefreshToken = "refresh-token-secret-value-abcdef",
+            IdToken = "id-token-secret-value-abcdef",
+            Scope = "openid profile"
+        };
 
+        // Act
+        var text = response.ToString();
 
+        // Assert
+        Assert.Contains($"Jti = {jti}", text);
+        Assert.Contains("ExpiresAt = ", text);
+        Assert.Contains("Scope = openid profile", text);
+        Assert.Contains(accessToken[..6] + "...", text);
+        Assert.DoesNotContain(accessToken, text);
+        Assert.DoesNotContain("refresh-token-secret-value-abcdef", text);
+        Assert.DoesNotContain("id-token-secret-value-abcdef", text);
+    }
 
+    [Fact]
+    public void ToString_WithMalformedAccessToken_ReportsUnknownJtiWithoutThrowing()
+    {
+        // Arrange
+        var response = new TokenResponse { AccessToken = "not.a.jwt-at-all" };
 
+        // Act
+        var text = response.ToString();
+
+        // Assert
+        Assert.Contains("Jti = n/a", text);
+        Assert.Contains("ExpiresAt = n/a", text);
+        Assert.DoesNotContain("not.a.jwt-at-all", text);
+    }
+
+    private static string CreateSignedJwt(string jti, DateTime expires)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(new string('k', 32)));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(
+            claims: [new Claim(JwtRegisteredClaimNames.Jti, jti)],
+            expires: expires,
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 }

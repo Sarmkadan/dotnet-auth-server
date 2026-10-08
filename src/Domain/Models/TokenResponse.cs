@@ -6,11 +6,14 @@
 
 namespace DotnetAuthServer.Domain.Models;
 
+using System.Diagnostics;
 using System.Text.Json.Serialization;
+using DotnetAuthServer.Diagnostics;
 
 /// <summary>
 /// Represents an OAuth2 token response
 /// </summary>
+[DebuggerDisplay("{ToString(),nq}")]
 public sealed class TokenResponse
 {
     /// <summary>
@@ -58,8 +61,18 @@ public sealed class TokenResponse
     [JsonExtensionData]
     public Dictionary<string, object> CustomProperties { get; set; } = [];
 
+    /// <summary>
+    /// Returns a diagnostic representation: the access token's jti and expiry (read without validation),
+    /// granted scopes, and truncated prefixes of the token values. Full token strings are never included.
+    /// </summary>
     public override string ToString()
     {
-        return $"TokenResponse {{ AccessToken = {AccessToken}, TokenType = {TokenType}, ExpiresIn = {ExpiresIn}, RefreshToken = {RefreshToken}, Scope = {Scope}, IdToken = {IdToken} }}";
+        var accessToken = JwtDiagnostics.TryRead(AccessToken);
+        var jti = accessToken?.Id ?? "n/a";
+        var expiresAt = accessToken is { ValidTo: var validTo } && validTo != DateTime.MinValue
+            ? validTo.ToString("O")
+            : "n/a";
+
+        return $"TokenResponse {{ Jti = {jti}, ExpiresAt = {expiresAt}, ExpiresIn = {ExpiresIn}s, TokenType = {TokenType}, Scope = {Scope ?? "none"}, AccessToken = {Redaction.Secret(AccessToken)}, RefreshToken = {Redaction.Secret(RefreshToken)}, IdToken = {Redaction.Secret(IdToken)} }}";
     }
 }
