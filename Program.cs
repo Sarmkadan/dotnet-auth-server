@@ -30,15 +30,26 @@ builder.Services.AddOptions<WebhookOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+// Validates password hashing, lockout and storage settings at startup (fails fast with key names)
+builder.Services.AddOptions<UserStoreOptions>()
+    .Bind(builder.Configuration.GetSection(UserStoreOptions.SectionKey))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<UserStoreOptions>>(sp =>
+    new UserStoreOptionsValidator(sp.GetRequiredService<AuthServerOptions>()));
+
 // Backward compatibility registration for services
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.AuthServer);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.Cache);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.Logging);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthServerOptions>>().Value.Opa);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<WebhookOptions>>().Value);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<UserStoreOptions>>().Value);
 
 // Repositories
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<DotnetAuthServer.Data.UserStore>();
+builder.Services.AddHostedService<DotnetAuthServer.Data.UserStoreStartupCheck>();
 builder.Services.AddSingleton<IClientRepository, ClientRepository>();
 builder.Services.AddSingleton<IAuthorizationGrantRepository, AuthorizationGrantRepository>();
 builder.Services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
