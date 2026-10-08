@@ -24,15 +24,12 @@ using DotnetAuthServer.Exceptions;
 public sealed class TotpService
 {
     private const int SecretBytesLength = 20; // 160-bit secret (TOTP spec recommendation)
-    private const int TotpDigits = 6;
-    private const int TotpStepSeconds = 30;
-    private const int BackupCodeCount = 8;
     private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    private const int DefaultClockSkewSteps = 1; // Allow ±1 time-step of clock skew
 
     private readonly ITotpCredentialRepository _credentialRepository;
     private readonly ILogger<TotpService> _logger;
     private readonly AuthServerOptions _options;
+    private readonly MfaOptions _mfaOptions;
 
     /// <summary>
     /// Initializes a new instance of <see cref="TotpService"/>.
@@ -40,15 +37,18 @@ public sealed class TotpService
     public TotpService(
         ITotpCredentialRepository credentialRepository,
         ILogger<TotpService> logger,
-        AuthServerOptions options)
+        AuthServerOptions options,
+        MfaOptions mfaOptions)
     {
         ArgumentNullException.ThrowIfNull(credentialRepository);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(mfaOptions);
 
         _credentialRepository = credentialRepository;
         _logger = logger;
         _options = options;
+        _mfaOptions = mfaOptions;
     }
 
     // -------------------------------------------------------------------------
@@ -78,7 +78,7 @@ public sealed class TotpService
 
         var secretBytes = GenerateRandomBytes(SecretBytesLength);
         var secretKey = EncodeBase32(secretBytes);
-        var backupCodes = GenerateBackupCodes();
+        var backupCodes = GenerateBackupCodes(_mfaOptions.RecoveryCodeCount, _mfaOptions.RecoveryCodeLength);
 
         var credential = new TotpCredential
         {
@@ -95,7 +95,7 @@ public sealed class TotpService
         return new MfaSetupResponse
         {
             SecretKey = secretKey,
-            ProvisioningUri = BuildProvisioningUri(secretKey, username, _options.IssuerUrl),
+            ProvisioningUri = BuildProvisioningUri(secretKey, username),
             BackupCodes = backupCodes
         };
     }
@@ -105,7 +105,7 @@ public sealed class TotpService
     /// The credential is enabled only when the code is valid.
     /// </summary>
     /// <param name="userId">The user's ID.</param>
-    /// <param name="code">The 6-digit TOTP code to verify.</param>
+    /// <param name="code">The TOTP code to verify, with the configured number of digits.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="AuthServerException">Thrown when no pending credential exists or the code is invalid.</exception>
     /// <exception cref="ArgumentException"><paramref name="userId"/> or <paramref name="code"/> is null or empty.</exception>
@@ -142,7 +142,7 @@ public sealed class TotpService
     /// with configurable clock skew tolerance.
     /// </summary>
     /// <param name="userId">The user's ID.</param>
-    /// <param name="code">The 6-digit TOTP code or backup code to verify.</param>
+    /// <param name="code">The TOTP code or recovery code to verify.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if the code is valid and MFA passes; false otherwise.</returns>
     /// <exception cref="ArgumentException"><paramref name="userId"/> or <paramref name="code"/> is null or empty.</exception>
@@ -250,25 +250,27 @@ public sealed class TotpService
     /// </summary>
     /// <param name="userId">The user ID for replay prevention tracking.</param>
     /// <param name="base32Secret">The Base32-encoded secret key.</param>
-    /// <param name="code">The 6-digit TOTP code to verify.</param>
-    /// <param name="clockSkewSteps">The number of time steps to check in each direction for clock skew.</param>
+    /// <param name="code">The TOTP code to verify, with the configured number of digits.</param>
+    /// <param name="clockSkewSteps">The number of time steps to check in each direction for clock skew. Defaults to <see cref="MfaOptions.AllowedDriftSteps"/>.</param>
     /// <returns>True if the code is valid and not a replay; otherwise false.</returns>
     /// <exception cref="ArgumentException"><paramref name="userId"/>, <paramref name="base32Secret"/>, or <paramref name="code"/> is null or empty.</exception>
     public async Task<bool> VerifyTotpCodeAsync(
         string userId,
         string base32Secret,
         string code,
-        int clockSkewSteps = DefaultClockSkewSteps)
+        int? clockSkewSteps = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(userId);
         ArgumentException.ThrowIfNullOrEmpty(base32Secret);
         ArgumentException.ThrowIfNullOrEmpty(code);
 
-        if (code.Length != TotpDigits || !int.TryParse(code, out var inputValue))
+        var allowedSteps = clockSkewSteps ?? _mfaOptions.AllowedDriftSteps;
+
+        if (code.Length != _mfaOptions.Digits || !int.TryParse(code, out var inputValue))
             return false;
 
         var secretBytes = DecodeBase32(base32Secret);
-        var currentCounter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / TotpStepSeconds;
+        var currentCounter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / _mfaOptions.TimeStepSeconds;
 
         // Get the credential for replay prevention
         var credential = await _credentialRepository.GetByUserIdAsync(userId);
@@ -278,8 +280,8 @@ public sealed class TotpService
         if (credential?.LastAcceptedTimeStep.HasValue == true)
         {
             var lastAcceptedStep = credential.LastAcceptedTimeStep.Value;
-            var acceptableRangeStart = lastAcceptedStep - clockSkewSteps;
-            var acceptableRangeEnd = lastAcceptedStep + clockSkewSteps;
+            var acceptableRangeStart = lastAcceptedStep - allowedSteps;
+            var acceptableRangeEnd = lastAcceptedStep + allowedSteps;
 
             // Reject codes outside the acceptable range (including older codes)
             if (currentCounter < acceptableRangeStart)
@@ -290,13 +292,13 @@ public sealed class TotpService
         }
 
         // Check the time window for valid codes with clock skew support
-        var clockSkew = _options.ClockSkewToleranceSeconds / TotpStepSeconds;
-        var effectiveClockSkewSteps = Math.Max(clockSkewSteps, clockSkew);
+        var clockSkew = _options.ClockSkewToleranceSeconds / _mfaOptions.TimeStepSeconds;
+        var effectiveClockSkewSteps = Math.Max(allowedSteps, clockSkew);
 
         for (var step = -effectiveClockSkewSteps; step <= effectiveClockSkewSteps; step++)
         {
             var testCounter = currentCounter + step;
-            if (ComputeTotp(secretBytes, testCounter) == inputValue)
+            if (ComputeTotp(secretBytes, testCounter, _mfaOptions.Digits) == inputValue)
             {
                 // Update the last accepted time-step to prevent replay
                 if (credential != null)
@@ -312,28 +314,29 @@ public sealed class TotpService
     }
 
     /// <summary>
-    /// Verifies a TOTP code against the shared secret using a ±1 step window.
+    /// Verifies a TOTP code against the shared secret using a window of time steps.
     /// </summary>
     /// <param name="base32Secret">The Base32-encoded secret key.</param>
-    /// <param name="code">The 6-digit TOTP code to verify.</param>
-    /// <param name="windowSteps">The number of time steps to check in each direction.</param>
+    /// <param name="code">The TOTP code to verify, with the configured number of digits.</param>
+    /// <param name="windowSteps">The number of time steps to check in each direction. Defaults to <see cref="MfaOptions.AllowedDriftSteps"/>.</param>
     /// <returns>True if the code is valid; otherwise false.</returns>
     /// <exception cref="ArgumentException"><paramref name="base32Secret"/> or <paramref name="code"/> is null or empty.</exception>
     [Obsolete("Use VerifyTotpCodeAsync for replay prevention and constant-time comparison.")]
-    public bool VerifyTotpCode(string base32Secret, string code, int windowSteps = 1)
+    public bool VerifyTotpCode(string base32Secret, string code, int? windowSteps = null)
     {
         if (string.IsNullOrWhiteSpace(base32Secret) || string.IsNullOrWhiteSpace(code))
             return false;
 
-        if (code.Length != TotpDigits || !int.TryParse(code, out var inputValue))
+        if (code.Length != _mfaOptions.Digits || !int.TryParse(code, out var inputValue))
             return false;
 
         var secretBytes = DecodeBase32(base32Secret);
-        var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / TotpStepSeconds;
+        var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / _mfaOptions.TimeStepSeconds;
+        var window = windowSteps ?? _mfaOptions.AllowedDriftSteps;
 
-        for (var step = -windowSteps; step <= windowSteps; step++)
+        for (var step = -window; step <= window; step++)
         {
-            if (ComputeTotp(secretBytes, counter + step) == inputValue)
+            if (ComputeTotp(secretBytes, counter + step, _mfaOptions.Digits) == inputValue)
                 return true;
         }
 
@@ -359,7 +362,8 @@ public sealed class TotpService
     /// </summary>
     /// <param name="key">The shared secret key.</param>
     /// <param name="counter">The time step counter.</param>
-    private static int ComputeTotp(byte[] key, long counter)
+    /// <param name="digits">The number of digits in the generated code.</param>
+    private static int ComputeTotp(byte[] key, long counter, int digits)
     {
         var counterBytes = BitConverter.GetBytes(counter);
         if (BitConverter.IsLittleEndian)
@@ -375,7 +379,7 @@ public sealed class TotpService
             | ((hash[offset + 2] & 0xFF) << 8)
             | (hash[offset + 3] & 0xFF);
 
-        return otp % (int)Math.Pow(10, TotpDigits);
+        return otp % (int)Math.Pow(10, digits);
     }
 
     // -------------------------------------------------------------------------
@@ -383,22 +387,22 @@ public sealed class TotpService
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Builds an <c>otpauth://totp/</c> URI for QR code generation.
+    /// Builds an <c>otpauth://totp/</c> URI for QR code generation, using the configured
+    /// issuer, digits and time step.
     /// </summary>
     /// <param name="secretKey">The Base32-encoded secret key.</param>
     /// <param name="username">The username for the provisioning URI.</param>
-    /// <param name="issuer">The issuer name for the provisioning URI.</param>
     /// <returns>The provisioning URI string.</returns>
-    /// <exception cref="ArgumentException"><paramref name="secretKey"/>, <paramref name="username"/>, or <paramref name="issuer"/> is null or empty.</exception>
-    public static string BuildProvisioningUri(string secretKey, string username, string issuer)
+    /// <exception cref="ArgumentException"><paramref name="secretKey"/> or <paramref name="username"/> is null or empty.</exception>
+    public string BuildProvisioningUri(string secretKey, string username)
     {
         ArgumentException.ThrowIfNullOrEmpty(secretKey);
         ArgumentException.ThrowIfNullOrEmpty(username);
-        ArgumentException.ThrowIfNullOrEmpty(issuer);
 
+        var issuer = _mfaOptions.Issuer;
         var label = Uri.EscapeDataString($"{issuer}:{username}");
         var issuerEncoded = Uri.EscapeDataString(issuer);
-        return $"otpauth://totp/{label}?secret={secretKey}&issuer={issuerEncoded}&algorithm=SHA1&digits={TotpDigits}&period={TotpStepSeconds}";
+        return $"otpauth://totp/{label}?secret={secretKey}&issuer={issuerEncoded}&algorithm=SHA1&digits={_mfaOptions.Digits}&period={_mfaOptions.TimeStepSeconds}";
     }
 
     // -------------------------------------------------------------------------
@@ -481,14 +485,15 @@ public sealed class TotpService
         return bytes;
     }
 
-    private static IList<string> GenerateBackupCodes()
+    private static IList<string> GenerateBackupCodes(int count, int length)
     {
-        var codes = new List<string>(BackupCodeCount);
-        for (var i = 0; i < BackupCodeCount; i++)
+        var codes = new List<string>(count);
+        for (var i = 0; i < count; i++)
         {
-            var raw = new byte[5];
+            // Each byte yields two hex characters; trim the last one when the length is odd.
+            var raw = new byte[(length + 1) / 2];
             RandomNumberGenerator.Fill(raw);
-            codes.Add(Convert.ToHexString(raw).ToUpperInvariant());
+            codes.Add(Convert.ToHexString(raw)[..length]);
         }
         return codes;
     }

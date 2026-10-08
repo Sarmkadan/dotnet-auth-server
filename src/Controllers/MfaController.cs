@@ -116,7 +116,7 @@ public sealed class MfaController : ControllerBase
     /// MFA is enabled only after this step succeeds.
     /// </summary>
     /// <param name="userId">Target user ID.</param>
-    /// <param name="request">Contains the 6-digit TOTP code.</param>
+    /// <param name="request">Contains the TOTP code (6 or 8 digits, per configuration).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpPost("confirm")]
     [Consumes("application/json")]
@@ -159,7 +159,7 @@ public sealed class MfaController : ControllerBase
     /// Returns 200 on success, 401 on failure.
     /// </summary>
     /// <param name="userId">Target user ID.</param>
-    /// <param name="request">Contains the 6-digit TOTP code or an 8-character backup code.</param>
+    /// <param name="request">Contains the TOTP code or a recovery code.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpPost("verify")]
     [Consumes("application/json")]

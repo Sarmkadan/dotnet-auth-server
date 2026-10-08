@@ -34,7 +34,8 @@ public sealed class TotpServiceTests
         _service = new TotpService(
             _credentialRepositoryMock.Object,
             _loggerMock.Object,
-            _options);
+            _options,
+            new MfaOptions { Issuer = "TestIssuer" });
     }
 
     #region TOTP Algorithm Correctness Tests
@@ -637,7 +638,7 @@ public sealed class TotpServiceTests
         const string issuer = "TestIssuer";
 
         // Act
-        var uri = TotpService.BuildProvisioningUri(secretKey, username, issuer);
+        var uri = _service.BuildProvisioningUri(secretKey, username);
 
         // Assert
         uri.Should().StartWith("otpauth://totp/");

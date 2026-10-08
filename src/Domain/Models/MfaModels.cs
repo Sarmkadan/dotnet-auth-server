@@ -44,7 +44,7 @@ public sealed class MfaVerifyRequest
 {
     /// <summary>
     /// Six-digit TOTP code from the authenticator app,
-    /// or an 8-character backup code (alphanumeric).
+    /// or a recovery code (alphanumeric).
     /// </summary>
     [Required]
     public string Code { get; set; } = null!;

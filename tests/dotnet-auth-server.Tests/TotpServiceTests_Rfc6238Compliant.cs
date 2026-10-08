@@ -35,7 +35,8 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         _service = new TotpService(
             _credentialRepositoryMock.Object,
             _loggerMock.Object,
-            _options);
+            _options,
+            new MfaOptions { Issuer = "TestIssuer" });
 
         _loggerMock.Object.LogInformation("TotpServiceTests_Rfc6238Compliant test class initialized");
     }
@@ -265,7 +266,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
         const string issuer = "TestIssuer";
 
         // Act
-        var uri = TotpService.BuildProvisioningUri(secretKey, username, issuer);
+        var uri = _service.BuildProvisioningUri(secretKey, username);
 
         // Assert
         uri.Should().StartWith("otpauth://totp/");

@@ -36,7 +36,7 @@ public sealed class MfaTotpTests
             DatabaseConnectionString = ""
         };
 
-        _service = new TotpService(_credentialRepository, logger, options);
+        _service = new TotpService(_credentialRepository, logger, options, new MfaOptions { Issuer = "https://auth.example.com" });
     }
 
     // -------------------------------------------------------------------------
@@ -259,7 +259,7 @@ public sealed class MfaTotpTests
         const string issuer = "https://auth.example.com";
 
         // Act
-        var uri = TotpService.BuildProvisioningUri(secret, username, issuer);
+        var uri = _service.BuildProvisioningUri(secret, username);
 
         // Assert
         uri.Should().Contain($"secret={secret}", "the URI must include the secret");
