@@ -8,8 +8,10 @@ namespace DotnetAuthServer.Data;
 
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
+using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
 using DotnetAuthServer.Domain.Entities;
+using Microsoft.Extensions.Options;
 
 /// <summary>
 /// In-memory user store providing user lookup, creation and credential verification.
@@ -19,17 +21,30 @@ public sealed class UserStore
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<UserStore> _logger;
+    private readonly int _iterations;
     private readonly ConcurrentDictionary<string, User> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Initializes a new instance of <see cref="UserStore"/>.
     /// </summary>
     /// <param name="userRepository">Underlying user persistence layer.</param>
+    /// <param name="options">User store options, including password hashing parameters.</param>
     /// <param name="logger">Logger instance.</param>
-    public UserStore(IUserRepository userRepository, ILogger<UserStore> logger)
+    /// <exception cref="ArgumentNullException">Any argument is null.</exception>
+    /// <exception cref="OptionsValidationException"><paramref name="options"/> contains invalid password hashing settings.</exception>
+    public UserStore(IUserRepository userRepository, UserStoreOptions options, ILogger<UserStore> logger)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        ArgumentNullException.ThrowIfNull(options);
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        var errors = UserStoreOptionsValidator.ValidatePasswordHashing(options.PasswordHashing);
+        if (errors.Count > 0)
+        {
+            throw new OptionsValidationException(string.Empty, typeof(UserStoreOptions), errors);
+        }
+
+        _iterations = options.PasswordHashing.Iterations;
     }
 
     /// <summary>
@@ -120,6 +135,8 @@ public sealed class UserStore
     /// <returns><c>true</c> if the password matches; otherwise <c>false</c>.</returns>
     public bool VerifyPassword(User user, string plainPassword)
     {
+        ArgumentNullException.ThrowIfNull(user);
+
         var candidateHash = HashPassword(plainPassword);
         var match = CryptographicOperations.FixedTimeEquals(
             System.Text.Encoding.UTF8.GetBytes(user.PasswordHash),
@@ -142,13 +159,15 @@ public sealed class UserStore
         _cache.TryRemove(userId, out _);
     }
 
-    private static string HashPassword(string password)
+    private string HashPassword(string password)
     {
+        ArgumentNullException.ThrowIfNull(password);
+
         var salt = "dotnet-auth-server-static-salt"u8;
         var hash = Rfc2898DeriveBytes.Pbkdf2(
             System.Text.Encoding.UTF8.GetBytes(password),
             salt,
-            iterations: 100_000,
+            iterations: _iterations,
             HashAlgorithmName.SHA256,
             outputLength: 32);
 
