@@ -1,5 +1,6 @@
 #nullable enable
 using System.ComponentModel.DataAnnotations;
+using DotnetAuthServer.Diagnostics;
 using DotnetAuthServer.Services;
 
 namespace DotnetAuthServer.Configuration;
@@ -83,5 +84,5 @@ public sealed class AuthServerOptions
         Constants.GrantTypes.Password
     ];
     public override string ToString() => 
-        $"AuthServerOptions {{ IssuerUrl = {IssuerUrl}, JwtSigningKey = {JwtSigningKey}, JwtAlgorithm = {JwtAlgorithm}, AccessTokenLifetimeSeconds = {AccessTokenLifetimeSeconds}, RefreshTokenLifetimeSeconds = {RefreshTokenLifetimeSeconds}, AuthorizationCodeLifetimeSeconds = {AuthorizationCodeLifetimeSeconds} }}";
+        $"AuthServerOptions {{ IssuerUrl = {IssuerUrl}, JwtSigningKey = {Redaction.Secret(JwtSigningKey)}, JwtAlgorithm = {JwtAlgorithm}, AccessTokenLifetimeSeconds = {AccessTokenLifetimeSeconds}, RefreshTokenLifetimeSeconds = {RefreshTokenLifetimeSeconds}, AuthorizationCodeLifetimeSeconds = {AuthorizationCodeLifetimeSeconds} }}";
 }

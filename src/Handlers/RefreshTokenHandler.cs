@@ -9,6 +9,7 @@ namespace DotnetAuthServer.Handlers;
 using System.Security.Cryptography;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Diagnostics;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Exceptions;
 using Microsoft.Extensions.Options;
@@ -100,7 +101,8 @@ public sealed class RefreshTokenHandler
 
         if (stored.IsRevoked)
         {
-            _logger.LogWarning("Revoked refresh token {TokenId} presented - possible theft", stored.TokenId);
+            SecurityEventLog.RefreshTokenReuseDetected(
+                _logger, stored.TokenId, stored.UserId, stored.ClientId, stored.FamilyId);
             await RevokeChainAsync(stored.UserId, stored.ClientId, cancellationToken);
             throw new InvalidGrantException("invalid_grant", "Refresh token has been revoked. All tokens for this grant have been invalidated.");
         }
@@ -119,25 +121,16 @@ public sealed class RefreshTokenHandler
     {
         var current = await ValidateAsync(currentRawToken, cancellationToken);
 
-        current.IsRevoked = true;
-        current.RevokedAt = DateTime.UtcNow;
+        current.Revoke(RefreshToken.RotationRevocationReason);
         await _tokenRepository.UpdateAsync(current, cancellationToken);
 
         var newRawToken = GenerateTokenValue();
         var newHash = HashToken(newRawToken);
 
-        var replacement = new RefreshToken
-        {
-            TokenId = Guid.NewGuid().ToString(),
-            TokenHash = newHash,
-            ClientId = current.ClientId,
-            UserId = current.UserId,
-            GrantedScopes = current.GrantedScopes,
-            Version = current.Version + 1,
-            PreviousTokenHash = current.TokenHash,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds)
-        };
+        var replacement = current.CreateRotatedToken(
+            Guid.NewGuid().ToString(),
+            newHash,
+            DateTime.UtcNow.AddSeconds(_options.RefreshTokenLifetimeSeconds));
 
         await _tokenRepository.CreateAsync(replacement, cancellationToken);
         _logger.LogInformation("Rotated refresh token {OldId} -> {NewId} (v{Version})",

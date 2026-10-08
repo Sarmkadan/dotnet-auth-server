@@ -6,9 +6,12 @@
 
 namespace DotnetAuthServer.Domain.Entities;
 
+using System.Diagnostics;
+
 /// <summary>
 /// Represents a user in the authorization system
 /// </summary>
+[DebuggerDisplay("{ToString(),nq}")]
 public sealed class User
 {
     /// <summary>
@@ -82,6 +85,12 @@ public sealed class User
     public DateTime? LockedUntil { get; set; }
 
     /// <summary>
+    /// Whether the user has an enabled TOTP credential. Mirrors <c>TotpCredential.IsEnabled</c>
+    /// and is kept in sync by <c>TotpService</c>.
+    /// </summary>
+    public bool MfaEnabled { get; set; }
+
+    /// <summary>
     /// Validates the user has all required properties for creation
     /// </summary>
     public bool IsValid()
@@ -138,10 +147,15 @@ public sealed class User
     }
 
     /// <summary>
-    /// Returns a concise string representation of the user.
+    /// Returns a diagnostic representation: identifier, username, lockout state and MFA status.
+    /// Email, full name and password hash are deliberately omitted. Unlike <see cref="IsLocked"/>,
+    /// this reads the lockout state without clearing an expired lock.
     /// </summary>
     public override string ToString()
     {
-        return $"User {{ UserId = {UserId}, Username = {Username}, Email = {Email}, FullName = {FullName}, PasswordHash = {PasswordHash}, EmailVerified = {EmailVerified} }}";
+        var lockedOut = LockedUntil is { } until && DateTime.UtcNow < until;
+        var lockedUntil = LockedUntil is { } expiry ? expiry.ToString("O") : "none";
+
+        return $"User {{ UserId = {UserId}, Username = {Username}, LockedOut = {lockedOut}, LockedUntil = {lockedUntil}, FailedLoginAttempts = {FailedLoginAttempts}, MfaEnabled = {MfaEnabled} }}";
     }
 }

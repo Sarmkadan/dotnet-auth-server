@@ -9,6 +9,7 @@ namespace DotnetAuthServer.Services;
 using System.Text.RegularExpressions;
 using DotnetAuthServer.Configuration;
 using DotnetAuthServer.Data.Repositories;
+using DotnetAuthServer.Diagnostics;
 using DotnetAuthServer.Domain.Entities;
 using DotnetAuthServer.Exceptions;
 using DotnetAuthServer.Services;
@@ -67,7 +68,8 @@ public sealed class UserService
 
             if (user.IsLocked())
             {
-                _logger.LogWarning("Authentication attempt for locked account: {UserId}", user.UserId);
+                SecurityEventLog.LoginRejectedForLockedAccount(
+                    _logger, user.UserId, user.LockedUntil.GetValueOrDefault());
                 throw new AuthServerException(
                     Constants.ErrorCodes.AccessDenied,
                     "Account is locked due to too many failed login attempts",
@@ -87,6 +89,15 @@ public sealed class UserService
             {
                 user.RecordFailedLogin(_options.FailedLoginAttemptThreshold);
                 await _userRepository.UpdateAsync(user, cancellationToken);
+
+                // The lock is only set by the attempt that reaches the threshold; later attempts
+                // are rejected earlier by IsLocked(), so this fires once per lockout.
+                if (user.LockedUntil is { } lockedUntil)
+                {
+                    SecurityEventLog.AccountLockedOut(
+                        _logger, user.UserId, lockedUntil, _options.FailedLoginAttemptThreshold);
+                }
+
                 _logger.LogInformation("Failed login attempt for user: {Username}", username);
                 throw new AuthServerException(
                     Constants.ErrorCodes.InvalidGrant,

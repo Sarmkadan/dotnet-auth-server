@@ -34,6 +34,7 @@ public sealed class TotpServiceTests_Rfc6238Compliant
 
         _service = new TotpService(
             _credentialRepositoryMock.Object,
+            new Mock<IUserRepository>().Object,
             _loggerMock.Object,
             _options,
             new MfaOptions { Issuer = "TestIssuer" });

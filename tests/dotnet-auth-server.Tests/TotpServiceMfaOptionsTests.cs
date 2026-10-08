@@ -107,6 +107,7 @@ public sealed class TotpServiceMfaOptionsTests
     private static TotpService CreateService(MfaOptions mfaOptions, AuthServerOptions? authOptions = null) =>
         new(
             new TotpCredentialRepository(),
+            new UserRepository(),
             NullLogger<TotpService>.Instance,
             authOptions ?? new AuthServerOptions(),
             mfaOptions);

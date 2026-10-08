@@ -158,4 +158,40 @@ public class RefreshTokenTests
 
         Assert.True(result);
     }
+
+    [Fact]
+    public void ToString_Always_OmitsTokenHashAndShowsIdentifiersAndState()
+    {
+        // Arrange
+        var token = CreateValidToken();
+        token.TokenHash = "secret-hash-value-that-must-not-leak";
+
+        // Act
+        var text = token.ToString();
+
+        // Assert
+        Assert.Contains($"TokenId = {token.TokenId}", text);
+        Assert.Contains($"FamilyId = {token.FamilyId}", text);
+        Assert.Contains($"UserId = {token.UserId}", text);
+        Assert.Contains("IsRevoked = False", text);
+        Assert.DoesNotContain("secret-hash-value-that-must-not-leak", text);
+    }
+
+    [Fact]
+    public void CreateRotatedToken_Always_KeepsFamilyAndIncrementsVersion()
+    {
+        // Arrange
+        var token = CreateValidToken();
+        var expiresAt = DateTime.UtcNow.AddDays(1);
+
+        // Act
+        var replacement = token.CreateRotatedToken("new-token-id", "new-hash", expiresAt);
+
+        // Assert
+        Assert.Equal(token.FamilyId, replacement.FamilyId);
+        Assert.Equal(token.Version + 1, replacement.Version);
+        Assert.Equal(token.TokenHash, replacement.PreviousTokenHash);
+        Assert.Equal("new-token-id", replacement.TokenId);
+        Assert.Equal(expiresAt, replacement.ExpiresAt);
+    }
 }

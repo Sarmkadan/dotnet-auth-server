@@ -16,7 +16,7 @@ using Microsoft.Extensions.Hosting;
 /// </summary>
 public sealed class UserStoreStartupCheck : IHostedService
 {
-    private const string ProbeUserId = "__startup_probe__";
+    internal const string ProbeUserId = "__startup_probe__";
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
 
     private readonly UserStore _userStore;
