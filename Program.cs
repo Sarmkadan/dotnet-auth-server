@@ -46,6 +46,9 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetAuthSer
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<WebhookOptions>>().Value);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<UserStoreOptions>>().Value);
 
+// Validates TOTP/MFA settings (issuer, digits, time step, drift, recovery codes) at startup
+builder.Services.AddMfaOptions(builder.Configuration);
+
 // Repositories
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<DotnetAuthServer.Data.UserStore>();
