@@ -237,6 +237,19 @@ Example response:
 }
 ```
 
+## Authentication
+
+The server authenticates two kinds of principals:
+
+- **Users** sign in with a username and password at the authorization endpoint. When MFA is enabled for the account, a TOTP code (or a backup code) is required after the password step. Failed password and TOTP attempts are rate limited per username and per IP address (see [Rate limiting](#rate-limiting)).
+- **Clients** authenticate at the token, introspection and revocation endpoints. PKCE is enforced by default on `GET /oauth/authorize`, and each client has its own `RequirePkce` setting. Confidential clients authenticate with `client_id` and `client_secret`, sent either in the request body or as HTTP Basic credentials.
+
+Issued access and refresh tokens are signed with `JwtSigningKey`. Resource APIs validate them either by calling `POST /oauth/introspect` or, preferably, by checking the signature against the public keys at `GET /.well-known/jwks.json`. A setup example is in [Protecting a resource API](#protecting-a-resource-api-and-enabling-mfa).
+
+Keep `JwtSigningKey` out of source control and load it from the environment outside local development.
+
+For the step-by-step flows, see [Getting Started](#getting-started), [Authorization Code + PKCE](#3-authorization-code--pkce-flow-example) and [Enrolling a user in TOTP MFA](#2-enrolling-a-user-in-totp-mfa).
+
 ## Rate limiting
 
 `src/Middleware/RateLimitingMiddleware.cs` applies an in-memory token-bucket limit to requests whose paths start with one of the configured sensitive endpoints. Buckets are keyed by the first 20 characters of the `Authorization` header when present, then by the `client_id` query parameter, and finally by the remote IP address. A rejected request receives HTTP 429, a `Retry-After: 60` header, and a `rate_limit_exceeded` JSON error.
