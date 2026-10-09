@@ -139,6 +139,9 @@ public sealed class ConsentService
 
     public ConsentService(IConsentRepository consentRepository, AuthServerOptions authServerOptions)
     {
+        ArgumentNullException.ThrowIfNull(consentRepository);
+        ArgumentNullException.ThrowIfNull(authServerOptions);
+
         _consentRepository = consentRepository;
         _authServerOptions = authServerOptions;
     }
@@ -152,6 +155,10 @@ public sealed class ConsentService
         IEnumerable<string> requestedScopes,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(userId);
+        ArgumentNullException.ThrowIfNull(clientId);
+        ArgumentNullException.ThrowIfNull(requestedScopes);
+
         var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
 
         if (consent is null || !consent.IsValidAndApproved())
@@ -170,6 +177,8 @@ public sealed class ConsentService
         ConsentRequest request,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         if (!request.IsValid())
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidRequest,
@@ -224,6 +233,10 @@ public sealed class ConsentService
         IEnumerable<string> requestedScopes,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(userId);
+        ArgumentNullException.ThrowIfNull(clientId);
+        ArgumentNullException.ThrowIfNull(requestedScopes);
+
         var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
 
         if (consent?.IsValidAndApproved() != true)
@@ -240,6 +253,8 @@ public sealed class ConsentService
     /// </summary>
     public async Task RevokeAllUserConsentsAsync(string userId, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(userId);
+
         await _consentRepository.RevokeAllUserConsentsAsync(userId, cancellationToken);
     }
 
@@ -251,6 +266,9 @@ public sealed class ConsentService
         string clientId,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(userId);
+        ArgumentNullException.ThrowIfNull(clientId);
+
         var consent = await _consentRepository.GetByUserAndClientAsync(userId, clientId, cancellationToken);
         if (consent is not null)
         {
@@ -266,6 +284,8 @@ public sealed class ConsentService
     /// <returns>True if consent has expired or is about to expire and needs renewal</returns>
     public bool RequiresReconsent(Consent consent)
     {
+        ArgumentNullException.ThrowIfNull(consent);
+
         if (consent.Status != ConsentStatus.Approved)
             return true;
 
@@ -291,6 +311,8 @@ public sealed class ConsentService
     /// <returns>TimeSpan representing remaining validity, or null if consent doesn't expire</returns>
     public TimeSpan? GetConsentRemainingValidity(Consent consent)
     {
+        ArgumentNullException.ThrowIfNull(consent);
+
         if (consent.ExpiresAt is null)
             return null;
 
@@ -305,6 +327,8 @@ public sealed class ConsentService
     /// <returns>Percentage (0-100) of validity remaining, or null if consent doesn't expire</returns>
     public double? GetConsentValidityPercentage(Consent consent)
     {
+        ArgumentNullException.ThrowIfNull(consent);
+
         if (consent.ExpiresAt is null)
             return null;
 
