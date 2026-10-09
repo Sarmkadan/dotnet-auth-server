@@ -25,6 +25,13 @@ public sealed class WebhookClient
     private readonly ILogger<WebhookClient> _logger;
     private readonly WebhookOptions _options;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebhookClient"/> class.
+    /// </summary>
+    /// <param name="httpClient">HTTP client used to deliver webhook requests.</param>
+    /// <param name="logger">Logger for delivery diagnostics.</param>
+    /// <param name="options">Webhook delivery configuration.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any argument is null.</exception>
     public WebhookClient(HttpClient httpClient, ILogger<WebhookClient> logger, WebhookOptions options)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -132,7 +139,14 @@ public sealed class WebhookClient
 /// </summary>
 public sealed class WebhookResult
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the webhook was delivered successfully.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets a short description of the failure, or null when delivery succeeded.
+    /// </summary>
     public string? Error { get; set; }
 
     public override string ToString() =>
@@ -144,10 +158,29 @@ public sealed class WebhookResult
 /// </summary>
 public sealed class WebhookPayload
 {
+    /// <summary>
+    /// Gets or sets the unique identifier of the domain event.
+    /// </summary>
     public string EventId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the type name of the domain event.
+    /// </summary>
     public string EventType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the UTC time at which the event occurred.
+    /// </summary>
     public DateTime OccurredAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the originating request, if any.
+    /// </summary>
     public string? RequestId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the serialized event body (camelCase JSON).
+    /// </summary>
     public JsonElement Data { get; set; }
 
     public override string ToString() =>
@@ -159,17 +192,32 @@ public sealed class WebhookPayload
 /// </summary>
 public sealed class WebhookOptions
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether webhook delivery is enabled.
+    /// </summary>
     [Required]
     public bool Enabled { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts (0 to 100).
+    /// </summary>
     [Range(0, 100)]
     public int MaxRetries { get; set; } = 3;
 
+    /// <summary>
+    /// Gets or sets the delay before the first retry, in milliseconds (100 to 10000).
+    /// </summary>
     [Range(100, 10000)]
     public int InitialRetryDelayMs { get; set; } = 1000;
 
+    /// <summary>
+    /// Gets or sets the upper bound for the retry delay, in milliseconds (1000 to 60000).
+    /// </summary>
     [Range(1000, 60000)]
     public int MaxRetryDelayMs { get; set; } = 30000;
 
+    /// <summary>
+    /// Gets or sets the timeout applied to a single webhook request. Default is 10 seconds.
+    /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 }
