@@ -27,6 +27,10 @@ public sealed class TokenCleanupWorker : BackgroundService
         IServiceProvider serviceProvider,
         RevokedTokenStore revokedTokenStore)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(revokedTokenStore);
+
         _logger = logger;
         _serviceProvider = serviceProvider;
         _revokedTokenStore = revokedTokenStore;
