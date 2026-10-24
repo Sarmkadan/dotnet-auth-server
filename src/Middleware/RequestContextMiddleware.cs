@@ -15,11 +15,17 @@ public sealed class RequestContextMiddleware
 {
     private readonly RequestDelegate _next;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RequestContextMiddleware"/> class.
+    /// </summary>
     public RequestContextMiddleware(RequestDelegate next)
     {
         _next = next;
     }
 
+    /// <summary>
+    /// Assigns a request ID (reusing the X-Request-Id header when present) and runs the rest of the pipeline within a logging scope.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         // Reuse incoming header if present, otherwise generate a new GUID.
@@ -62,6 +68,9 @@ public static class LogicalContext
 {
     private static readonly AsyncLocal<string?> RequestIdStorage = new();
 
+    /// <summary>
+    /// Gets or sets the request ID for the current async flow.
+    /// </summary>
     public static string? RequestId
     {
         get => RequestIdStorage.Value;

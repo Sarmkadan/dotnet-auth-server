@@ -311,7 +311,7 @@ public static class MemoryCacheServiceExtensions
         {
             string s => System.Text.Encoding.Unicode.GetByteCount(s),
             byte[] b => b.Length,
-            Array a => a.Length * (a.GetType().GetElementType()?.IsValueType == true ? System.Runtime.InteropServices.Marshal.SizeOf(a.GetType().GetElementType()) : IntPtr.Size),
+            Array a => a.Length * (a.GetType().GetElementType() is { IsValueType: true } elementType ? System.Runtime.InteropServices.Marshal.SizeOf(elementType) : IntPtr.Size),
             _ => IntPtr.Size // Default size for reference types
         };
     }

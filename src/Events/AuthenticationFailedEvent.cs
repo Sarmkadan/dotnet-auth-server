@@ -12,9 +12,24 @@ namespace DotnetAuthServer.Events;
 /// </summary>
 public sealed class AuthenticationFailedEvent : IDomainEvent
 {
+    /// <summary>
+    /// Unique identifier of this event.
+    /// </summary>
     public string EventId { get; set; } = Guid.NewGuid().ToString("N");
+
+    /// <summary>
+    /// UTC timestamp at which the event occurred.
+    /// </summary>
     public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Identifier of the HTTP request that produced the event, if available.
+    /// </summary>
     public string? RequestId { get; set; }
+
+    /// <summary>
+    /// Machine-readable event type name.
+    /// </summary>
     public string EventType => "authentication_failed";
 
     /// <summary>

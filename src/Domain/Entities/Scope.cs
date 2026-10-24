@@ -108,6 +108,9 @@ public sealed class Scope
         return allClaims;
     }
 
+    /// <summary>
+    /// Returns a string representation of the scope for diagnostics.
+    /// </summary>
     public override string ToString()
     {
         return $"Scope {{ ScopeId = {ScopeId}, DisplayName = {DisplayName}, Description = {Description}, IsRequired = {IsRequired}, RequiresConsent = {RequiresConsent}, IsOpenIdScope = {IsOpenIdScope} }}";

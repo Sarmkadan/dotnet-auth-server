@@ -42,6 +42,9 @@ public sealed class DynamicClientRegistrationService
     private readonly AuthServerOptions _options;
     private readonly ILogger<DynamicClientRegistrationService> _logger;
 
+    /// <summary>
+    /// Initializes a new dynamic client registration service.
+    /// </summary>
     public DynamicClientRegistrationService(
         IClientRepository clientRepository,
         AuthServerOptions options,

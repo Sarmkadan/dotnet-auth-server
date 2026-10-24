@@ -47,16 +47,25 @@ public sealed class ConsentRepository : IConsentRepository
 {
     private readonly ConcurrentDictionary<string, Consent> _consents = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Gets a consent by its ID, or null if not found.
+    /// </summary>
     public async Task<Consent?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_consents.TryGetValue(id, out var consent) ? consent : null);
     }
 
+    /// <summary>
+    /// Gets all consents.
+    /// </summary>
     public async Task<IEnumerable<Consent>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_consents.Values.ToList());
     }
 
+    /// <summary>
+    /// Adds a new consent. Throws InvalidOperationException if one with the same ID already exists.
+    /// </summary>
     public async Task<Consent> CreateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (!_consents.TryAdd(entity.ConsentId, entity))
@@ -64,6 +73,9 @@ public sealed class ConsentRepository : IConsentRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Updates an existing consent and sets its UpdatedAt timestamp. Throws InvalidOperationException if not found.
+    /// </summary>
     public async Task<Consent> UpdateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (!_consents.ContainsKey(entity.ConsentId))
@@ -74,22 +86,34 @@ public sealed class ConsentRepository : IConsentRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Deletes the specified consent.
+    /// </summary>
     public async Task DeleteAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         await DeleteByIdAsync(entity.ConsentId, cancellationToken);
     }
 
+    /// <summary>
+    /// Deletes the consent with the specified ID, if it exists.
+    /// </summary>
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _consents.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Checks whether a consent with the specified ID exists.
+    /// </summary>
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_consents.ContainsKey(id));
     }
 
+    /// <summary>
+    /// Gets the consent for the specified user and client, or null if none exists.
+    /// </summary>
     public async Task<Consent?> GetByUserAndClientAsync(
         string userId,
         string clientId,
@@ -101,6 +125,9 @@ public sealed class ConsentRepository : IConsentRepository
         return await Task.FromResult(consent);
     }
 
+    /// <summary>
+    /// Gets all consents granted by the specified user.
+    /// </summary>
     public async Task<IEnumerable<Consent>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         var consents = _consents.Values.Where(c =>
@@ -108,6 +135,9 @@ public sealed class ConsentRepository : IConsentRepository
         return await Task.FromResult(consents);
     }
 
+    /// <summary>
+    /// Gets all consents granted to the specified client.
+    /// </summary>
     public async Task<IEnumerable<Consent>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
         var consents = _consents.Values.Where(c =>
@@ -115,6 +145,9 @@ public sealed class ConsentRepository : IConsentRepository
         return await Task.FromResult(consents);
     }
 
+    /// <summary>
+    /// Revokes all consents granted by the specified user.
+    /// </summary>
     public Task RevokeAllUserConsentsAsync(string userId, CancellationToken cancellationToken = default)
     {
         var userConsents = _consents.Values.Where(c =>
@@ -137,6 +170,9 @@ public sealed class ConsentService
     private readonly IConsentRepository _consentRepository;
     private readonly AuthServerOptions _authServerOptions;
 
+    /// <summary>
+    /// Initializes a new consent service.
+    /// </summary>
     public ConsentService(IConsentRepository consentRepository, AuthServerOptions authServerOptions)
     {
         ArgumentNullException.ThrowIfNull(consentRepository);

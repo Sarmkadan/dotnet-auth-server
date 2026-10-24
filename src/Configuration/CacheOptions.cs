@@ -59,6 +59,9 @@ public sealed class CacheOptions
     [Required]
     public CacheItemExpirations ItemExpirations { get; set; } = new();
 
+    /// <summary>
+    /// Returns a string representation of these options.
+    /// </summary>
     public override string ToString() => $"CacheOptions {{ Enabled = {Enabled}, Backend = {Backend}, DefaultExpirationSeconds = {DefaultExpirationSeconds}, MaxEntries = {MaxEntries}, ExpirationScanIntervalSeconds = {ExpirationScanIntervalSeconds}, ConnectionString = {ConnectionString} }}";
 }
 

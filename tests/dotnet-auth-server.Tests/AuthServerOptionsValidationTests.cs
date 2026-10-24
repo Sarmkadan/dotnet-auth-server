@@ -92,21 +92,21 @@ public class AuthServerOptionsValidationTests
     public void Validate_NullInput_ThrowsArgumentNullException()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => AuthServerOptionsValidation.Validate(null));
+        Assert.Throws<ArgumentNullException>(() => AuthServerOptionsValidation.Validate(null!));
     }
 
     [Fact]
     public void IsValid_NullInput_ThrowsArgumentNullException()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => AuthServerOptionsValidation.IsValid(null));
+        Assert.Throws<ArgumentNullException>(() => AuthServerOptionsValidation.IsValid(null!));
     }
 
     [Fact]
     public void EnsureValid_NullInput_ThrowsArgumentNullException()
     {
         // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => AuthServerOptionsValidation.EnsureValid(null));
+        Assert.Throws<ArgumentNullException>(() => AuthServerOptionsValidation.EnsureValid(null!));
     }
 
     [Fact]

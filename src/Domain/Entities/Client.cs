@@ -175,5 +175,8 @@ public sealed class Client
         return AllowedScopes.Contains(scope, StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Returns a string representation of the client for diagnostics.
+    /// </summary>
     public override string ToString() => $"Client {{ ClientId = {ClientId}, ClientName = {ClientName}, ClientSecretHash = {ClientSecretHash}, Description = {Description}, IsConfidential = {IsConfidential}, IsActive = {IsActive} }}";
 }

@@ -88,7 +88,7 @@ public class CreateUserRequestValidationTests
             Username = "",                 // missing
             Email = "",                    // missing
             Password = "",                 // missing
-            Roles = null
+            Roles = null!
         };
 
         var ex = Assert.Throws<ArgumentException>(() => request.EnsureValid());

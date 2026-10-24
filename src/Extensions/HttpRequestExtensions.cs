@@ -12,7 +12,6 @@ namespace DotnetAuthServer.Extensions;
 /// Extension methods for <see cref="HttpRequest"/> to extract and validate OAuth2/OIDC parameters.
 /// Handles both query string and form body parameters which are both valid in OAuth2.
 /// </summary>
-/// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/></exception>
 public static class HttpRequestExtensions
 {
     /// <summary>

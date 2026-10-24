@@ -124,7 +124,10 @@ public sealed class TotpService
 
         var credential = await GetCredentialOrThrowAsync(userId, cancellationToken);
 
-        if (!VerifyTotpCode(credential.SecretKey, code))
+#pragma warning disable CS0618 // Setup confirmation keeps the legacy synchronous check; replay tracking is not applied here.
+        var isValid = VerifyTotpCode(credential.SecretKey, code);
+#pragma warning restore CS0618
+        if (!isValid)
             throw new AuthServerException(
                 Constants.ErrorCodes.InvalidGrant,
                 "Invalid TOTP code; please try again",
@@ -234,7 +237,7 @@ public sealed class TotpService
 
     /// <summary>
     /// Disables and removes the TOTP credential for a user.
-    /// </>
+    /// </summary>
     /// <param name="userId">The user's ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="ArgumentException"><paramref name="userId"/> is null or empty.</exception>

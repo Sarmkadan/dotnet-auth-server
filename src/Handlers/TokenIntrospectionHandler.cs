@@ -121,15 +121,50 @@ public sealed class TokenIntrospectionHandler
 /// </summary>
 public sealed class IntrospectionResponse
 {
+    /// <summary>
+    /// Whether the token is active (valid, unexpired, and not revoked).
+    /// </summary>
     public bool Active { get; set; }
+
+    /// <summary>
+    /// Space-separated list of scopes associated with the token.
+    /// </summary>
     public string? Scope { get; set; }
+
+    /// <summary>
+    /// Identifier of the client the token was issued to.
+    /// </summary>
     public string? ClientId { get; set; }
+
+    /// <summary>
+    /// Human-readable identifier of the resource owner, if any.
+    /// </summary>
     public string? Username { get; set; }
+
+    /// <summary>
+    /// Type of the token, for example <c>Bearer</c>.
+    /// </summary>
     public string? TokenType { get; set; }
+
+    /// <summary>
+    /// Expiration time of the token, as seconds since the Unix epoch.
+    /// </summary>
     public long? Exp { get; set; }
+
+    /// <summary>
+    /// Time at which the token was issued, as seconds since the Unix epoch.
+    /// </summary>
     public long? Iat { get; set; }
+
+    /// <summary>
+    /// Subject identifier of the token.
+    /// </summary>
     public string? Sub { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of this introspection response.
+    /// </summary>
+    /// <returns>A string representation of the response.</returns>
     public override string ToString() =>
         $"IntrospectionResponse {{ Active = {Active}, Scope = {Scope}, ClientId = {ClientId}, Username = {Username}, TokenType = {TokenType}, Exp = {Exp}, Iat = {Iat}, Sub = {Sub} }}";
 }

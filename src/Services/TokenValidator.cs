@@ -15,6 +15,9 @@ public sealed class TokenValidator : ITokenValidator
     private readonly TokenIntrospectionHandler _introspectionHandler;
     private readonly ILogger<TokenValidator> _logger;
 
+    /// <summary>
+    /// Initializes a new token validator.
+    /// </summary>
     public TokenValidator(
         TokenRevocationHandler revocationHandler,
         TokenIntrospectionHandler introspectionHandler,

@@ -33,6 +33,9 @@ public sealed class SecretsService
 
     private readonly ILogger<SecretsService> _logger;
 
+    /// <summary>
+    /// Initializes a new secrets service.
+    /// </summary>
     public SecretsService(ILogger<SecretsService> logger)
     {
         ArgumentNullException.ThrowIfNull(logger);
@@ -83,18 +86,15 @@ public sealed class SecretsService
         }
 
         // Hash with PBKDF2
-        using (var pbkdf2 = new Rfc2898DeriveBytes(secret, salt, iterations, Pbkdf2HashAlgorithm))
-        {
-            var hash = pbkdf2.GetBytes(Pbkdf2OutputByteLength);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(secret, salt, iterations, Pbkdf2HashAlgorithm, Pbkdf2OutputByteLength);
 
-            return new SecretHash
-            {
-                Hash = Convert.ToBase64String(hash),
-                Salt = Convert.ToBase64String(salt),
-                Iterations = iterations,
-                Algorithm = "PBKDF2-SHA256"
-            };
-        }
+        return new SecretHash
+        {
+            Hash = Convert.ToBase64String(hash),
+            Salt = Convert.ToBase64String(salt),
+            Iterations = iterations,
+            Algorithm = "PBKDF2-SHA256"
+        };
     }
 
     /// <summary>
@@ -109,18 +109,16 @@ public sealed class SecretsService
         try
         {
             var salt = Convert.FromBase64String(hash.Salt);
-            using (var pbkdf2 = new Rfc2898DeriveBytes(
+            var computedHash = Rfc2898DeriveBytes.Pbkdf2(
                 secret,
                 salt,
                 hash.Iterations,
-                Pbkdf2HashAlgorithm))
-            {
-                var computedHash = pbkdf2.GetBytes(Pbkdf2OutputByteLength);
-                var storedHash = Convert.FromBase64String(hash.Hash);
+                Pbkdf2HashAlgorithm,
+                Pbkdf2OutputByteLength);
+            var storedHash = Convert.FromBase64String(hash.Hash);
 
-                // Constant-time comparison to prevent timing attacks
-                return ConstantTimeCompare(computedHash, storedHash);
-            }
+            // Constant-time comparison to prevent timing attacks
+            return ConstantTimeCompare(computedHash, storedHash);
         }
         catch (Exception ex)
         {
@@ -174,11 +172,26 @@ public sealed class SecretsService
 /// </summary>
 public sealed class SecretHash
 {
+    /// <summary>
+    /// Derived hash of the secret.
+    /// </summary>
     public string Hash { get; set; } = string.Empty;
+    /// <summary>
+    /// Salt used when deriving the hash.
+    /// </summary>
     public string Salt { get; set; } = string.Empty;
+    /// <summary>
+    /// Number of PBKDF2 iterations. Defaults to 10000.
+    /// </summary>
     public int Iterations { get; set; } = 10000;
+    /// <summary>
+    /// Name of the hash algorithm. Defaults to PBKDF2-SHA256.
+    /// </summary>
     public string Algorithm { get; set; } = "PBKDF2-SHA256";
 
+    /// <summary>
+    /// Returns a string with the algorithm and iteration count, without the hash or salt.
+    /// </summary>
     public override string ToString()
     {
         // Return masked version for logging

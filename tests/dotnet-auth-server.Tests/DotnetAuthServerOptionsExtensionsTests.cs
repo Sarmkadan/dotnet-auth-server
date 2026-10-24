@@ -79,7 +79,7 @@ public class DotnetAuthServerOptionsExtensionsTests
     {
         var options = CreateValidOptions();
 
-        options.AuthServer.JwtAlgorithm = null;
+        options.AuthServer.JwtAlgorithm = null!;
         Assert.Equal("HS256", options.GetEffectiveJwtAlgorithm());
 
         options.AuthServer.JwtAlgorithm = string.Empty;

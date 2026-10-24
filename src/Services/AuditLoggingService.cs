@@ -22,6 +22,9 @@ public sealed class AuditLoggingService : IAuditLoggingService
     private readonly ConcurrentQueue<AuditLogEntry> _auditLog = new();
     private readonly int _maxLogEntries = 10000; // Prevent unbounded memory growth
 
+    /// <summary>
+    /// Initializes a new audit logging service.
+    /// </summary>
     public AuditLoggingService(ILogger<AuditLoggingService> logger)
     {
         _logger = logger;
@@ -152,7 +155,6 @@ public sealed class AuditLoggingService : IAuditLoggingService
     {
         _logger.LogInformation("LogAdministrativeAction started with Action: {Action}, TargetClientId: {TargetClientId}, TargetUserId: {TargetUserId}", action, targetClientId ?? "unknown", targetUserId ?? "unknown");
         ArgumentException.ThrowIfNullOrEmpty(nameof(action));
-        ArgumentNullException.ThrowIfNull(nameof(changes));
         var details = changes ?? new Dictionary<string, string>();
         details["action"] = action;
 
@@ -347,12 +349,33 @@ public sealed class AuditLoggingService : IAuditLoggingService
 /// </summary>
 public sealed class AuditLogEntry
 {
+    /// <summary>
+    /// Type of the audited event.
+    /// </summary>
     public string EventType { get; set; } = string.Empty;
+    /// <summary>
+    /// ID of the user associated with the event, if any.
+    /// </summary>
     public string? UserId { get; set; }
+    /// <summary>
+    /// ID of the client associated with the event, if any.
+    /// </summary>
     public string? ClientId { get; set; }
+    /// <summary>
+    /// When the event occurred (UTC).
+    /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Correlation ID of the request that produced the event, if any.
+    /// </summary>
     public string? RequestId { get; set; }
+    /// <summary>
+    /// Additional key/value details about the event.
+    /// </summary>
     public Dictionary<string, string> Details { get; set; } = new();
+    /// <summary>
+    /// Severity level of the event.
+    /// </summary>
     public AuditSeverity Severity { get; set; } = AuditSeverity.Information;
 }
 
@@ -361,7 +384,16 @@ public sealed class AuditLogEntry
 /// </summary>
 public enum AuditSeverity
 {
+    /// <summary>
+    /// Routine informational event.
+    /// </summary>
     Information = 0,
+    /// <summary>
+    /// Event that warrants attention but is not a failure.
+    /// </summary>
     Warning = 1,
+    /// <summary>
+    /// Serious event that requires immediate attention.
+    /// </summary>
     Critical = 2
 }

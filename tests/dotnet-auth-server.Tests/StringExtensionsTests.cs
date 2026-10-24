@@ -191,7 +191,7 @@ public sealed class StringExtensionsTests
     public void JoinScopes_WithNullElements_FiltersOutNulls()
     {
         // Arrange
-        var scopes = new[] { "openid", null, "profile", string.Empty, "email" };
+        var scopes = new[] { "openid", null!, "profile", string.Empty, "email" };
 
         // Act
         var result = scopes.JoinScopes();

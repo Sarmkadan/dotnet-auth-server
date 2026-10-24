@@ -57,7 +57,7 @@ public class UserExtensionsTests
         int age = user.GetAttribute<int>("age");
         Assert.Equal(30, age);
 
-        string missing = user.GetAttribute<string>("nonexistent", "default");
+        string? missing = user.GetAttribute<string>("nonexistent", "default");
         Assert.Equal("default", missing);
     }
 

@@ -10,7 +10,7 @@ namespace DotnetAuthServer.Configuration;
 
 /// <summary>
 /// Options for the optional Open Policy Agent (OPA) integration.
-/// When <see cref="Enabled"/> is true the <see cref="PolicyEnforcementService"/>
+/// When <see cref="Enabled"/> is true the <see cref="Services.PolicyEnforcementService"/>
 /// delegates policy decisions to the OPA REST API instead of evaluating them
 /// locally, allowing teams to manage and version policies externally using Rego.
 /// </summary>

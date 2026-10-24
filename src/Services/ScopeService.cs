@@ -51,17 +51,26 @@ public sealed class ScopeRepository : IScopeRepository
 {
     private readonly Dictionary<string, Scope> _scopes = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Gets a scope by its ID, or null if not found.
+    /// </summary>
     public async Task<Scope?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_scopes.TryGetValue(id, out var scope) ? scope : null);
     }
 
+    /// <summary>
+    /// Gets all scopes.
+    /// </summary>
     public async Task<IEnumerable<Scope>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_scopes.Values.ToList());
     }
 
+    /// <summary>
+    /// Adds a new scope. Throws InvalidOperationException if one with the same ID already exists.
+    /// </summary>
     public async Task<Scope> CreateAsync(Scope entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -72,6 +81,9 @@ public sealed class ScopeRepository : IScopeRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Updates an existing scope and sets its UpdatedAt timestamp. Throws InvalidOperationException if not found.
+    /// </summary>
     public async Task<Scope> UpdateAsync(Scope entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -83,12 +95,18 @@ public sealed class ScopeRepository : IScopeRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Deletes the specified scope.
+    /// </summary>
     public async Task DeleteAsync(Scope entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         await DeleteByIdAsync(entity.ScopeId, cancellationToken);
     }
 
+    /// <summary>
+    /// Deletes the scope with the specified ID, if it exists.
+    /// </summary>
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
@@ -96,12 +114,18 @@ public sealed class ScopeRepository : IScopeRepository
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Checks whether a scope with the specified ID exists.
+    /// </summary>
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_scopes.ContainsKey(id));
     }
 
+    /// <summary>
+    /// Gets a scope by its scope identifier (case-insensitive), or null if not found.
+    /// </summary>
     public async Task<Scope?> GetByScopeIdAsync(string scopeId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(scopeId);
@@ -110,12 +134,18 @@ public sealed class ScopeRepository : IScopeRepository
         return await Task.FromResult(scope);
     }
 
+    /// <summary>
+    /// Gets all active scopes.
+    /// </summary>
     public async Task<IEnumerable<Scope>> GetActiveScopesAsync(CancellationToken cancellationToken = default)
     {
         var scopes = _scopes.Values.Where(s => s.IsActive).ToList();
         return await Task.FromResult(scopes);
     }
 
+    /// <summary>
+    /// Searches scopes whose ID, display name, or description contains the query (case-insensitive).
+    /// </summary>
     public async Task<IEnumerable<Scope>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(query);
@@ -135,6 +165,9 @@ public sealed class ScopeService
 {
     private readonly IScopeRepository _scopeRepository;
 
+    /// <summary>
+    /// Initializes a new scope service.
+    /// </summary>
     public ScopeService(IScopeRepository scopeRepository)
     {
         ArgumentNullException.ThrowIfNull(scopeRepository);
@@ -284,10 +317,28 @@ public sealed class ScopeService
 /// </summary>
 public sealed class ScopeSummary
 {
+    /// <summary>
+    /// Scope identifier.
+    /// </summary>
     public string ScopeId { get; set; } = null!;
+    /// <summary>
+    /// Human-readable name of the scope.
+    /// </summary>
     public string DisplayName { get; set; } = null!;
+    /// <summary>
+    /// Description of the scope.
+    /// </summary>
     public string Description { get; set; } = null!;
+    /// <summary>
+    /// Whether the scope is an OpenID Connect scope.
+    /// </summary>
     public bool IsOpenIdScope { get; set; }
+    /// <summary>
+    /// Whether the user must consent to this scope.
+    /// </summary>
     public bool RequiresConsent { get; set; }
+    /// <summary>
+    /// Claims associated with the scope.
+    /// </summary>
     public IEnumerable<string> Claims { get; set; } = [];
 }

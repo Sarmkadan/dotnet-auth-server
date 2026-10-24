@@ -11,6 +11,12 @@ namespace DotnetAuthServer.Exceptions;
 /// </summary>
 public sealed class ConfigurationException : AuthServerException
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConfigurationException"/> class with a message.
+    /// </summary>
+    /// <param name="message">Exception message.</param>
+    /// <param name="errorDescription">Optional detailed description.</param>
+    /// <param name="innerException">Optional inner exception.</param>
     public ConfigurationException(
         string message = "Server configuration error",
         string? errorDescription = null,
@@ -25,6 +31,13 @@ public sealed class ConfigurationException : AuthServerException
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConfigurationException"/> class for an invalid configuration property.
+    /// </summary>
+    /// <param name="propertyName">Name of the invalid configuration property.</param>
+    /// <param name="propertyValue">Value that was supplied.</param>
+    /// <param name="expectedFormat">Description of the expected format.</param>
+    /// <param name="innerException">Optional inner exception.</param>
     public ConfigurationException(
         string propertyName,
         string propertyValue,

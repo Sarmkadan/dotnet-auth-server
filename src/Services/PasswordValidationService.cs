@@ -26,6 +26,9 @@ public sealed class PasswordValidationService
         _passwordPolicy = passwordPolicy ?? new PasswordPolicyOptions();
     }
 
+    /// <summary>
+    /// Returns a string summarizing the active password policy settings.
+    /// </summary>
     public override string ToString() => $"PasswordValidationService {{ RequireMinimumLength = {_passwordPolicy.RequireMinimumLength}, MinimumLength = {_passwordPolicy.MinimumLength}, RequireMaximumLength = {_passwordPolicy.RequireMaximumLength}, MaximumLength = {_passwordPolicy.MaximumLength}, RequireLowercase = {_passwordPolicy.RequireLowercase}, RequireUppercase = {_passwordPolicy.RequireUppercase} }}";
 
     /// <summary>

@@ -19,6 +19,9 @@ public sealed class SessionStateService
     private readonly ConcurrentDictionary<string, SessionState> _sessions = new();
     private readonly ILogger<SessionStateService> _logger;
 
+    /// <summary>
+    /// Initializes a new session state service.
+    /// </summary>
     public SessionStateService(ILogger<SessionStateService> logger)
     {
         ArgumentNullException.ThrowIfNull(logger);
@@ -163,15 +166,45 @@ public sealed class SessionStateService
 /// </summary>
 public sealed class SessionState
 {
+    /// <summary>
+    /// Unique identifier of the authorization state.
+    /// </summary>
     public string StateId { get; set; } = string.Empty;
+    /// <summary>
+    /// ID of the client that started the authorization flow.
+    /// </summary>
     public string ClientId { get; set; } = string.Empty;
+    /// <summary>
+    /// Redirect URI for the authorization response.
+    /// </summary>
     public string RedirectUri { get; set; } = string.Empty;
+    /// <summary>
+    /// Scopes requested by the client.
+    /// </summary>
     public string RequestedScopes { get; set; } = string.Empty;
+    /// <summary>
+    /// Scopes granted to the client, if any.
+    /// </summary>
     public string? GrantedScopes { get; set; }
+    /// <summary>
+    /// OpenID Connect nonce value, if provided.
+    /// </summary>
     public string? Nonce { get; set; }
+    /// <summary>
+    /// ID of the authenticated user, if any.
+    /// </summary>
     public string? UserId { get; set; }
+    /// <summary>
+    /// When the state was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+    /// <summary>
+    /// When the state expires.
+    /// </summary>
     public DateTime ExpiresAt { get; set; }
+    /// <summary>
+    /// When the state was last updated, if ever.
+    /// </summary>
     public DateTime? LastUpdatedAt { get; set; }
 
     /// <summary>

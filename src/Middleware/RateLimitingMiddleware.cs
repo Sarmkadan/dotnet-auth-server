@@ -51,6 +51,13 @@ public sealed class RateLimitingMiddleware
     private readonly int _burstSize;
     private readonly HashSet<string> _sensitiveEndpoints;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RateLimitingMiddleware"/> class.
+    /// Falls back to 60 requests per minute and a burst size of 10 when options are not supplied.
+    /// </summary>
+    /// <param name="next">The next middleware in the pipeline.</param>
+    /// <param name="logger">Logger for rate-limit events.</param>
+    /// <param name="options">Optional rate-limiting configuration.</param>
     public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger, RateLimitingOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(next);
@@ -69,6 +76,9 @@ public sealed class RateLimitingMiddleware
         };
     }
 
+    /// <summary>
+    /// Applies the token bucket rate limit to sensitive OAuth endpoints and passes other requests through.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value ?? "";
@@ -81,7 +91,7 @@ public sealed class RateLimitingMiddleware
             {
                 _logger.LogWarning("Rate limit exceeded for client {ClientId}", clientId);
                 context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                context.Response.Headers.Add("Retry-After", "60");
+                context.Response.Headers["Retry-After"] = "60";
                 await context.Response.WriteAsJsonAsync(new { error = "rate_limit_exceeded" });
                 return;
             }

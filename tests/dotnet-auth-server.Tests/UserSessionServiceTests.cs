@@ -152,7 +152,7 @@ public sealed class UserSessionServiceTests
         var sessionId = "session1";
 
         _sessionRepositoryMock.Setup(repo => repo.GetByIdAsync(sessionId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserSession)null);
+            .ReturnsAsync((UserSession)null!);
 
         // Act & Assert
         _loggerMock.Object.LogWarning("Attempt to revoke non-existent session {SessionId}", sessionId);

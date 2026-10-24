@@ -20,24 +20,43 @@ public sealed class ErrorHandlingMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
 
-    #pragma warning disable IDE0044
-    private string? _error;
-    private string? _errorDescription;
-    private string? _errorUri;
-    #pragma warning restore IDE0044
+    // Never populated: error bodies are built per exception in HandleExceptionAsync.
+    private readonly string? _error = null;
+    private readonly string? _errorDescription = null;
+    private readonly string? _errorUri = null;
 
+    /// <summary>
+    /// Error code field; always null because it is never populated.
+    /// </summary>
     public string? Error => _error;
+
+    /// <summary>
+    /// Error description field; always null because it is never populated.
+    /// </summary>
     public string? ErrorDescription => _errorDescription;
+
+    /// <summary>
+    /// Error URI field; always null because it is never populated.
+    /// </summary>
     public string? ErrorUri => _errorUri;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ErrorHandlingMiddleware"/> class.
+    /// </summary>
     public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Returns a string representation of the middleware's error fields.
+    /// </summary>
     public override string ToString() => $"ErrorHandlingMiddleware {{ Error = {Error}, ErrorDescription = {ErrorDescription}, ErrorUri = {ErrorUri} }}";
 
+    /// <summary>
+    /// Invokes the next middleware and converts any unhandled exception into a JSON error response.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         _logger.LogInformation("Processing request {Method} {Path}", context.Request.Method, context.Request.Path);

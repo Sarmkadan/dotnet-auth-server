@@ -28,6 +28,10 @@ public sealed class RequestValidationHandler
     private const int MaxNonceLength = 500;
     private const int MaxLoginHintLength = 1000;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RequestValidationHandler"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used to record validation failures.</param>
     public RequestValidationHandler(ILogger<RequestValidationHandler> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

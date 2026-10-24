@@ -22,6 +22,12 @@ public sealed class TokenCleanupWorker : BackgroundService
     private readonly RevokedTokenStore _revokedTokenStore;
     private readonly TimeSpan _cleanupInterval;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TokenCleanupWorker"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used to report cleanup progress and errors.</param>
+    /// <param name="serviceProvider">Provider used to create scopes for repository access.</param>
+    /// <param name="revokedTokenStore">Store whose expired revocation entries are purged.</param>
     public TokenCleanupWorker(
         ILogger<TokenCleanupWorker> logger,
         IServiceProvider serviceProvider,
@@ -37,6 +43,10 @@ public sealed class TokenCleanupWorker : BackgroundService
         _cleanupInterval = TimeSpan.FromHours(1); // Run cleanup hourly
     }
 
+    /// <summary>
+    /// Runs the cleanup loop until the host shuts down, removing expired tokens and grants each hour.
+    /// </summary>
+    /// <param name="stoppingToken">Token signalled when the host is shutting down.</param>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Token cleanup worker started");

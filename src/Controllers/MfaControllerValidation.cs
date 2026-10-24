@@ -5,67 +5,66 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using DotnetAuthServer.Services;
 
-namespace DotnetAuthServer.Controllers
+namespace DotnetAuthServer.Controllers;
+
+/// <summary>
+/// Validation helpers for <see cref="MfaController"/>.
+/// Provides validation methods to ensure MfaController instances are properly initialized
+/// with all required dependencies.
+/// </summary>
+public static class MfaControllerValidation
 {
     /// <summary>
-    /// Validation helpers for <see cref="MfaController"/>.
-    /// Provides validation methods to ensure MfaController instances are properly initialized
-    /// with all required dependencies.
+    /// Returns a read‑only list of human‑readable validation problems for the supplied
+    /// <see cref="MfaController"/> instance.
     /// </summary>
-    public static class MfaControllerValidation
+    /// <param name="value">The controller instance to validate.</param>
+    /// <returns>A list of validation error messages. Empty if the instance is valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    public static IReadOnlyList<string> Validate(this MfaController? value)
     {
-        /// <summary>
-        /// Returns a read‑only list of human‑readable validation problems for the supplied
-        /// <see cref="MfaController"/> instance.
-        /// </summary>
-        /// <param name="value">The controller instance to validate.</param>
-        /// <returns>A list of validation error messages. Empty if the instance is valid.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-        public static IReadOnlyList<string> Validate(this MfaController? value)
+        var problems = new List<string>();
+
+        ArgumentNullException.ThrowIfNull(value);
+
+        // Validate required injected services via reflection (they are private fields).
+        // _totpService - required dependency
+        var totpField = typeof(MfaController).GetField("_totpService", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var totpService = totpField?.GetValue(value) as TotpService;
+        if (totpService is null)
+            problems.Add("TotpService dependency is null.");
+
+        // _logger - required dependency
+        var loggerField = typeof(MfaController).GetField("_logger", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var logger = loggerField?.GetValue(value) as ILogger<MfaController>;
+        if (logger is null)
+            problems.Add("ILogger<MfaController> dependency is null.");
+
+        // _userRepository is optional; no validation needed.
+
+        return problems;
+    }
+
+    /// <summary>
+    /// Determines whether the supplied <see cref="MfaController"/> instance is valid.
+    /// </summary>
+    /// <param name="value">The controller instance to check.</param>
+    /// <returns>True if no validation problems were found; otherwise false.</returns>
+    public static bool IsValid(this MfaController? value) => value?.Validate().Count == 0;
+
+    /// <summary>
+    /// Ensures that the supplied <see cref="MfaController"/> instance is valid.
+    /// Throws an <see cref="ArgumentException"/> if validation fails.
+    /// </summary>
+    /// <param name="value">The controller instance to validate.</param>
+    /// <exception cref="ArgumentException">Thrown when validation fails with details of the problems.</exception>
+    public static void EnsureValid(this MfaController? value)
+    {
+        var problems = value.Validate();
+        if (problems.Count > 0)
         {
-            var problems = new List<string>();
-
-            ArgumentNullException.ThrowIfNull(value);
-
-            // Validate required injected services via reflection (they are private fields).
-            // _totpService - required dependency
-            var totpField = typeof(MfaController).GetField("_totpService", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var totpService = totpField?.GetValue(value) as TotpService;
-            if (totpService is null)
-                problems.Add("TotpService dependency is null.");
-
-            // _logger - required dependency
-            var loggerField = typeof(MfaController).GetField("_logger", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var logger = loggerField?.GetValue(value) as ILogger<MfaController>;
-            if (logger is null)
-                problems.Add("ILogger<MfaController> dependency is null.");
-
-            // _userRepository is optional; no validation needed.
-
-            return problems;
-        }
-
-        /// <summary>
-        /// Determines whether the supplied <see cref="MfaController"/> instance is valid.
-        /// </summary>
-        /// <param name="value">The controller instance to check.</param>
-        /// <returns>True if no validation problems were found; otherwise false.</returns>
-        public static bool IsValid(this MfaController? value) => value?.Validate().Count == 0;
-
-        /// <summary>
-        /// Ensures that the supplied <see cref="MfaController"/> instance is valid.
-        /// Throws an <see cref="ArgumentException"/> if validation fails.
-        /// </summary>
-        /// <param name="value">The controller instance to validate.</param>
-        /// <exception cref="ArgumentException">Thrown when validation fails with details of the problems.</exception>
-        public static void EnsureValid(this MfaController? value)
-        {
-            var problems = value.Validate();
-            if (problems.Count > 0)
-            {
-                var message = $"MfaController validation failed: {string.Join("; ", problems)}";
-                throw new ArgumentException(message, nameof(value));
-            }
+            var message = $"MfaController validation failed: {string.Join("; ", problems)}";
+            throw new ArgumentException(message, nameof(value));
         }
     }
 }

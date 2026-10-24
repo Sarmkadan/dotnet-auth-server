@@ -27,6 +27,14 @@ public sealed class TokenRevocationHandler
     private readonly AuthServerOptions _options;
     private readonly ILogger<TokenRevocationHandler> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TokenRevocationHandler"/> class.
+    /// </summary>
+    /// <param name="refreshTokenRepository">Repository used to find and revoke refresh tokens.</param>
+    /// <param name="grantRepository">Repository used to find and revoke authorization grants.</param>
+    /// <param name="revokedTokenStore">Store that records revoked access tokens.</param>
+    /// <param name="options">Server options.</param>
+    /// <param name="logger">Logger used to record revocation activity.</param>
     public TokenRevocationHandler(
         IRefreshTokenRepository refreshTokenRepository,
         IAuthorizationGrantRepository grantRepository,
@@ -189,6 +197,10 @@ public sealed class RevocationResult
     /// </summary>
     public string? Error { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of this revocation result.
+    /// </summary>
+    /// <returns>A string representation of the result.</returns>
     public override string ToString() => $"TokenRevocationHandler {{ Success = {Success}, Revoked = {Revoked}, Error = {Error} }}";
 
     /// <summary>

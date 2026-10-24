@@ -68,6 +68,9 @@ public sealed class ConsentRequest
                !string.IsNullOrWhiteSpace(ClientId) &&
                (Approved == false || GrantedScopes.Count > 0);
     }
+    /// <summary>
+    /// Returns a string representation of the request for diagnostics.
+    /// </summary>
     public override string ToString() => 
         $"ConsentRequest {{ UserId = {UserId}, ClientId = {ClientId}, GrantedScopes = {string.Join(", ", GrantedScopes)}, Approved = {Approved}, DenialReason = {DenialReason}, RememberConsent = {RememberConsent} }}";
 }

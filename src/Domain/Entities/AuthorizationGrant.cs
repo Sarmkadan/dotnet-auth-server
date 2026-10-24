@@ -186,11 +186,17 @@ public sealed class AuthorizationGrant : IEquatable<AuthorizationGrant>
         return false;
     }
 
+    /// <summary>
+    /// Returns a string representation of the grant for diagnostics.
+    /// </summary>
     public override string ToString()
     {
         return $"AuthorizationGrant {{ GrantId = {GrantId}, Code = {Code}, ClientId = {ClientId}, UserId = {UserId}, RequestedScopes = {RequestedScopes}, GrantedScopes = {GrantedScopes} }}";
     }
 
+    /// <summary>
+    /// Determines whether the specified grant has the same identifying and request values as this grant.
+    /// </summary>
     public bool Equals(AuthorizationGrant? other)
     {
         if (other is null) return false;
@@ -204,21 +210,33 @@ public sealed class AuthorizationGrant : IEquatable<AuthorizationGrant>
                State == other.State;
     }
 
+    /// <summary>
+    /// Determines whether the specified object is an authorization grant equal to this one.
+    /// </summary>
     public override bool Equals(object? obj)
     {
         return Equals(obj as AuthorizationGrant);
     }
 
+    /// <summary>
+    /// Returns a hash code computed from the grant's identifying and request values.
+    /// </summary>
     public override int GetHashCode()
     {
         return HashCode.Combine(GrantId, Code, ClientId, UserId, RequestedScopes, GrantedScopes, RedirectUri, State);
     }
 
+    /// <summary>
+    /// Determines whether two grants are equal.
+    /// </summary>
     public static bool operator ==(AuthorizationGrant? left, AuthorizationGrant? right)
     {
         return Equals(left, right);
     }
 
+    /// <summary>
+    /// Determines whether two grants are not equal.
+    /// </summary>
     public static bool operator !=(AuthorizationGrant? left, AuthorizationGrant? right)
     {
         return !Equals(left, right);

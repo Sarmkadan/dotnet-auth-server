@@ -20,11 +20,8 @@ public static class DateTimeExtensions
     /// </summary>
     /// <param name="dateTime">The DateTime to convert. If not UTC, it will be converted to UTC.</param>
     /// <returns>Unix epoch time in seconds.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="dateTime"/> is <see langword="null"/>.</exception>
     public static long ToUnixTimestamp(this DateTime dateTime)
     {
-        ArgumentNullException.ThrowIfNull(dateTime);
-
         return dateTime.Kind switch
         {
             DateTimeKind.Utc => (long)new DateTimeOffset(dateTime).ToUnixTimeSeconds(),
@@ -88,11 +85,8 @@ public static class DateTimeExtensions
     /// </summary>
     /// <param name="dateTime">The DateTime to format.</param>
     /// <returns>RFC 3339 formatted string representation of the DateTime in UTC.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="dateTime"/> is <see langword="null"/>.</exception>
     public static string ToRfc3339String(this DateTime dateTime)
     {
-        ArgumentNullException.ThrowIfNull(dateTime);
-
         return dateTime.Kind switch
         {
             DateTimeKind.Utc => dateTime.ToString("o"),

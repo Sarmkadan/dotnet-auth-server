@@ -20,6 +20,9 @@ public sealed class ClaimsEnrichmentService
     private readonly IUserRepository _userRepository;
     private readonly ILogger<ClaimsEnrichmentService> _logger;
 
+    /// <summary>
+    /// Initializes a new claims enrichment service.
+    /// </summary>
     public ClaimsEnrichmentService(IUserRepository userRepository, ILogger<ClaimsEnrichmentService> logger)
     {
         _userRepository = userRepository;

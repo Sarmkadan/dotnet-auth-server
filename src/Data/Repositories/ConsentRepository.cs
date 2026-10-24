@@ -19,17 +19,26 @@ public sealed class ConsentRepository : IConsentRepository
 {
     private readonly ConcurrentDictionary<string, Consent> _consents = new();
 
+    /// <summary>
+    /// Gets a consent record by its ID, or null if it does not exist.
+    /// </summary>
     public Task<Consent?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _consents.TryGetValue(id, out var consent);
         return Task.FromResult(consent);
     }
 
+    /// <summary>
+    /// Gets all consent records.
+    /// </summary>
     public Task<IEnumerable<Consent>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_consents.Values.AsEnumerable());
     }
 
+    /// <summary>
+    /// Adds a consent record, generating an ID if none is set.
+    /// </summary>
     public Task<Consent> CreateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (entity is null)
@@ -42,6 +51,9 @@ public sealed class ConsentRepository : IConsentRepository
         return Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Replaces an existing consent record; throws if it does not exist.
+    /// </summary>
     public Task<Consent> UpdateAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (entity is null || string.IsNullOrWhiteSpace(entity.ConsentId))
@@ -54,6 +66,9 @@ public sealed class ConsentRepository : IConsentRepository
         return Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Deletes the specified consent record.
+    /// </summary>
     public Task DeleteAsync(Consent entity, CancellationToken cancellationToken = default)
     {
         if (entity is not null && !string.IsNullOrWhiteSpace(entity.ConsentId))
@@ -61,6 +76,9 @@ public sealed class ConsentRepository : IConsentRepository
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Deletes the consent record with the given ID, if present.
+    /// </summary>
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(id))
@@ -68,17 +86,26 @@ public sealed class ConsentRepository : IConsentRepository
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Checks whether a consent record with the given ID exists.
+    /// </summary>
     public Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(!string.IsNullOrWhiteSpace(id) && _consents.ContainsKey(id));
     }
 
+    /// <summary>
+    /// Gets all consent records for the specified user.
+    /// </summary>
     public Task<IEnumerable<Consent>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(
             _consents.Values.Where(c => c.UserId == userId).AsEnumerable());
     }
 
+    /// <summary>
+    /// Gets the consent record for a user and client pair, or null if none exists.
+    /// </summary>
     public Task<Consent?> GetByUserAndClientAsync(
         string userId,
         string clientId,
@@ -90,12 +117,18 @@ public sealed class ConsentRepository : IConsentRepository
         return Task.FromResult(consent);
     }
 
+    /// <summary>
+    /// Gets all consent records for the specified client.
+    /// </summary>
     public Task<IEnumerable<Consent>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(
             _consents.Values.Where(c => c.ClientId == clientId).AsEnumerable());
     }
 
+    /// <summary>
+    /// Removes all consent records for the specified user and returns how many were removed.
+    /// </summary>
     public Task<int> RevokeUserConsentsAsync(string userId, CancellationToken cancellationToken = default)
     {
         var consentsToRemove = _consents.Values.Where(c => c.UserId == userId).ToList();
@@ -112,6 +145,9 @@ public sealed class ConsentRepository : IConsentRepository
         return Task.FromResult(count);
     }
 
+    /// <summary>
+    /// Removes the consent record for a user and client pair; returns true if one was removed.
+    /// </summary>
     public Task<bool> RevokeConsentAsync(
         string userId,
         string clientId,

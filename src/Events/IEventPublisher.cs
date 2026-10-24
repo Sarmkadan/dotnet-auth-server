@@ -14,7 +14,7 @@ namespace DotnetAuthServer.Events;
 /// Delivery semantics (documented contract, must not change without updating callers):
 /// <list type="bullet">
 /// <item><description>
-/// <see cref="PublishAsync{TEvent}"/> is synchronous: subscribers for <typeparamref name="TEvent"/>
+/// <see cref="PublishAsync{TEvent}"/> is synchronous: subscribers for the published event type
 /// are invoked sequentially, in the order they were registered via
 /// <see cref="EventPublisher.Subscribe{TEvent}"/>. Invocation order is stable and deterministic.
 /// </description></item>
@@ -23,7 +23,7 @@ namespace DotnetAuthServer.Events;
 /// subscriber still runs. <see cref="PublishAsync{TEvent}"/> never rethrows a subscriber's
 /// exception, so a misbehaving audit/analytics hook cannot fail the caller's OAuth flow.
 /// The only exception that propagates out of <see cref="PublishAsync{TEvent}"/> is
-/// <see cref="OperationCanceledException"/> raised because <paramref name="cancellationToken"/>
+/// <see cref="OperationCanceledException"/> raised because <c>cancellationToken</c>
 /// (or one derived from it) was cancelled.
 /// </description></item>
 /// <item><description>

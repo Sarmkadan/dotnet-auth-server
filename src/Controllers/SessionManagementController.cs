@@ -48,7 +48,6 @@ public sealed class SessionManagementController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<SessionSummary>>), 200)]
     public async Task<IActionResult> GetAllActiveSessionsAsync(CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cancellationToken);
         try
         {
             var sessions = await _sessionService.GetAllActiveSessionsAsync(cancellationToken);
@@ -69,7 +68,6 @@ public sealed class SessionManagementController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SessionStats>), 200)]
     public async Task<IActionResult> GetStatsAsync(CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cancellationToken);
         try
         {
             var stats = await _sessionService.GetStatsAsync(cancellationToken);
@@ -95,7 +93,6 @@ public sealed class SessionManagementController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<SessionSummary>>), 200)]
     public async Task<IActionResult> GetUserSessionsAsync(string userId, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cancellationToken);
         ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
@@ -128,7 +125,6 @@ public sealed class SessionManagementController : ControllerBase
         [FromQuery] string? reason,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cancellationToken);
         ArgumentException.ThrowIfNullOrEmpty(sessionId);
         try
         {
@@ -159,7 +155,6 @@ public sealed class SessionManagementController : ControllerBase
         [FromQuery] string? reason,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cancellationToken);
         ArgumentException.ThrowIfNullOrEmpty(userId);
         try
         {
@@ -182,7 +177,6 @@ public sealed class SessionManagementController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> CleanupExpiredAsync(CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cancellationToken);
         try
         {
             var count = await _sessionService.CleanupExpiredSessionsAsync(cancellationToken);

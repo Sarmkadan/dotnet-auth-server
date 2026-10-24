@@ -20,13 +20,23 @@ using DotnetAuthServer.Configuration;
 /// </summary>
 public sealed class JwksHandler
 {
-    public override string ToString() => $"JwksHandler {{ Keys = {string.Join(", ", _cacheService.GetAsync<JwksResponse>(JwksKey, default).Result.Keys.Select(k => $"Kty = {k.Kty}, Kid = {k.Kid}, Use = {k.Use}, Alg = {k.Alg}, K = {k.K}"))} }}";
+    /// <summary>
+    /// Returns a string listing the cached JWKS keys, if any.
+    /// </summary>
+    /// <returns>A string representation of the handler's cached key set.</returns>
+    public override string ToString() => $"JwksHandler {{ Keys = {string.Join(", ", (_cacheService.GetAsync<JwksResponse>(JwksKey, default).Result?.Keys ?? []).Select(k => $"Kty = {k.Kty}, Kid = {k.Kid}, Use = {k.Use}, Alg = {k.Alg}, K = {k.K}"))} }}";
     private readonly AuthServerOptions _options;
     private readonly ICacheService _cacheService;
     private readonly ILogger<JwksHandler> _logger;
 
     private const string JwksKey = "jwks";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JwksHandler"/> class.
+    /// </summary>
+    /// <param name="options">Server options containing the signing configuration.</param>
+    /// <param name="cacheService">Cache used to store the generated key set.</param>
+    /// <param name="logger">Logger used to record JWKS activity.</param>
     public JwksHandler(
         AuthServerOptions options,
         ICacheService cacheService,
@@ -149,6 +159,9 @@ public sealed class JwksHandler
 /// </summary>
 public sealed class JwksResponse
 {
+    /// <summary>
+    /// The public keys in the set.
+    /// </summary>
     [JsonPropertyName("keys")]
     public List<JwkKey> Keys { get; set; } = new();
 }
@@ -158,26 +171,51 @@ public sealed class JwksResponse
 /// </summary>
 public sealed class JwkKey
 {
+    /// <summary>
+    /// Key type (RSA, oct, EC, etc.).
+    /// </summary>
     [JsonPropertyName("kty")]
     public string? Kty { get; set; } // Key type (RSA, oct, EC, etc.)
 
+    /// <summary>
+    /// Key identifier.
+    /// </summary>
     [JsonPropertyName("kid")]
     public string? Kid { get; set; } // Key ID
 
+    /// <summary>
+    /// Intended key use (sig, enc).
+    /// </summary>
     [JsonPropertyName("use")]
     public string? Use { get; set; } // Key use (sig, enc)
 
+    /// <summary>
+    /// Algorithm intended for use with the key.
+    /// </summary>
     [JsonPropertyName("alg")]
     public string? Alg { get; set; } // Algorithm
 
+    /// <summary>
+    /// Symmetric key material, for oct keys.
+    /// </summary>
     [JsonPropertyName("k")]
     public string? K { get; set; } // Symmetric key material (for oct keys)
 
+    /// <summary>
+    /// Returns a string representation of this key, excluding the modulus and exponent.
+    /// </summary>
+    /// <returns>A string representation of the key.</returns>
     public override string ToString() => $"JwkKey {{ Kty = {Kty}, Kid = {Kid}, Use = {Use}, Alg = {Alg}, K = {K} }}";
 
+    /// <summary>
+    /// RSA modulus.
+    /// </summary>
     [JsonPropertyName("n")]
     public string? N { get; set; } // RSA modulus
 
+    /// <summary>
+    /// RSA public exponent.
+    /// </summary>
     [JsonPropertyName("e")]
     public string? E { get; set; } // RSA exponent
 

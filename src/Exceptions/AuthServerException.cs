@@ -36,6 +36,15 @@ public class AuthServerException : Exception
     /// </summary>
     public Dictionary<string, object> Details { get; set; } = [];
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthServerException"/> class.
+    /// </summary>
+    /// <param name="errorCode">OAuth2 error code.</param>
+    /// <param name="message">Exception message.</param>
+    /// <param name="statusCode">HTTP status code to return; defaults to 400.</param>
+    /// <param name="errorDescription">Detailed description; defaults to <paramref name="message"/>.</param>
+    /// <param name="errorUri">Optional URI for error documentation.</param>
+    /// <param name="innerException">Optional inner exception.</param>
     public AuthServerException(
         string errorCode,
         string message,
