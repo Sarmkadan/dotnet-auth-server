@@ -32,7 +32,7 @@ public class ApiResponseTests
     public void Generic_SuccessResponse_AllowsNullData()
     {
         // Act
-        var response = ApiResponse<object>.SuccessResponse(null);
+        var response = ApiResponse<object>.SuccessResponse(null!);
 
         // Assert
         Assert.True(response.Success);

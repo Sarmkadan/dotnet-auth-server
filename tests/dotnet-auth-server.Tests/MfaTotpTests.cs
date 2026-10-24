@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
+#pragma warning disable CS0618 // Deliberately exercises the deprecated synchronous TOTP verifier.
+
 /// <summary>
 /// Contains unit tests for Multi-Factor Authentication (MFA) using Time-based One-Time Passwords (TOTP).
 /// </summary>
@@ -256,7 +258,6 @@ public sealed class MfaTotpTests
         // Arrange
         const string secret = "JBSWY3DPEHPK3PXP";
         const string username = "alice";
-        const string issuer = "https://auth.example.com";
 
         // Act
         var uri = _service.BuildProvisioningUri(secret, username);

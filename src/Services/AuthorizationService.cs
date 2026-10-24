@@ -22,6 +22,9 @@ public sealed class AuthorizationService
     private readonly IAuthorizationGrantRepository _grantRepository;
     private readonly ILogger<AuthorizationService> _logger;
 
+    /// <summary>
+    /// Initializes a new authorization service.
+    /// </summary>
     public AuthorizationService(
         AuthServerOptions options,
         IClientRepository clientRepository,
@@ -51,6 +54,10 @@ public sealed class AuthorizationService
                 "Authorization request is missing required parameters",
                 400);
         }
+
+        // IsValid() guarantees these are present
+        ArgumentNullException.ThrowIfNull(request.ClientId);
+        ArgumentNullException.ThrowIfNull(request.ResponseType);
 
         // Validate client
         var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
@@ -212,6 +219,7 @@ public sealed class AuthorizationService
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(request.ClientId);
 
         var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
         if (client is null)
@@ -312,12 +320,36 @@ public sealed class AuthorizationService
 /// </summary>
 public sealed class ConsentResponse
 {
+    /// <summary>
+    /// OAuth client identifier requesting consent.
+    /// </summary>
     public string ClientId { get; set; } = null!;
+    /// <summary>
+    /// Display name of the client.
+    /// </summary>
     public string ClientName { get; set; } = null!;
+    /// <summary>
+    /// URI of the client's logo image, if any.
+    /// </summary>
     public string? ClientLogoUri { get; set; }
+    /// <summary>
+    /// Description of the client, if any.
+    /// </summary>
     public string? ClientDescription { get; set; }
+    /// <summary>
+    /// ID of the user being asked for consent.
+    /// </summary>
     public string UserId { get; set; } = null!;
+    /// <summary>
+    /// Display name of the user.
+    /// </summary>
     public string UserName { get; set; } = null!;
+    /// <summary>
+    /// Scopes requested by the client.
+    /// </summary>
     public IEnumerable<string> RequestedScopes { get; set; } = [];
+    /// <summary>
+    /// Whether the user must explicitly grant consent.
+    /// </summary>
     public bool RequireConsent { get; set; }
 }

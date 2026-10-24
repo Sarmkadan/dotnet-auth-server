@@ -128,6 +128,9 @@ public sealed class TokenRequest
         };
     }
 
+    /// <summary>
+    /// Returns a string representation of the request for diagnostics.
+    /// </summary>
     public override string ToString() =>
         $"TokenRequest {{ GrantType = {GrantType}, ClientId = {ClientId}, ClientSecret = {ClientSecret}, Code = {Code}, RedirectUri = {RedirectUri}, RefreshToken = {RefreshToken} }}";
 }

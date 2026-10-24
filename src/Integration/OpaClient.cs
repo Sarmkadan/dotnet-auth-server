@@ -24,6 +24,12 @@ public sealed class OpaClient
     private readonly OpaOptions _options;
     private readonly ILogger<OpaClient> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OpaClient"/> class.
+    /// </summary>
+    /// <param name="http">HTTP client used to call the OPA server.</param>
+    /// <param name="options">OPA connection and policy options.</param>
+    /// <param name="logger">Logger used to record policy evaluation activity.</param>
     public OpaClient(HttpClient http, OpaOptions options, ILogger<OpaClient> logger)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));

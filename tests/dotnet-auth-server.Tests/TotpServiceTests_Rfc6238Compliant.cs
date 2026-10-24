@@ -10,6 +10,8 @@ using Xunit;
 using System.Security.Cryptography;
 using System;
 
+#pragma warning disable CS0618 // Deliberately exercises the deprecated synchronous TOTP verifier.
+
 namespace DotnetAuthServer.Tests;
 
 /// <summary>

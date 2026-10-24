@@ -36,6 +36,11 @@ public sealed class LoginRateLimiter : IDisposable
     private int _globalFailureCount;
     private DateTime _lastGlobalReset = DateTime.UtcNow;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoginRateLimiter"/> class.
+    /// </summary>
+    /// <param name="options">Server options containing the login rate limit settings.</param>
+    /// <param name="logger">Logger used to record rate limit decisions.</param>
     public LoginRateLimiter(AuthServerOptions options, ILogger<LoginRateLimiter> logger)
     {
         ArgumentNullException.ThrowIfNull(options);

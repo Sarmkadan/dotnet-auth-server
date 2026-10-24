@@ -18,6 +18,9 @@ public sealed class JwtTokenFormatter
 {
     private readonly ILogger<JwtTokenFormatter> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JwtTokenFormatter"/> class.
+    /// </summary>
     public JwtTokenFormatter(ILogger<JwtTokenFormatter> logger)
     {
         _logger = logger;
@@ -115,8 +118,19 @@ public sealed class JwtTokenFormatter
 /// </summary>
 public sealed class TokenInspection
 {
+    /// <summary>
+    /// JWT header of the inspected token.
+    /// </summary>
     public TokenHeader Header { get; set; } = new();
+
+    /// <summary>
+    /// JWT payload (claims) of the inspected token.
+    /// </summary>
     public TokenPayload Payload { get; set; } = new();
+
+    /// <summary>
+    /// The original, unparsed token string.
+    /// </summary>
     public string Raw { get; set; } = string.Empty;
 }
 
@@ -125,8 +139,19 @@ public sealed class TokenInspection
 /// </summary>
 public sealed class TokenHeader
 {
+    /// <summary>
+    /// Signing algorithm from the header (the 'alg' parameter).
+    /// </summary>
     public string? Alg { get; set; }
+
+    /// <summary>
+    /// Token type from the header (the 'typ' parameter).
+    /// </summary>
     public string? Typ { get; set; }
+
+    /// <summary>
+    /// Key identifier from the header (the 'kid' parameter).
+    /// </summary>
     public string? Kid { get; set; }
 }
 
@@ -135,11 +160,38 @@ public sealed class TokenHeader
 /// </summary>
 public sealed class TokenPayload
 {
+    /// <summary>
+    /// Subject of the token (the 'sub' claim).
+    /// </summary>
     public string? Subject { get; set; }
+
+    /// <summary>
+    /// Issuer of the token (the 'iss' claim).
+    /// </summary>
     public string? Issuer { get; set; }
+
+    /// <summary>
+    /// First audience value of the token (the 'aud' claim).
+    /// </summary>
     public string? Audience { get; set; }
+
+    /// <summary>
+    /// Time at which the token was issued (the 'iat' claim).
+    /// </summary>
     public DateTime? IssuedAt { get; set; }
+
+    /// <summary>
+    /// Expiration time of the token (the 'exp' claim).
+    /// </summary>
     public DateTime? ExpiresAt { get; set; }
+
+    /// <summary>
+    /// Time before which the token is not valid (the 'nbf' claim).
+    /// </summary>
     public DateTime? NotBefore { get; set; }
+
+    /// <summary>
+    /// All claims grouped by claim type; each type maps to its list of values.
+    /// </summary>
     public Dictionary<string, List<string>> Claims { get; set; } = new();
 }

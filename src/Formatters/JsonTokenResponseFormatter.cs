@@ -57,8 +57,8 @@ public sealed class JsonTokenResponseFormatter
 
             return new TokenResponse
             {
-                AccessToken = dto.AccessToken,
-                TokenType = dto.TokenType,
+                AccessToken = dto.AccessToken ?? string.Empty,
+                TokenType = dto.TokenType ?? "Bearer",
                 ExpiresIn = dto.ExpiresIn.GetValueOrDefault(),
                 RefreshToken = dto.RefreshToken,
                 Scope = dto.Scope

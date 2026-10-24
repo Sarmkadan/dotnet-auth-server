@@ -41,6 +41,10 @@ public sealed class DeviceFlowHandler
     /// </summary>
     private const string UserCodeAlphabet = "ABCDEFGHJKLMNPQRTUVW";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DeviceFlowHandler"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used to record device flow activity.</param>
     public DeviceFlowHandler(ILogger<DeviceFlowHandler> logger)
     {
         ArgumentNullException.ThrowIfNull(logger);
@@ -339,13 +343,40 @@ public sealed class DeviceFlowHandler
 /// </summary>
 public sealed class DeviceFlowInitiation
 {
+    /// <summary>
+    /// Opaque device code the client uses to poll for the token.
+    /// </summary>
     public string DeviceCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Short code the user enters on the verification page.
+    /// </summary>
     public string UserCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// URI where the user goes to enter the user code.
+    /// </summary>
     public string VerificationUri { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Lifetime of the device and user codes, in seconds.
+    /// </summary>
     public int ExpiresIn { get; set; }
+
+    /// <summary>
+    /// Minimum number of seconds the client must wait between polls.
+    /// </summary>
     public int Interval { get; set; }
+
+    /// <summary>
+    /// Current status of the device flow authorization.
+    /// </summary>
     public DeviceFlowStatus Status { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of this initiation response.
+    /// </summary>
+    /// <returns>A string representation of the response.</returns>
     public override string ToString() =>
         $"DeviceFlowInitiation {{ DeviceCode = {DeviceCode}, UserCode = {UserCode}, VerificationUri = {VerificationUri}, ExpiresIn = {ExpiresIn}, Interval = {Interval}, Status = {Status} }}";
 }
@@ -355,9 +386,24 @@ public sealed class DeviceFlowInitiation
 /// </summary>
 public sealed class DeviceFlowPollResult
 {
+    /// <summary>
+    /// Status of the device flow at the time of polling.
+    /// </summary>
     public DeviceFlowStatus Status { get; set; }
+
+    /// <summary>
+    /// Identifier of the user who approved the flow, when approved.
+    /// </summary>
     public string? UserId { get; set; }
+
+    /// <summary>
+    /// Granted scope, when approved.
+    /// </summary>
     public string? Scope { get; set; }
+
+    /// <summary>
+    /// Error code describing why polling did not yield a token, if any.
+    /// </summary>
     public string? Error { get; set; }
 }
 
@@ -366,14 +412,49 @@ public sealed class DeviceFlowPollResult
 /// </summary>
 public sealed class DeviceFlowSession
 {
+    /// <summary>
+    /// Opaque device code the client uses to poll for the token.
+    /// </summary>
     public string DeviceCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Short code the user enters on the verification page.
+    /// </summary>
     public string UserCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Identifier of the client that initiated the flow.
+    /// </summary>
     public string ClientId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Requested scope, if any.
+    /// </summary>
     public string? Scope { get; set; }
+
+    /// <summary>
+    /// Identifier of the user who approved the flow, if approved.
+    /// </summary>
     public string? UserId { get; set; }
+
+    /// <summary>
+    /// UTC time at which the session was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// UTC time at which the session expires.
+    /// </summary>
     public DateTime ExpiresAt { get; set; }
+
+    /// <summary>
+    /// UTC time at which the user approved the session, or null if not yet approved.
+    /// </summary>
     public DateTime? ApprovedAt { get; set; }
+
+    /// <summary>
+    /// Current status of the device flow authorization.
+    /// </summary>
     public DeviceFlowStatus Status { get; set; }
 
     /// <summary>
@@ -399,9 +480,28 @@ public sealed class DeviceFlowSession
 /// </summary>
 public enum DeviceFlowStatus
 {
+    /// <summary>
+    /// The status could not be determined, for example because the device code is not recognized.
+    /// </summary>
     Unknown = 0,
+
+    /// <summary>
+    /// The user has not yet approved or denied the request.
+    /// </summary>
     Pending = 1,
+
+    /// <summary>
+    /// The user approved the request.
+    /// </summary>
     Approved = 2,
+
+    /// <summary>
+    /// The user denied the request.
+    /// </summary>
     Denied = 3,
+
+    /// <summary>
+    /// The device code expired before the request was approved.
+    /// </summary>
     Expired = 4
 }

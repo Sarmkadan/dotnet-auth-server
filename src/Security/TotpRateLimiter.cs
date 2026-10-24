@@ -27,6 +27,11 @@ public sealed class TotpRateLimiter : IDisposable
     private readonly ConcurrentDictionary<string, List<DateTime>> _attempts =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TotpRateLimiter"/> class.
+    /// </summary>
+    /// <param name="options">Server options containing the TOTP rate limit settings.</param>
+    /// <param name="logger">Logger used to record rate limit decisions.</param>
     public TotpRateLimiter(AuthServerOptions options, ILogger<TotpRateLimiter> logger)
     {
         ArgumentNullException.ThrowIfNull(options);

@@ -20,6 +20,9 @@ public sealed class ClientService
     private readonly IClientRepository _clientRepository;
     private readonly ILogger<ClientService> _logger;
 
+    /// <summary>
+    /// Initializes a new client service.
+    /// </summary>
     public ClientService(IClientRepository clientRepository, ILogger<ClientService> logger)
     {
         _clientRepository = clientRepository ?? throw new ArgumentNullException(nameof(clientRepository));

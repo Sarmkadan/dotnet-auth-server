@@ -11,8 +11,14 @@ namespace DotnetAuthServer.Exceptions;
 /// </summary>
 public sealed class UnauthorizedClientException : AuthServerException
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UnauthorizedClientException"/> class.
+    /// </summary>
+    /// <param name="message">Exception message.</param>
+    /// <param name="errorDescription">Optional detailed description.</param>
+    /// <param name="innerException">Optional inner exception.</param>
     public UnauthorizedClientException(
-        string message = "The client is not authorized to use this grant type",
+        string message ="The client is not authorized to use this grant type",
         string? errorDescription = null,
         Exception? innerException = null)
         : base(

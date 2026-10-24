@@ -23,6 +23,9 @@ public sealed class ClientRegistrationController : ControllerBase
     private readonly DynamicClientRegistrationService _registrationService;
     private readonly ILogger<ClientRegistrationController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ClientRegistrationController"/> class.
+    /// </summary>
     public ClientRegistrationController(
         DynamicClientRegistrationService registrationService,
         ILogger<ClientRegistrationController> logger)

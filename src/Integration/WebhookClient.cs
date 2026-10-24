@@ -44,7 +44,7 @@ public sealed class WebhookClient
     /// Uses resilience policies configured in the HttpClient for retry and timeout.
     /// </summary>
     /// <param name="webhookUrl">The URL to send the webhook to.</param>
-    /// <param name="@event">The domain event to send.</param>
+    /// <param name="event">The domain event to send.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Result of the webhook delivery attempt.</returns>
     /// <exception cref="ArgumentException">Thrown when webhook URL is null or whitespace.</exception>
@@ -149,6 +149,10 @@ public sealed class WebhookResult
     /// </summary>
     public string? Error { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of this delivery result.
+    /// </summary>
+    /// <returns>A string representation of the result.</returns>
     public override string ToString() =>
         $"WebhookResult {{ Success = {Success}, Error = {Error} }}";
 }
@@ -183,6 +187,10 @@ public sealed class WebhookPayload
     /// </summary>
     public JsonElement Data { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of this payload, excluding the event data.
+    /// </summary>
+    /// <returns>A string representation of the payload.</returns>
     public override string ToString() =>
         $"WebhookPayload {{ EventId = {EventId}, EventType = {EventType}, OccurredAt = {OccurredAt}, RequestId = {RequestId} }}";
 }

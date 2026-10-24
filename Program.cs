@@ -202,7 +202,6 @@ app.MapGet("/.well-known/oauth-authorization-server", () =>
         code_challenge_methods_supported = new[] { "plain", "S256" }
     });
 })
-.WithOpenApi()
 .WithName("GetOAuth2Metadata")
 .WithDescription("Returns OAuth2 authorization server metadata");
 
@@ -224,7 +223,6 @@ app.MapGet("/.well-known/openid-configuration", () =>
         code_challenge_methods_supported = new[] { "plain", "S256" }
     });
 })
-.WithOpenApi()
 .WithName("GetOpenIdConfiguration")
 .WithDescription("Returns OpenID Connect configuration");
 
@@ -235,7 +233,6 @@ app.MapGet("/.well-known/jwks.json", async (JwksHandler jwksHandler, Cancellatio
     var jwks = await jwksHandler.GetJwksAsync(cancellationToken);
     return Results.Json(jwks);
 })
-.WithOpenApi()
 .WithName("GetJwks")
 .WithDescription("Returns the JSON Web Key Set used to validate tokens issued by this server");
 
@@ -244,7 +241,6 @@ app.MapGet("/health", () =>
 {
     return Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
 })
-.WithOpenApi()
 .WithName("Health")
 .WithDescription("Health check endpoint");
 

@@ -25,6 +25,9 @@ public sealed class AuthorizationController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly ILogger<AuthorizationController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthorizationController"/> class.
+    /// </summary>
     public AuthorizationController(
         AuthorizationService authorizationService,
         ConsentService consentService,

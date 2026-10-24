@@ -42,16 +42,25 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
 {
     private readonly ConcurrentDictionary<string, AuthorizationGrant> _grants = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Gets an authorization grant by its ID, or null if it does not exist.
+    /// </summary>
     public async Task<AuthorizationGrant?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_grants.TryGetValue(id, out var grant) ? grant : null);
     }
 
+    /// <summary>
+    /// Gets all authorization grants.
+    /// </summary>
     public async Task<IEnumerable<AuthorizationGrant>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_grants.Values.ToList());
     }
 
+    /// <summary>
+    /// Adds a new authorization grant; throws if a grant with the same ID already exists.
+    /// </summary>
     public async Task<AuthorizationGrant> CreateAsync(AuthorizationGrant entity, CancellationToken cancellationToken = default)
     {
         if (!_grants.TryAdd(entity.GrantId, entity))
@@ -59,6 +68,9 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Replaces an existing authorization grant; throws if it does not exist.
+    /// </summary>
     public async Task<AuthorizationGrant> UpdateAsync(AuthorizationGrant entity, CancellationToken cancellationToken = default)
     {
         if (!_grants.ContainsKey(entity.GrantId))
@@ -68,22 +80,34 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Deletes the specified authorization grant.
+    /// </summary>
     public async Task DeleteAsync(AuthorizationGrant entity, CancellationToken cancellationToken = default)
     {
         await DeleteByIdAsync(entity.GrantId, cancellationToken);
     }
 
+    /// <summary>
+    /// Deletes the authorization grant with the given ID, if present.
+    /// </summary>
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         _grants.TryRemove(id, out _);
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Checks whether an authorization grant with the given ID exists.
+    /// </summary>
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_grants.ContainsKey(id));
     }
 
+    /// <summary>
+    /// Gets the grant with the given authorization code, or null if none matches.
+    /// </summary>
     public async Task<AuthorizationGrant?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(code))
@@ -93,6 +117,9 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
         return await Task.FromResult(grant);
     }
 
+    /// <summary>
+    /// Gets all grants issued to the specified user.
+    /// </summary>
     public async Task<IEnumerable<AuthorizationGrant>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userId))
@@ -102,6 +129,9 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
         return await Task.FromResult(grants);
     }
 
+    /// <summary>
+    /// Gets all grants issued to the specified client.
+    /// </summary>
     public async Task<IEnumerable<AuthorizationGrant>> GetByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(clientId))
@@ -111,6 +141,9 @@ public sealed class AuthorizationGrantRepository : IAuthorizationGrantRepository
         return await Task.FromResult(grants);
     }
 
+    /// <summary>
+    /// Deletes all grants that have expired.
+    /// </summary>
     public Task DeleteExpiredAsync(CancellationToken cancellationToken = default)
     {
         var expiredIds = _grants.Values

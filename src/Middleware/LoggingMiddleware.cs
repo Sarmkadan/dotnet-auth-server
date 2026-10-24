@@ -24,12 +24,18 @@ public sealed class LoggingMiddleware
         "/.well-known/jwks.json"
     };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoggingMiddleware"/> class.
+    /// </summary>
     public LoggingMiddleware(RequestDelegate next, ILogger<LoggingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Logs the request and its duration, skipping excluded paths such as Swagger, health checks and JWKS.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         var shouldLog = !_excludedPaths.Any(path => context.Request.Path.StartsWithSegments(path));

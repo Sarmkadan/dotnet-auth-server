@@ -23,6 +23,9 @@ public sealed class ClientValidationService
     private readonly ICacheService _cacheService;
     private readonly ILogger<ClientValidationService> _logger;
 
+    /// <summary>
+    /// Initializes a new client validation service.
+    /// </summary>
     public ClientValidationService(
         IClientRepository clientRepository,
         ICacheService cacheService,

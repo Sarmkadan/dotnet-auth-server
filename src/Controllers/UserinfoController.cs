@@ -33,6 +33,9 @@ public sealed class UserinfoController : ControllerBase
     private readonly ITokenValidator _tokenValidator;
     private readonly ILogger<UserinfoController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UserinfoController"/> class.
+    /// </summary>
     public UserinfoController(
         UserinfoHandler userinfoHandler,
         RevokedTokenStore revokedTokenStore,

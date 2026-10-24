@@ -141,6 +141,9 @@ public sealed class Consent
         return GrantedScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
+    /// <summary>
+    /// Returns a string representation of the consent for diagnostics.
+    /// </summary>
     public override string ToString()
     {
         return $"Consent {{ ConsentId = {ConsentId}, UserId = {UserId}, ClientId = {ClientId}, GrantedScopes = {GrantedScopes}, Status = {Status}, ExpiresAt = {ExpiresAt} }}";

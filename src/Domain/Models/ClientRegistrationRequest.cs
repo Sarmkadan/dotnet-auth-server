@@ -100,6 +100,9 @@ public sealed class ClientRegistrationRequest
         return true;
     }
 
+    /// <summary>
+    /// Returns a string representation of the request for diagnostics.
+    /// </summary>
     public override string ToString()
     {
         return $"ClientRegistrationRequest {{ ClientName = {ClientName}, GrantTypes = {GrantTypes}, RedirectUris = {RedirectUris}, ResponseTypes = {ResponseTypes}, Scope = {Scope}, TokenEndpointAuthMethod = {TokenEndpointAuthMethod} }}";

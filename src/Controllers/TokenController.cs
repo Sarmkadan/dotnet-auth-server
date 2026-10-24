@@ -25,6 +25,9 @@ public sealed class TokenController : ControllerBase
     private readonly TokenRevocationHandler _revocationHandler;
     private readonly ILogger<TokenController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TokenController"/> class.
+    /// </summary>
     public TokenController(
         ITokenIssuer tokenIssuer,
         TokenIntrospectionHandler introspectionHandler,

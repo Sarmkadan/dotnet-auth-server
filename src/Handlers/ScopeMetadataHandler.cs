@@ -77,6 +77,11 @@ public sealed class ScopeMetadataHandler
         }
     };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ScopeMetadataHandler"/> class.
+    /// </summary>
+    /// <param name="cacheService">Cache used to store scope metadata.</param>
+    /// <param name="logger">Logger used to record scope registrations and lookups.</param>
     public ScopeMetadataHandler(ICacheService cacheService, ILogger<ScopeMetadataHandler> logger)
     {
         ArgumentNullException.ThrowIfNull(cacheService);
@@ -197,10 +202,33 @@ public sealed class ScopeMetadataHandler
 /// </summary>
 public sealed class ScopeMetadata
 {
+    /// <summary>
+    /// Scope identifier as sent in OAuth requests.
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Human-readable name shown to the user.
+    /// </summary>
     public string DisplayName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Description of what the scope grants, shown to the user.
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the user must explicitly consent to this scope.
+    /// </summary>
     public bool RequiresConsent { get; set; }
+
+    /// <summary>
+    /// Optional icon identifier or URL for the scope.
+    /// </summary>
     public string? Icon { get; set; }
+
+    /// <summary>
+    /// Other scopes related to this one.
+    /// </summary>
     public List<string> RelatedScopes { get; set; } = new();
 }

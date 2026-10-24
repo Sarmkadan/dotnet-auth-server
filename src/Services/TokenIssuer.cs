@@ -33,6 +33,9 @@ public sealed class TokenIssuer : ITokenIssuer
     private readonly LoginRateLimiter _loginRateLimiter;
     private readonly ILogger<TokenIssuer> _logger;
 
+    /// <summary>
+    /// Initializes a new token issuer.
+    /// </summary>
     public TokenIssuer(
         AuthServerOptions options,
         IUserRepository userRepository,
@@ -123,6 +126,8 @@ public sealed class TokenIssuer : ITokenIssuer
             if (!request.IsValidForGrantType(Constants.GrantTypes.AuthorizationCode))
                 throw new InvalidGrantException("Authorization code or redirect_uri is missing");
 
+            // IsValidForGrantType() guarantees the code is present
+            ArgumentNullException.ThrowIfNull(request.Code);
             var grant = await _grantRepository.GetByCodeAsync(request.Code, cancellationToken);
             if (grant is null || !grant.IsValid())
                 throw new InvalidGrantException("Authorization code is invalid or expired");
@@ -150,6 +155,7 @@ public sealed class TokenIssuer : ITokenIssuer
                     "User not found",
                     500);
 
+            ArgumentNullException.ThrowIfNull(request.ClientId);
             var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
 
             var scopes = grant.GrantedScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -322,6 +328,7 @@ public sealed class TokenIssuer : ITokenIssuer
 
         try
         {
+            ArgumentNullException.ThrowIfNull(request.ClientId);
             var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
             if (client is null)
                 throw new InvalidClientException("Client not found or inactive");
@@ -398,6 +405,7 @@ public sealed class TokenIssuer : ITokenIssuer
 
             _loginRateLimiter.RecordSuccess(request.Username);
 
+            ArgumentNullException.ThrowIfNull(request.ClientId);
             var client = await _clientRepository.GetActiveClientAsync(request.ClientId, cancellationToken);
 
             var scopes = (request.Scope ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);

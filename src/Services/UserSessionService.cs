@@ -36,6 +36,9 @@ public sealed class UserSessionService
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
+    /// <summary>
+    /// Returns a string representation of the service.
+    /// </summary>
     public override string ToString()
     {
         return $"UserSessionService {{ SessionId = {null}, UserId = {null}, ClientId = {null}, IpAddress = {null}, UserAgent = {null}, CreatedAt = {DateTime.MinValue} }}";
@@ -468,6 +471,9 @@ public sealed class UserSessionService
         /// <summary>Whether the session has been explicitly revoked.</summary>
         public bool IsRevoked { get; set; }
 
+        /// <summary>
+        /// Returns a string representation of the session information.
+        /// </summary>
         public override string ToString()
         {
             return $"UserSessionInfo {{ SessionId = {SessionId}, UserId = {UserId}, ClientId = {ClientId}, IpAddress = {IpAddress}, UserAgent = {UserAgent}, CreatedAt = {CreatedAt} }}";

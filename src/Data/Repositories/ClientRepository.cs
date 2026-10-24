@@ -37,17 +37,26 @@ public sealed class ClientRepository : IClientRepository
 {
     private readonly ConcurrentDictionary<string, Client> _clients = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Gets a client by its client ID, or null if it does not exist.
+    /// </summary>
     public async Task<Client?> GetByIdAsync(string clientId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(clientId);
         return await Task.FromResult(_clients.TryGetValue(clientId, out var client) ? client : null);
     }
 
+    /// <summary>
+    /// Gets all registered clients.
+    /// </summary>
     public async Task<IEnumerable<Client>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(_clients.Values.ToList());
     }
 
+    /// <summary>
+    /// Adds a new client; throws if a client with the same ID already exists.
+    /// </summary>
     public async Task<Client> CreateAsync(Client entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -56,6 +65,9 @@ public sealed class ClientRepository : IClientRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Replaces an existing client and stamps its UpdatedAt time; throws if the client does not exist.
+    /// </summary>
     public async Task<Client> UpdateAsync(Client entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -67,12 +79,18 @@ public sealed class ClientRepository : IClientRepository
         return await Task.FromResult(entity);
     }
 
+    /// <summary>
+    /// Deletes the specified client.
+    /// </summary>
     public async Task DeleteAsync(Client entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         await DeleteByIdAsync(entity.ClientId, cancellationToken);
     }
 
+    /// <summary>
+    /// Deletes the client with the given ID, if present.
+    /// </summary>
     public Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
@@ -80,12 +98,18 @@ public sealed class ClientRepository : IClientRepository
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Checks whether a client with the given ID exists.
+    /// </summary>
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
         return await Task.FromResult(_clients.ContainsKey(id));
     }
 
+    /// <summary>
+    /// Gets an active client by ID, or null if the client is missing or inactive.
+    /// </summary>
     public async Task<Client?> GetActiveClientAsync(string clientId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(clientId);
@@ -93,12 +117,18 @@ public sealed class ClientRepository : IClientRepository
         return await Task.FromResult(client?.IsActive == true ? client : null);
     }
 
+    /// <summary>
+    /// Gets all active clients.
+    /// </summary>
     public async Task<IEnumerable<Client>> GetActiveClientsAsync(CancellationToken cancellationToken = default)
     {
         var clients = _clients.Values.Where(c => c.IsActive).ToList();
         return await Task.FromResult(clients);
     }
 
+    /// <summary>
+    /// Searches clients whose name, client ID, or description contains the query (case-insensitive).
+    /// </summary>
     public async Task<IEnumerable<Client>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(query);

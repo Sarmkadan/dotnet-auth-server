@@ -23,6 +23,9 @@ public sealed class PolicyEnforcementService
     private readonly OpaOptions? _opaOptions;
     private readonly Dictionary<string, Policy> _policies = new();
 
+    /// <summary>
+    /// Initializes a new policy enforcement service.
+    /// </summary>
     public PolicyEnforcementService(ILogger<PolicyEnforcementService> logger)
     {
         _logger = logger;
@@ -43,6 +46,9 @@ public sealed class PolicyEnforcementService
         InitializeDefaultPolicies();
     }
 
+    /// <summary>
+    /// Returns a string representation of the service.
+    /// </summary>
     public override string ToString()
     {
         return $"PolicyEnforcementService {{ Rules = {null}, CombineWith = {PolicyCombineMode.All}, Type = {PolicyRuleType.Role}, Attribute = {null}, Values = {null}, Match = {PolicyMatchMode.Any} }}";
@@ -53,6 +59,7 @@ public sealed class PolicyEnforcementService
     /// </summary>
     public void RegisterPolicy(string? policyName, Policy policy)
     {
+        ArgumentNullException.ThrowIfNull(policyName);
         _policies[policyName] = policy;
         _logger.LogInformation("Policy registered: {PolicyName}", policyName);
     }
@@ -65,6 +72,9 @@ public sealed class PolicyEnforcementService
     /// </summary>
     public bool EvaluatePolicy(string? policyName, ClaimsPrincipal? principal)
     {
+        ArgumentNullException.ThrowIfNull(policyName);
+        ArgumentNullException.ThrowIfNull(principal);
+
         if (_opaClient is not null && _opaOptions?.Enabled == true)
         {
             // Run synchronously; callers that need async should use EvaluatePolicyAsync.
@@ -162,6 +172,7 @@ public sealed class PolicyEnforcementService
 
     private bool EvaluateAttributeRule(PolicyRule rule, ClaimsPrincipal principal)
     {
+        ArgumentNullException.ThrowIfNull(rule.Attribute);
         var attributeValue = principal.FindFirst(rule.Attribute)?.Value;
         if (string.IsNullOrEmpty(attributeValue))
             return rule.Match == PolicyMatchMode.None;
@@ -192,6 +203,7 @@ public sealed class PolicyEnforcementService
 
     private bool EvaluateClaimRule(PolicyRule rule, ClaimsPrincipal principal)
     {
+        ArgumentNullException.ThrowIfNull(rule.Attribute);
         var claim = principal.FindFirst(rule.Attribute);
         if (claim is null)
             return rule.Match == PolicyMatchMode.None;
@@ -205,6 +217,9 @@ public sealed class PolicyEnforcementService
         };
     }
 
+    /// <summary>
+    /// Registers the built-in policies (AdminOnly and ConsentRequired).
+    /// </summary>
     public void InitializeDefaultPolicies()
     {
         // Policy requiring admin role
@@ -245,7 +260,13 @@ public sealed class PolicyEnforcementService
 /// </summary>
 public sealed class Policy
 {
+    /// <summary>
+    /// Rules that make up the policy.
+    /// </summary>
     public List<PolicyRule> Rules { get; set; } = new();
+    /// <summary>
+    /// How the rule results are combined. Defaults to All.
+    /// </summary>
     public PolicyCombineMode CombineWith { get; set; } = PolicyCombineMode.All;
 }
 
@@ -254,9 +275,21 @@ public sealed class Policy
 /// </summary>
 public sealed class PolicyRule
 {
+    /// <summary>
+    /// Kind of rule to evaluate.
+    /// </summary>
     public PolicyRuleType Type { get; set; }
+    /// <summary>
+    /// Attribute or claim name the rule checks, if applicable.
+    /// </summary>
     public string? Attribute { get; set; } // For attribute/claim rules
+    /// <summary>
+    /// Values the rule compares against.
+    /// </summary>
     public List<string> Values { get; set; } = new();
+    /// <summary>
+    /// How Values are matched against the principal. Defaults to Any.
+    /// </summary>
     public PolicyMatchMode Match { get; set; } = PolicyMatchMode.Any;
 }
 
@@ -265,7 +298,13 @@ public sealed class PolicyRule
 /// </summary>
 public enum PolicyCombineMode
 {
+    /// <summary>
+    /// All rules must be satisfied.
+    /// </summary>
     All,  // All rules must be satisfied
+    /// <summary>
+    /// At least one rule must be satisfied.
+    /// </summary>
     Any   // At least one rule must be satisfied
 }
 
@@ -274,9 +313,21 @@ public enum PolicyCombineMode
 /// </summary>
 public enum PolicyRuleType
 {
+    /// <summary>
+    /// Role-based access control.
+    /// </summary>
     Role,       // Role-based access control
+    /// <summary>
+    /// Attribute value matching.
+    /// </summary>
     Attribute,  // Attribute value matching
+    /// <summary>
+    /// OAuth 2.0 scope checking.
+    /// </summary>
     Scope,      // OAuth2 scope checking
+    /// <summary>
+    /// Generic claim matching.
+    /// </summary>
     Claim       // Generic claim matching
 }
 
@@ -285,7 +336,16 @@ public enum PolicyRuleType
 /// </summary>
 public enum PolicyMatchMode
 {
+    /// <summary>
+    /// The principal has at least one of the values.
+    /// </summary>
     Any,   // User has at least one of the values
+    /// <summary>
+    /// The principal has all of the values.
+    /// </summary>
     All,   // User has all of the values
+    /// <summary>
+    /// The principal has none of the values.
+    /// </summary>
     None   // User has none of the values
 }

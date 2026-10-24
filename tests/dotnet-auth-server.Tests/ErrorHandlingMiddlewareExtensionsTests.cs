@@ -255,7 +255,7 @@ public class ErrorHandlingMiddlewareExtensionsTests
         ErrorHandlingMiddleware? nullMiddleware = null;
 
         // Act
-        var result = nullMiddleware.HasError();
+        var result = nullMiddleware!.HasError();
 
         // Assert
         Assert.False(result);
@@ -293,7 +293,7 @@ public class ErrorHandlingMiddlewareExtensionsTests
         ErrorHandlingMiddleware? nullMiddleware = null;
 
         // Act
-        nullMiddleware.ClearError();
+        nullMiddleware!.ClearError();
 
         // Assert - no exception thrown
         Assert.True(true);

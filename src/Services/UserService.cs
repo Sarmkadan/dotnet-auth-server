@@ -26,6 +26,9 @@ public sealed class UserService
     private readonly ILogger<UserService> _logger;
     private readonly PasswordValidationService _passwordValidator;
 
+    /// <summary>
+    /// Initializes a new user service.
+    /// </summary>
     public UserService(
         IUserRepository userRepository,
         IRefreshTokenRepository refreshTokenRepository,
@@ -416,8 +419,6 @@ public sealed class UserService
             return false;
         }
     }
-
-    /// <summary>
 
     /// <summary>
     /// Hashes a password using bcrypt with a per-password salt.

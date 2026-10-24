@@ -25,7 +25,6 @@ public class UserSessionTests
         Assert.Null(session.IpAddress);
         Assert.Null(session.UserAgent);
         Assert.Equal(string.Empty, session.GrantedScopes);
-        Assert.NotNull(session.CreatedAt);
         Assert.True(session.ExpiresAt > DateTime.UtcNow);
         Assert.Null(session.LastActivityAt);
         Assert.False(session.IsRevoked);
