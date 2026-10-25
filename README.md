@@ -271,6 +271,51 @@ Configuration is bound from the `DotnetAuthServer` section - see
 `appsettings.example.json` for the full shape. Set `JwtSigningKey` from the
 environment in anything but local development.
 
+## Error handling
+
+Protocol errors are thrown as typed exceptions and returned as OAuth 2.0 JSON error responses. `ErrorHandlingMiddleware` (`src/Middleware/ErrorHandlingMiddleware.cs`) is the middleware that does this conversion; `Program.cs` registers it after the request-context, logging and rate-limiting middleware.
+
+### Exception types
+
+Every protocol error derives from `AuthServerException` (`src/Exceptions/AuthServerException.cs`). It carries an OAuth2 `ErrorCode`, an HTTP `StatusCode`, an `ErrorDescription`, an optional `ErrorUri` and a `Details` dictionary. The built-in subclasses are:
+
+| Exception | `error` | HTTP status |
+|---|---|---|
+| `InvalidClientException` | `invalid_client` | 401 |
+| `InvalidGrantException` | `invalid_grant` | 400 |
+| `InvalidScopeException` | `invalid_scope` | 400 |
+| `UnauthorizedClientException` | `unauthorized_client` | 403 |
+| `UnsupportedGrantTypeException` | `unsupported_grant_type` | 400 |
+| `ValidationException` | `invalid_request` | 400 |
+| `ConfigurationException` | `server_error` | 500 |
+
+Subclass constructors have a default message and take an optional `errorDescription`; when that is omitted, the message becomes `ErrorDescription`. `ValidationException` has an `Errors` dictionary for per-field messages, but that dictionary is not part of the response body; only `Details` is.
+
+### Response shape
+
+`AuthServerException.ToErrorResponse()` builds the body, which is serialized as `application/json`:
+
+```json
+{
+  "error": "invalid_grant",
+  "error_description": "The provided grant is invalid, expired, revoked, or does not match the redirect URI"
+}
+```
+
+- `error_description` is always present. It falls back to the exception message if no description was set.
+- `error_uri` is added only when `ErrorUri` is set. None of the built-in subclasses set it.
+- Each entry in `Details` is copied into the top level of the body.
+
+For `invalid_client`, the middleware also sets a `WWW-Authenticate` response header that carries the error and its description.
+
+### What the middleware returns
+
+- **`AuthServerException`**: the response uses the exception's `StatusCode` and the body from `ToErrorResponse()`.
+- **`InvalidOperationException`** (any other type): HTTP 400 with `error` set to `invalid_request` and `error_description` set to the exception message. `error_uri` is `null` in the body.
+- **Any other exception**: HTTP 500 with `error` set to `server_error` and the fixed description `An internal server error occurred`. The exception is logged with its stack trace, but no details are returned to the client. `error_uri` is `null` in the body.
+
+`src/Middleware/AuthExceptionHandlingMiddleware.cs` is a separate translator that maps exception types to fixed status codes and error codes. `Program.cs` does not register it, so it does not affect responses unless it is added to the pipeline. Its `invalid_client` response carries `WWW-Authenticate: Basic`, and it returns `500 server_error` for `UnauthorizedClientException` because it has no branch for that type. See [docs/AuthExceptionHandlingMiddleware.md](docs/AuthExceptionHandlingMiddleware.md) for details.
+
 ## Endpoints
 
 | Route | Purpose |
