@@ -16,6 +16,8 @@ public static class ScopeStringExtensions
     /// <returns>A set containing each scope.</returns>
     public static HashSet<string> ToScopeSet(this string scopeString)
     {
+        ArgumentNullException.ThrowIfNull(scopeString);
+
         return new HashSet<string>(scopeString.Split(' '));
     }
 
@@ -27,6 +29,9 @@ public static class ScopeStringExtensions
     /// <returns>true if the scope is present; otherwise false.</returns>
     public static bool ContainsScope(this string scopeString, string scope)
     {
+        ArgumentNullException.ThrowIfNull(scopeString);
+        ArgumentNullException.ThrowIfNull(scope);
+
         var scopeSet = ToScopeSet(scopeString);
         return scopeSet.Contains(scope);
     }
@@ -62,6 +67,8 @@ public static class ScopeStringExtensions
     /// <returns>A space-delimited scope string.</returns>
     public static string ToScopeString(this IEnumerable<string> scopes)
     {
+        ArgumentNullException.ThrowIfNull(scopes);
+
         return string.Join(" ", scopes);
     }
 }
