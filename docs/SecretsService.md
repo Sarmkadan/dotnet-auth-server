@@ -1,126 +1,152 @@
 # SecretsService
 
-Provides cryptographic operations for secret management, including secure random secret generation, salted iterative hashing, verification, and token creation. The service encapsulates the hash parameters (salt, iteration count, algorithm) used for a particular secret derivation, enabling consistent verification and masking of sensitive values.
+`SecretsService` generates random secrets and tokens, hashes secrets for storage with PBKDF2-SHA256, verifies a presented secret against a stored hash, and masks secrets for logs. It is built only on the BCL (`System.Security.Cryptography`), so it adds no NuGet dependencies.
 
-## API
+The class is `public sealed` and lives in `src/Services/SecretsService.cs`, namespace `DotnetAuthServer.Services`. It has no interface; it is registered as a scoped concrete type (`Program.cs`). The file also defines the public `SecretHash` class, which holds a stored hash and its metadata.
 
-### public SecretsService
+## Role in the system
 
-Constructor. Initializes a new instance with the specified hash parameters.
+- Generates client secrets and tokens.
+- Produces the `SecretHash` value that is persisted in place of the plain-text secret.
+- Verifies a secret presented at request time against that stored `SecretHash`.
+- Masks values before they reach logs.
 
-- **Parameters:**
-  - `string hash`: The hash algorithm name (e.g., `"SHA256"`, `"SHA512"`).
-  - `string salt`: A base64-encoded salt value.
-  - `int iterations`: The number of iterations for the key derivation.
-- **Throws:** `ArgumentNullException` if `hash` or `salt` is null; `ArgumentException` if `hash` is empty or `iterations` is less than 1.
+Logging goes through `ILogger<SecretsService>`. The service logs an invalid requested length and verification errors. It never logs the secret, the hash, or the salt.
 
-### public string GenerateSecureSecret
+## Constructor
 
-Generates a cryptographically strong random secret string.
+### `public SecretsService(ILogger<SecretsService> logger)`
 
-- **Parameters:** None.
-- **Returns:** A base64-encoded string of random bytes suitable for use as a secret.
-- **Throws:** `System.Security.Cryptography.CryptographicException` if the underlying random number generator fails.
+Creates the service.
 
-### public SecretHash HashSecret
+**Parameters:**
+- `logger` – logger for invalid-length and verification-error events.
 
-Hashes a secret using the configured salt, iterations, and algorithm.
+**Exceptions:** `ArgumentNullException` if `logger` is `null`.
 
-- **Parameters:**
-  - `string secret`: The plaintext secret to hash.
-- **Returns:** A `SecretHash` object containing the derived hash bytes and associated metadata.
-- **Throws:** `ArgumentNullException` if `secret` is null; `ArgumentException` if `secret` is empty.
+## Constants
 
-### public bool VerifySecret
+These values are private and fixed. They are listed here because they determine the output of the public methods.
 
-Verifies a plaintext secret against a previously computed hash.
+| Constant | Value | Meaning |
+|---|---|---|
+| Default secret length | `32` bytes | 256-bit random secret; default for `GenerateSecureSecret` and `GenerateToken` |
+| Salt length | `16` bytes | 128-bit salt, unique per `HashSecret` call |
+| PBKDF2 output length | `32` bytes | 256-bit derived key, matching SHA-256 |
+| Default iterations | `10000` | Default PBKDF2 work factor for `HashSecret` |
+| Hash algorithm | SHA-256 | PBKDF2 PRF |
 
-- **Parameters:**
-  - `string secret`: The plaintext secret to verify.
-  - `SecretHash storedHash`: The hash object to compare against.
-- **Returns:** `true` if the secret produces a hash matching `storedHash`; otherwise `false`.
-- **Throws:** `ArgumentNullException` if either argument is null.
+## Generation
 
-### public string GenerateToken
+### `public string GenerateSecureSecret(int length = 32)`
 
-Creates a time-limited or random token string for authentication or session purposes.
+Generates a cryptographically secure random secret from `RandomNumberGenerator`. Suitable for client secrets, API keys, and tokens.
 
-- **Parameters:** None.
-- **Returns:** A base64-encoded token string.
-- **Throws:** `System.Security.Cryptography.CryptographicException` if random generation fails.
+The bytes are encoded as unpadded Base64url (`+` → `-`, `/` → `_`, `=` removed). The output is therefore about `length × 4 / 3` characters long, and it contains no characters that need escaping in URLs.
 
-### public static string MaskSecret
+**Parameters:**
+- `length` – number of random bytes, before encoding. Must be between `16` and `256` inclusive. Default `32`.
 
-Obscures a secret string for safe display or logging.
+**Return value:** the Base64url-encoded secret.
 
-- **Parameters:**
-  - `string secret`: The secret to mask.
-- **Returns:** A masked representation (e.g., retaining only the first and last few characters with asterisks in between). Returns `null` if `secret` is null; returns an empty string if `secret` is empty.
-- **Throws:** None.
+**Exceptions:**
+- `ArgumentException` with the message `Secret length must be between 16 and 256` if `length` is outside the range. A warning with the requested length is logged first.
 
-### public string Hash
+### `public string GenerateToken(int length = 32)`
 
-Gets the hash algorithm name used by this instance (e.g., `"SHA256"`).
+Same as `GenerateSecureSecret`. It forwards `length` unchanged, so the same range and exception apply. Use it where the call site means "token" rather than "secret".
 
-### public string Salt
+**Parameters:**
+- `length` – number of random bytes. Must be between `16` and `256` inclusive. Default `32`.
 
-Gets the base64-encoded salt value used by this instance.
+**Return value:** the Base64url-encoded token.
 
-### public int Iterations
+**Exceptions:** same as `GenerateSecureSecret`.
 
-Gets the number of iterations used for key derivation.
+## Hashing
 
-### public string Algorithm
+### `public SecretHash HashSecret(string secret, int iterations = 10000)`
 
-Gets the algorithm identifier string. Typically identical to `Hash` but may include additional derivation scheme information.
+Hashes a secret for storage. A new 16-byte random salt is generated on every call, so hashing the same secret twice gives different results. The derived key is computed with `Rfc2898DeriveBytes.Pbkdf2` using SHA-256 and a 32-byte output.
 
-### public override string ToString
+**Parameters:**
+- `secret` – the plain-text secret. Must not be `null` or empty.
+- `iterations` – PBKDF2 iteration count. Default `10000`. The value is stored in the result, so `VerifySecret` uses the same count. No range check is done here; the BCL rejects values that are not positive.
 
-Returns a string representation of the service configuration.
+**Return value:** a `SecretHash` with:
+- `Hash` – Base64 of the derived key.
+- `Salt` – Base64 of the salt.
+- `Iterations` – the iteration count used.
+- `Algorithm` – always `"PBKDF2-SHA256"`.
 
-- **Returns:** A formatted string containing the algorithm, iteration count, and masked salt.
+**Exceptions:**
+- `ArgumentException` if `secret` is `null` or empty.
+- `ArgumentOutOfRangeException` from the BCL if `iterations` is not positive. This exception is not caught.
 
-## Usage
+### `public bool VerifySecret(string secret, SecretHash hash)`
 
-### Example 1: Creating and Verifying a User Secret
+Checks a presented secret against a stored `SecretHash`. The method derives a key from `secret` using the salt and iteration count in `hash`, then compares it with `hash.Hash` in constant time (all bytes are always compared; the comparison does not stop at the first mismatch).
+
+**Parameters:**
+- `secret` – the presented plain-text secret. Must not be `null` or empty.
+- `hash` – the stored `SecretHash` to check against.
+
+**Return value:**
+- `true` if the derived key matches `hash.Hash`.
+- `false` if the secret does not match, or if the stored value cannot be used. The second case covers a `Salt` or `Hash` that is not valid Base64, a `null` `Salt` or `Hash`, and a non-positive `Iterations`. These errors are logged with `LogError` and reported as `false`.
+
+**Exceptions:**
+- `ArgumentException` if `secret` is `null` or empty.
+- `ArgumentNullException` if `hash` is `null`.
+
+Because malformed stored data returns `false` rather than throwing, callers cannot tell "wrong secret" from "corrupt record" by the return value. Check the logs when this distinction matters.
+
+## Masking
+
+### `public static string MaskSecret(string secret)`
+
+Returns a masked form of a secret for logs. It keeps the first 3 and last 3 characters and replaces the middle with `***`. Short or empty input is fully masked.
+
+**Parameters:**
+- `secret` – the value to mask. May be `null`.
+
+**Return value:**
+- `"***"` if `secret` is `null`, empty, whitespace-only, or 6 characters or fewer.
+- Otherwise `{first 3 chars}***{last 3 chars}`. For example, `abcdefghij` becomes `abc***hij`.
+
+**Exceptions:** none.
+
+## SecretHash
+
+`SecretHash` is a public `sealed` class in the same file. It is the storage record produced by `HashSecret` and consumed by `VerifySecret`. All properties have public setters, so it can be mapped by an ORM or serializer.
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `Hash` | `string` | `""` | Base64 of the PBKDF2-derived key |
+| `Salt` | `string` | `""` | Base64 of the random salt |
+| `Iterations` | `int` | `10000` | PBKDF2 iteration count used to derive `Hash` |
+| `Algorithm` | `string` | `"PBKDF2-SHA256"` | Name of the algorithm |
+
+### `public override string ToString()`
+
+Returns `SecretHash(<Algorithm>, iterations=<Iterations>)`. `Hash` and `Salt` are never included, so the value is safe to log.
+
+## Typical usage
 
 ```csharp
-// Initialize the service with SHA512, a generated salt, and 100,000 iterations
-var saltBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
-var salt = Convert.ToBase64String(saltBytes);
-var service = new SecretsService("SHA512", salt, 100_000);
+// Issue a new client secret: show the plain text once, store only the hash.
+var clientSecret = secretsService.GenerateSecureSecret();
+var storedHash = secretsService.HashSecret(clientSecret);
 
-// Generate a new secret and hash it for storage
-string userSecret = service.GenerateSecureSecret();
-SecretHash storedHash = service.HashSecret(userSecret);
+// Later, verify a presented secret.
+bool valid = secretsService.VerifySecret(presentedSecret, storedHash);
 
-// Later, verify a provided secret against the stored hash
-bool isValid = service.VerifySecret("attempted-secret", storedHash);
-
-Console.WriteLine($"Verification result: {isValid}");
-Console.WriteLine($"Service config: {service}");
-```
-
-### Example 2: Masking Secrets for Audit Logging
-
-```csharp
-var service = new SecretsService("SHA256", "c2FsdC12YWx1ZQ==", 50_000);
-string apiKey = service.GenerateSecureSecret();
-
-// Log the masked version to avoid exposing the full key
-string maskedKey = SecretsService.MaskSecret(apiKey);
-Console.WriteLine($"Generated key (masked): {maskedKey}");
-
-// Generate a short-lived token
-string sessionToken = service.GenerateToken();
-Console.WriteLine($"Session token (masked): {SecretsService.MaskSecret(sessionToken)}");
+// Log-safe representation of a secret.
+logger.LogDebug("Received secret {Masked}", SecretsService.MaskSecret(presentedSecret));
 ```
 
 ## Notes
 
-- **Immutability:** `Hash`, `Salt`, `Iterations`, and `Algorithm` are set at construction and do not change. Instances are effectively immutable with respect to their derivation parameters.
-- **Thread Safety:** All public instance methods (`GenerateSecureSecret`, `HashSecret`, `VerifySecret`, `GenerateToken`) are thread-safe; they do not mutate shared instance state. The static method `MaskSecret` is inherently thread-safe.
-- **Empty and Null Handling:** `MaskSecret` gracefully handles null and empty inputs without throwing. Other methods throw `ArgumentNullException` or `ArgumentException` for null or empty secrets where hashing or verification would be meaningless.
-- **Salt Encoding:** The `Salt` property returns a base64-encoded string. Consumers must ensure proper encoding when supplying salts to the constructor.
-- **Iteration Count:** Higher values increase computational cost for hashing and verification, improving resistance to brute-force attacks at the expense of performance. The constructor enforces a minimum of 1 iteration.
-- **SecretHash Comparison:** `VerifySecret` performs a constant-time comparison where possible to mitigate timing attacks.
+- `ConstantTimeCompare` is a private helper and is not part of the public API.
+- The 10,000-iteration default is the value the code uses today. It is lower than current OWASP guidance for PBKDF2-SHA256. Raising it changes new hashes only; existing `SecretHash` records keep their stored `Iterations`, so they still verify.
+- Secrets and hashes are not logged by any method in this class.
