@@ -1,185 +1,228 @@
 # AuthorizationService
 
-`AuthorizationService` orchestrates the OAuth 2.0 authorization flow on the server side. It validates incoming authorization requests, manages consent prompts, creates authorization grants, and enforces PKCE verification. The service also exposes contextual properties describing the current client, user, and requested scopes, and provides a maintenance method for removing expired grants from the backing store.
+**Namespace:** `DotnetAuthServer.Services`
+
+Handles the server side of the OAuth 2.0 / OpenID Connect authorization endpoint: validates authorization requests, builds the consent prompt model, creates authorization codes (grants), checks PKCE code verifiers, and deletes expired grants. The class is `public sealed`, has no interface, and holds no per-request state; every method takes the data it needs as arguments. The same file also declares the public type [`ConsentResponse`](#consentresponse), which is returned by `GetConsentPromptAsync`.
 
 ## API
 
-### Properties
-
-#### `ClientId`
-`public string ClientId`
-
-The unique identifier of the OAuth 2.0 client that initiated the authorization request.
-
-#### `ClientName`
-`public string ClientName`
-
-The display name of the requesting client, suitable for presentation in consent screens.
-
-#### `ClientLogoUri`
-`public string? ClientLogoUri`
-
-An optional URI pointing to the client’s logo image. Returns `null` when the client has not registered a logo.
-
-#### `ClientDescription`
-`public string? ClientDescription`
-
-An optional human-readable description of the client application. Returns `null` when no description is available.
-
-#### `UserId`
-`public string UserId`
-
-The unique identifier of the resource owner (authenticated user) participating in the authorization flow.
-
-#### `UserName`
-`public string UserName`
-
-The display name of the authenticated user, intended for consent UI rendering.
-
-#### `RequestedScopes`
-`public IEnumerable<string> RequestedScopes`
-
-The set of scope strings the client has requested. This collection reflects the scopes parsed from the original authorization request.
-
-#### `RequireConsent`
-`public bool RequireConsent`
-
-Indicates whether explicit user consent must be obtained before an authorization grant can be issued. Evaluated based on client configuration, previously granted consents, and scope sensitivity.
+| Member | Returns | Purpose |
+|---|---|---|
+| [`AuthorizationService(...)`](#constructor) | | Constructor |
+| [`ValidateAuthorizationRequestAsync`](#validateauthorizationrequestasync) | `Task<AuthorizationRequest>` | Validate an authorization request |
+| [`CreateAuthorizationGrantAsync`](#createauthorizationgrantasync) | `Task<AuthorizationGrant>` | Create and store an authorization code |
+| [`GetConsentPromptAsync`](#getconsentpromptasync) | `Task<ConsentResponse>` | Build the consent prompt model |
+| [`ValidatePkceCodeVerifier`](#validatepkcecodeverifier) | `bool` | Check a PKCE code verifier against a stored challenge |
+| [`CleanupExpiredGrantsAsync`](#cleanupexpiredgrantsasync) | `Task` | Delete expired authorization grants |
 
 ### Constructor
 
-#### `AuthorizationService`
 ```csharp
-public AuthorizationService(/* implementation-defined dependencies */)
+public AuthorizationService(
+    AuthServerOptions options,
+    IClientRepository clientRepository,
+    IAuthorizationGrantRepository grantRepository,
+    ILogger<AuthorizationService> logger)
 ```
-Instantiates the service with the required dependencies for request validation, grant persistence, and consent evaluation. The exact constructor parameters are determined by the dependency injection configuration of the host application.
 
-### Methods
+Stores the four dependencies. No argument is null-checked in the constructor.
 
-#### `ValidateAuthorizationRequestAsync`
+**Parameters**
+
+- `options`: Server options. Read for `SupportedScopes`, `RequirePkceForAllClients`, and `AuthorizationCodeLifetimeSeconds`.
+- `clientRepository`: Looks up clients through `GetActiveClientAsync`.
+- `grantRepository`: Stores grants (`CreateAsync`) and removes expired ones (`DeleteExpiredAsync`).
+- `logger`: Receives warning and debug messages about rejected or accepted requests, and an information message when a grant is created.
+
+### ValidateAuthorizationRequestAsync
+
 ```csharp
 public async Task<AuthorizationRequest> ValidateAuthorizationRequestAsync(
-    /* authorization request parameters */)
+    AuthorizationRequest request,
+    CancellationToken cancellationToken = default)
 ```
-Parses and validates an incoming OAuth 2.0 authorization request. This includes verifying the client identity, redirect URI matching, response type support, and scope validity.
 
-- **Returns**: A validated `AuthorizationRequest` object containing the normalized request parameters.
-- **Throws**: Throws an exception when the client is unknown, the redirect URI is invalid or mismatched, the response type is unsupported, or required parameters are missing. The specific exception type is determined by the error handling policy of the server.
+Runs the authorization request checks in the order below. The first failing check throws; nothing is written to the repositories. The method does not modify `request`.
 
-#### `CreateAuthorizationGrantAsync`
+1. `request` is null: `ArgumentNullException`.
+2. `request.IsValid()` is false (`ClientId`, `ResponseType`, `RedirectUri`, or `Scope` is missing or whitespace): `AuthServerException` with `invalid_request`, status 400.
+3. No active client matches `ClientId`: `InvalidClientException` ("Client not found or inactive").
+4. `ResponseType` is not one of `code`, `token`, `id_token`, `code id_token`, `code token`, `id_token token`, `code id_token token` (case-insensitive): `AuthServerException` with `unsupported_response_type`, status 400.
+5. `RedirectUri` is not registered for the client (`Client.IsRedirectUriValid`): `invalid_request`, 400.
+6. `Scope` longer than 500 characters: `invalid_request`, 400.
+7. `State` longer than 500 characters: `invalid_request`, 400.
+8. A requested scope is not in `AuthServerOptions.SupportedScopes` (case-insensitive): `InvalidScopeException`.
+9. `ResponseType` is not allowed for the client (`Client.IsGrantTypeAllowed`): `UnauthorizedClientException`.
+10. `CodeChallengeMethod` is `plain`: `invalid_request`, 400. Only `S256` is accepted.
+11. A `CodeChallenge` is present but malformed: `invalid_request`, 400. See [PKCE challenge format](#pkce-challenge-format).
+12. The client is public (`IsConfidential == false`) and no `CodeChallenge` is present: `invalid_request`, 400.
+13. `RequirePkceForAllClients` is true, the client has `RequirePkce` set, and no `CodeChallenge` is present: `invalid_request`, 400.
+
+**Parameters**
+
+- `request`: The parsed authorization request.
+- `cancellationToken`: Passed to the client lookup.
+
+**Returns**
+
+The same `request` instance, unchanged, once all checks pass.
+
+**Exceptions**
+
+All thrown types derive from `AuthServerException`, except `ArgumentNullException` (step 1). Each carries the OAuth error code and HTTP status listed above; `ErrorHandlingMiddleware` turns them into `{"error", "error_description"}` JSON.
+
+### CreateAuthorizationGrantAsync
+
 ```csharp
 public async Task<AuthorizationGrant> CreateAuthorizationGrantAsync(
-    AuthorizationRequest request)
+    string clientId,
+    string userId,
+    string grantedScopes,
+    string redirectUri,
+    AuthorizationRequest request,
+    CancellationToken cancellationToken = default)
 ```
-Generates an authorization grant (typically an authorization code) based on a validated request. The grant is persisted and associated with the client, user, and requested scopes.
 
-- **Parameters**:
-  - `request`: The validated `AuthorizationRequest` from which to produce the grant.
-- **Returns**: An `AuthorizationGrant` containing the generated code and its metadata.
-- **Throws**: Throws when persistence fails or when the request state does not permit grant creation (e.g., consent required but not yet obtained).
+Creates an authorization code for a request that has already been validated and approved, stores it through `grantRepository.CreateAsync`, and returns it. The method does not re-run any validation, does not check the client, and does not check consent. Callers must call `ValidateAuthorizationRequestAsync` first.
 
-#### `GetConsentPromptAsync`
+The new grant has:
+
+- `GrantId`: a new `Guid` string.
+- `Code`: 32 random bytes from `RandomNumberGenerator`, encoded as base64url without padding (43 characters).
+- `RequestedScopes`: `request.Scope`, or `""` if it is null.
+- `GrantedScopes`: the `grantedScopes` argument.
+- `ResponseType`: `request.ResponseType`, or `""` if it is null.
+- `State`, `Nonce`, `CodeChallenge`, `CodeChallengeMethod`: copied from `request`.
+- `ExpiresAt`: UTC now plus `AuthorizationCodeLifetimeSeconds` (300 by default).
+
+**Parameters**
+
+- `clientId`: The client the code is issued to. Must not be null or empty.
+- `userId`: The user who approved the request. Must not be null or empty.
+- `grantedScopes`: The scopes actually granted, which may be a subset of the requested scopes. Must not be null or empty.
+- `redirectUri`: The redirect URI the code is bound to. Must not be null or empty.
+- `request`: The validated request. Must not be null.
+- `cancellationToken`: Passed to the repository.
+
+**Returns**
+
+The stored `AuthorizationGrant`, including the generated `Code`.
+
+**Exceptions**
+
+- `ArgumentException` (from `ThrowIfNullOrEmpty`): `clientId`, `userId`, `grantedScopes`, or `redirectUri` is null or empty. Checked in that order.
+- `ArgumentNullException`: `request` is null.
+- Exceptions from `grantRepository.CreateAsync` propagate unchanged.
+
+### GetConsentPromptAsync
+
 ```csharp
-public async Task<ConsentResponse> GetConsentPromptAsync()
+public async Task<ConsentResponse> GetConsentPromptAsync(
+    AuthorizationRequest request,
+    User user,
+    CancellationToken cancellationToken = default)
 ```
-Retrieves the current consent state for the active client, user, and requested scopes. When `RequireConsent` is `true`, the returned `ConsentResponse` describes the scopes needing approval and any previously granted scopes that can be silently authorized.
 
-- **Returns**: A `ConsentResponse` detailing which scopes require explicit user action.
-- **Throws**: Throws when the service state is incomplete (e.g., no validated request has been loaded prior to calling this method).
+Builds the model for the consent screen from the request, the authenticated user, and the client's details. It does not check whether consent was already given; that is the job of [`ConsentService`](ConsentService.md).
 
-#### `ValidatePkceCodeVerifier`
+**Parameters**
+
+- `request`: The validated authorization request. `request.ClientId` must not be null.
+- `user`: The authenticated user.
+- `cancellationToken`: Passed to the client lookup.
+
+**Returns**
+
+A [`ConsentResponse`](#consentresponse) with:
+
+- `ClientId`, `ClientName`, `ClientLogoUri`, `ClientDescription`: from the client.
+- `UserId`, `UserName`: from `user` (`Username`).
+- `RequestedScopes`: the scopes from `request.GetRequestedScopes()`, materialized as a list.
+- `RequireConsent`: `client.RequireConsent && RequestedScopes.Any()`.
+
+**Exceptions**
+
+- `ArgumentNullException`: `request`, `user`, or `request.ClientId` is null.
+- `InvalidClientException` ("Client not found"): no active client matches `request.ClientId`.
+
+### ValidatePkceCodeVerifier
+
 ```csharp
 public bool ValidatePkceCodeVerifier(
-    string codeVerifier,
-    string storedCodeChallenge,
-    string codeChallengeMethod)
-```
-Verifies a PKCE code verifier against the stored code challenge using the specified transform method (S256 or plain).
-
-- **Parameters**:
-  - `codeVerifier`: The verifier string submitted by the client at the token endpoint.
-  - `storedCodeChallenge`: The challenge originally sent in the authorization request.
-  - `codeChallengeMethod`: The challenge method (`"S256"` or `"plain"`).
-- **Returns**: `true` when the verifier correctly matches the challenge; `false` otherwise.
-- **Throws**: Does not throw. Returns `false` for any mismatch, including unsupported challenge methods.
-
-#### `CleanupExpiredGrantsAsync`
-```csharp
-public async Task CleanupExpiredGrantsAsync()
-```
-Removes all authorization grants and associated tokens that have exceeded their configured lifetime from the persistent store. This is intended for periodic background execution.
-
-- **Returns**: A completed task when the cleanup operation finishes.
-- **Throws**: Throws when the underlying data store operation fails.
-
-## Usage
-
-### Example 1: Full Authorization Flow with Consent
-
-```csharp
-// Assume AuthorizationService is injected via DI
-public async Task<IActionResult> Authorize(
-    AuthorizationService authService,
-    string clientId,
-    string redirectUri,
-    string responseType,
-    string scope,
-    string state,
     string codeChallenge,
-    string codeChallengeMethod)
-{
-    // Validate the incoming request
-    var authRequest = await authService.ValidateAuthorizationRequestAsync(
-        clientId, redirectUri, responseType, scope, state,
-        codeChallenge, codeChallengeMethod);
-
-    // Check if consent is required
-    if (authService.RequireConsent)
-    {
-        var consentResponse = await authService.GetConsentPromptAsync();
-        // Render consent view using:
-        //   consentResponse.ScopesRequested
-        //   authService.ClientName
-        //   authService.ClientLogoUri
-        return View("Consent", consentResponse);
-    }
-
-    // No consent needed — create grant immediately
-    var grant = await authService.CreateAuthorizationGrantAsync(authRequest);
-    var redirectUrl = $"{redirectUri}?code={grant.Code}&state={state}";
-    return Redirect(redirectUrl);
-}
+    string codeVerifier,
+    string? method)
 ```
 
-### Example 2: Background Grant Cleanup
+Checks whether `codeVerifier` produces `codeChallenge` under `method`. Stateless; it does not use any instance state and can be called from the token endpoint.
+
+- `method` `"S256"`: computes `BASE64URL(SHA256(UTF8(codeVerifier)))` without padding and compares it to `codeChallenge` with `==`.
+- `method` `"plain"`: compares `codeVerifier` to `codeChallenge` with `==`.
+- `method` `null`: treated as `"plain"`.
+- Any other value: returns `false`. Comparison is case-sensitive, so `"s256"` returns `false`.
+
+Comparisons are ordinary string equality, not constant-time.
+
+**Parameters**
+
+- `codeChallenge`: The challenge stored with the grant. Must not be null or empty.
+- `codeVerifier`: The verifier the client sent. Must not be null or empty.
+- `method`: The challenge method stored with the grant, or `null`.
+
+**Returns**
+
+`true` when the verifier matches the challenge under the method; otherwise `false`.
+
+**Exceptions**
+
+- `ArgumentException` (from `ThrowIfNullOrEmpty`): `codeChallenge` or `codeVerifier` is null or empty. Checked in that order.
+
+### CleanupExpiredGrantsAsync
 
 ```csharp
-public class GrantCleanupBackgroundService : BackgroundService
-{
-    private readonly AuthorizationService _authService;
-    private readonly TimeSpan _cleanupInterval = TimeSpan.FromHours(1);
-
-    public GrantCleanupBackgroundService(AuthorizationService authService)
-    {
-        _authService = authService;
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(_cleanupInterval, stoppingToken);
-            await _authService.CleanupExpiredGrantsAsync();
-        }
-    }
-}
+public async Task CleanupExpiredGrantsAsync(
+    CancellationToken cancellationToken = default)
 ```
+
+Calls `grantRepository.DeleteExpiredAsync` to delete every grant whose expiry has passed. It removes expired grants for all clients and users, not only those tied to the current request. `TokenCleanupWorker` runs the same repository call on its own schedule; this method is an alternative entry point for the same job.
+
+**Parameters**
+
+- `cancellationToken`: Passed to the repository.
+
+**Returns**
+
+A task that completes when the repository call finishes.
+
+**Exceptions**
+
+Exceptions from `grantRepository.DeleteExpiredAsync` propagate unchanged.
+
+## Supporting Types
+
+### ConsentResponse
+
+```csharp
+public sealed class ConsentResponse
+```
+
+Model returned by `GetConsentPromptAsync`. All properties are settable.
+
+| Property | Type | Description |
+|---|---|---|
+| `ClientId` | `string` | Client identifier. Not null after `GetConsentPromptAsync` returns. |
+| `ClientName` | `string` | Client display name. Not null after `GetConsentPromptAsync` returns. |
+| `ClientLogoUri` | `string?` | Client logo URI, if registered. |
+| `ClientDescription` | `string?` | Client description, if set. |
+| `UserId` | `string` | User identifier. Not null after `GetConsentPromptAsync` returns. |
+| `UserName` | `string` | User display name. Not null after `GetConsentPromptAsync` returns. |
+| `RequestedScopes` | `IEnumerable<string>` | Requested scopes. Defaults to an empty collection. |
+| `RequireConsent` | `bool` | Whether the user must explicitly approve. |
 
 ## Notes
 
-- **Stateful service**: The properties `ClientId`, `ClientName`, `ClientLogoUri`, `ClientDescription`, `UserId`, `UserName`, `RequestedScopes`, and `RequireConsent` reflect the context of the most recently validated authorization request. Accessing them before calling `ValidateAuthorizationRequestAsync` yields default or empty values.
-- **Consent preconditions**: `GetConsentPromptAsync` must only be called after a successful validation and when `RequireConsent` is `true`. Calling it in other states will throw.
-- **PKCE enforcement**: `ValidatePkceCodeVerifier` is a stateless utility method. It does not depend on the current request context and can be called independently at the token endpoint.
-- **Thread safety**: The service is designed for scoped lifetime (typically scoped to an HTTP request in ASP.NET Core). It is not safe for concurrent use across multiple authorization flows. Each request should receive its own instance.
-- **Cleanup scope**: `CleanupExpiredGrantsAsync` operates on all grants in the store, not only those associated with the current service instance. It is suitable for invocation from a background job or scheduled task.
-- **Error handling**: Validation and grant creation methods throw on failure. Callers should wrap these calls in try-catch blocks and translate exceptions into appropriate OAuth 2.0 error responses (e.g., `invalid_request`, `unauthorized_client`).
+- **PKCE challenge format**: A challenge must be 43 to 128 characters, and each character must be a letter or digit (`char.IsLetterOrDigit`, which also accepts non-ASCII letters), `-`, `.`, `_`, or `~`.
+- **Stateless instance**: The class keeps no per-request state. The instance is safe to share, but the repositories it uses are singletons and handle their own synchronization.
+- **Validation before grant**: `CreateAuthorizationGrantAsync` trusts its inputs. Always run `ValidateAuthorizationRequestAsync` first, or the grant may be created for a client, redirect URI, or scope that was never checked.
+- **Ordering of PKCE checks**: Steps 11 to 13 in `ValidateAuthorizationRequestAsync` run in that order, so a malformed challenge is reported before the missing-PKCE checks.
+- **Logging**: Rejected requests log a warning that names the client but not the secret or code values. Accepted requests log at debug level.
