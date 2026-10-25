@@ -74,6 +74,13 @@ public sealed class RateLimitingMiddleware
             "/oauth/introspect",
             "/oauth/revoke"
         };
+
+        if (options is null)
+        {
+            _logger.LogWarning("No rate limiting options supplied; using defaults of {RequestsPerMinute} requests/min and burst {BurstSize}", _requestsPerMinute, _burstSize);
+        }
+
+        _logger.LogInformation("RateLimitingMiddleware initialized with {RequestsPerMinute} requests/min, burst {BurstSize}, {SensitiveEndpointCount} sensitive endpoints", _requestsPerMinute, _burstSize, _sensitiveEndpoints.Count);
     }
 
     /// <summary>
@@ -83,6 +90,7 @@ public sealed class RateLimitingMiddleware
     {
         var path = context.Request.Path.Value ?? "";
         var isSensitive = _sensitiveEndpoints.Any(ep => path.StartsWith(ep, StringComparison.OrdinalIgnoreCase));
+        _logger.LogInformation("InvokeAsync called for {Path} (sensitive: {IsSensitive})", path, isSensitive);
 
         if (isSensitive)
         {
@@ -98,6 +106,7 @@ public sealed class RateLimitingMiddleware
         }
 
         await _next(context);
+        _logger.LogInformation("InvokeAsync completed for {Path}", path);
     }
 
     private string ExtractClientIdentifier(HttpContext context)
@@ -114,6 +123,11 @@ public sealed class RateLimitingMiddleware
         }
 
         // Fallback to IP address
+        if (context.Connection.RemoteIpAddress is null)
+        {
+            _logger.LogWarning("No client identifier or remote IP address available; rate limiting under 'unknown'");
+        }
+
         return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 
