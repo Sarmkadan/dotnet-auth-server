@@ -57,6 +57,21 @@ public static class DateTimeExtensions
         => !expiresAt.IsExpired();
 
     /// <summary>
+    /// Checks if a DateTime is earlier than the current UTC time.
+    /// </summary>
+    /// <param name="dateTime">The DateTime to check. If not UTC, it will be converted to UTC.</param>
+    /// <returns><see langword="true"/> if the DateTime is earlier than <c>DateTime.UtcNow</c>; otherwise, <see langword="false"/>.</returns>
+    public static bool IsInPast(this DateTime dateTime)
+    {
+        var utc = dateTime.Kind switch
+        {
+            DateTimeKind.Utc => dateTime,
+            _ => dateTime.ToUniversalTime()
+        };
+        return utc < DateTime.UtcNow;
+    }
+
+    /// <summary>
     /// Calculates remaining lifetime in seconds until expiration.
     /// Returns 0 if already expired.
     /// </summary>
