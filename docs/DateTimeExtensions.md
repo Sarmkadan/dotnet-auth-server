@@ -1,158 +1,145 @@
 # DateTimeExtensions
 
-A set of extension methods for `System.DateTime` that provide common utilities for working with Unix timestamps, expiration checks, lifetime adjustments, and RFC 3339 formatting in the dotnet‑auth‑server project.
+**Namespace:** `DotnetAuthServer.Extensions`
 
-## API
+Static extension methods on `System.DateTime` for Unix timestamps, token expiration checks, lifetime calculation, and RFC 3339 formatting. JWT and OAuth2 handling uses them so that timestamp conversion and expiry checks behave the same way everywhere in the server.
 
-### `public static long ToUnixTimestamp(this DateTime dateTime)`
-**Purpose**  
-Converts a `DateTime` value to the number of whole seconds that have elapsed since the Unix epoch (1970‑01‑01T00:00:00Z).
+The class is `public static`. It has no state and no constructor.
 
-**Parameters**  
-- `dateTime`: The `DateTime` instance to convert. The method treats the value as UTC; if the `Kind` is `Local` it is first converted to UTC.
+## Methods
 
-**Return Value**  
-A `long` representing the Unix timestamp in seconds.
+### `long ToUnixTimestamp(this DateTime dateTime)`
 
-**Exceptions**  
-- `ArgumentOutOfRangeException` if the resulting timestamp is outside the range of a signed 64‑bit integer (practically impossible for .NET `DateTime` values).
+Converts a `DateTime` to Unix epoch time: whole seconds since 1970-01-01T00:00:00Z.
 
----
+The conversion depends on `Kind`:
 
-### `public static DateTime FromUnixTimestamp(this long unixTimestamp)`
-**Purpose**  
-Creates a `DateTime` from a Unix timestamp expressed in seconds.
+- `Utc`: the value is used as-is.
+- `Local`: the value is converted to UTC first.
+- `Unspecified`: the value is treated as local time and converted to UTC. This is the behaviour of `DateTime.ToUniversalTime()`, so the result depends on the machine's time zone. Use `Utc` values to get machine-independent results.
 
-**Parameters**  
-- `unixTimestamp`: The number of seconds elapsed since 1970‑01‑01T00:00:00Z.
+Fractional seconds are truncated, not rounded.
 
-**Return Value**  
-A `DateTime` with `Kind` set to `Utc` representing the corresponding point in time.
+**Parameters:**
+- `dateTime`: The value to convert.
 
-**Exceptions**  
-- `ArgumentOutOfRangeException` if `unixTimestamp` would result in a `DateTime` earlier than `DateTime.MinValue` or later than `DateTime.MaxValue`.
+**Returns:** The Unix timestamp in seconds. Values before the epoch return negative numbers.
 
----
+**Exceptions:** None thrown by the method itself. A `Local` or `Unspecified` value at the extreme ends of the `DateTime` range can overflow during the conversion to UTC.
 
-### `public static bool IsExpired(this DateTime dateTime)`
-**Purpose**  
-Determines whether the supplied `DateTime` represents a moment in the past relative to the current UTC time.
+**Example:**
 
-**Parameters**  
-- `dateTime`: The `DateTime` instance to test. The method compares the UTC representation of `dateTime` with `DateTime.UtcNow`.
+```csharp
+long exp = DateTime.UtcNow.AddMinutes(5).ToUnixTimestamp();
+```
 
-**Return Value**  
-`true` if `dateTime` is earlier than the current UTC time; otherwise `false`.
+### `DateTime FromUnixTimestamp(long timestamp)`
 
-**Exceptions**  
-None.
+Creates a `DateTime` from Unix epoch time in seconds. This is a regular static method, not an extension method, so call it through the class name.
 
----
+**Parameters:**
+- `timestamp`: Seconds since 1970-01-01T00:00:00Z. Negative values are allowed.
 
-### `public static bool IsValid(this DateTime dateTime)`
-**Purpose**  
-Checks whether the `DateTime` value is within the supported range and is not an unset sentinel (`DateTime.MinValue`).
+**Returns:** A `DateTime` with `Kind` set to `Utc`.
 
-**Parameters**  
-- `dateTime`: The `DateTime` instance to validate.
+**Exceptions:**
+- `ArgumentOutOfRangeException`: `timestamp` is outside `-62135596800` (`0001-01-01T00:00:00Z`) through `253402300799` (`9999-12-31T23:59:59Z`).
 
-**Return Value**  
-`true` if `dateTime` is greater than `DateTime.MinValue` and less than `DateTime.MaxValue`; otherwise `false`.
+**Example:**
 
-**Exceptions**  
-None.
+```csharp
+DateTime expiresAt = DateTimeExtensions.FromUnixTimestamp(1737779695);
+```
 
----
+### `bool IsExpired(this DateTime expiresAt)`
 
-### `public static long RemainingSeconds(this DateTime dateTime)`
-**Purpose**  
-Calculates the number of whole seconds remaining from the current UTC time until the supplied `DateTime`. If the moment is in the past, returns `0`.
+Returns `true` if `expiresAt` is at or before the current UTC time plus 5 seconds. The 5-second margin stops a token from being accepted just before it actually expires, which avoids races with clock skew and in-flight requests.
 
-**Parameters**  
-- `dateTime`: The target `DateTime` (treated as UTC).
+The method compares the raw `DateTime` value with `DateTime.UtcNow`. It does not convert `Kind` first, so pass UTC values.
 
-**Return Value**  
-A non‑negative `long` indicating the seconds left until `dateTime`. Returns `0` when `dateTime` is already past.
+**Parameters:**
+- `expiresAt`: The expiration time.
 
-**Exceptions**  
-None.
+**Returns:** `true` if the value has expired, including the 5-second margin; otherwise `false`.
 
----
+**Exceptions:** None.
 
-### `public static DateTime AddLifetime(this DateTime dateTime)`
-**Purpose**  
-Adds a predefined lifetime interval to the supplied `DateTime`. The lifetime constant is defined elsewhere in the auth server (e.g., token validity period).
+### `bool IsValid(this DateTime expiresAt)`
 
-**Parameters**  
-- `dateTime`: The base `DateTime` to which the lifetime is added. The method does not modify the original instance.
+The negation of `IsExpired`. Returns `true` while `expiresAt` is more than 5 seconds in the future.
 
-**Return Value**  
-A new `DateTime` representing `dateTime` plus the configured lifetime, with `Kind` preserved.
+**Parameters:**
+- `expiresAt`: The expiration time.
 
-**Exceptions**  
-None.
+**Returns:** `true` if the value is still valid; otherwise `false`.
 
----
+**Exceptions:** None.
 
-### `public static string ToRfc3339String(this DateTime dateTime)`
-**Purpose**  
-Formats the `DateTime` as an RFC 3339‑compliant string (ISO 8601 with UTC offset “Z”).
+### `long RemainingSeconds(this DateTime expiresAt)`
 
-**Parameters**  
-- `dateTime`: The `DateTime` instance to format. The value is converted to UTC before formatting.
+Returns the whole seconds from the current UTC time until `expiresAt`. The result is truncated. It has no 5-second margin, so it can return a positive value for a time that `IsExpired` already reports as expired.
 
-**Return Value**  
-A string such as `"2025-09-24T12:34:56Z"` representing the UTC instant.
+**Parameters:**
+- `expiresAt`: The expiration time. The comparison uses the raw value against `DateTime.UtcNow`.
 
-**Exceptions**  
-None.
+**Returns:** The remaining seconds, or `0` if `expiresAt` is in the past.
+
+**Exceptions:** None.
+
+### `DateTime AddLifetime(this DateTime baseTime, int lifetimeSeconds)`
+
+Adds a lifetime in seconds to `baseTime`. Negative lifetimes are treated as `0`, so the method never returns a time earlier than `baseTime`.
+
+**Parameters:**
+- `baseTime`: The starting time. `Kind` is preserved in the result.
+- `lifetimeSeconds`: The lifetime to add, in seconds. Values below `0` are clamped to `0`.
+
+**Returns:** A new `DateTime`. The original value is not changed.
+
+**Exceptions:** None thrown directly. The result can overflow past `DateTime.MaxValue`, which makes `AddSeconds` throw `ArgumentOutOfRangeException`.
+
+**Example:**
+
+```csharp
+DateTime expiresAt = DateTime.UtcNow.AddLifetime(3600);
+```
+
+### `string ToRfc3339String(this DateTime dateTime)`
+
+Formats a `DateTime` in the round-trip (`"o"`) format after converting it to UTC. The result always ends in `Z`.
+
+The output includes seven fractional-second digits, for example `2025-09-24T12:34:56.0000000Z`. Some consumers expect whole seconds only. Truncate the fraction yourself if they do.
+
+**Parameters:**
+- `dateTime`: The value to format. `Local` and `Unspecified` values are converted to UTC first.
+
+**Returns:** The RFC 3339 string in UTC.
+
+**Exceptions:** None thrown directly.
+
+## Behavior notes
+
+- **Epoch precision:** `ToUnixTimestamp` and `RemainingSeconds` both truncate sub-second parts. Round trips through `ToUnixTimestamp` and `FromUnixTimestamp` lose milliseconds.
+- **Null checks:** `DateTime` is a value type, so the XML comments that mention `ArgumentNullException` on the expiry methods do not apply.
+- **Kind handling:** Only `ToUnixTimestamp` and `ToRfc3339String` convert `Kind`. `IsExpired`, `IsValid`, `RemainingSeconds`, and `AddLifetime` use the raw value. Use `Utc` throughout to avoid surprises.
 
 ## Usage
 
 ```csharp
-using System;
-using DotNetAuthServer.Extensions; // namespace containing DateTimeExtensions
+using DotnetAuthServer.Extensions;
 
-// Convert to and from Unix timestamp
-DateTime now = DateTime.UtcNow;
-long stamp = now.ToUnixTimestamp();          // e.g., 1737779695
-DateTime fromStamp = stamp.FromUnixTimestamp(); // round‑trip yields same instant
+DateTime issuedAt = DateTime.UtcNow;
+DateTime expiresAt = issuedAt.AddLifetime(3600);
 
-// Check expiration and remaining time
-DateTime expires = now.AddMinutes(5);
-bool expired = expires.IsExpired();          // false
-long secsLeft = expires.RemainingSeconds();  // approximately 300
+long expClaim = expiresAt.ToUnixTimestamp();            // JWT "exp" claim
+string header = expiresAt.ToRfc3339String();            // e.g. "2025-09-24T13:34:56.0000000Z"
 
-// Apply a configured lifetime and produce an RFC 3339 string
-DateTime issued = DateTime.UtcNow;
-DateTime validUntil = issued.AddLifetime(); // adds server‑defined token lifetime
-string header = validUntil.ToRfc3339String(); // suitable for HTTP headers or JWT claims
+if (expiresAt.IsExpired())
+{
+    // reject the token
+}
+
+long secondsLeft = expiresAt.RemainingSeconds();
+
+DateTime fromClaim = DateTimeExtensions.FromUnixTimestamp(expClaim);
 ```
-
-```csharp
-// Defensive validation before using a DateTime from an untrusted source
-DateTime userProvided = ParseUserInput(); // hypothetical method
-if (!userProvided.IsValid())
-{
-    throw new ArgumentException("The supplied date is not valid.");
-}
-
-// If the date is in the past, treat it as expired immediately
-if (userProvided.IsExpired())
-{
-    HandleExpiredToken();
-}
-else
-{
-    long remaining = userProvided.RemainingSeconds();
-    // Use remaining seconds for sliding‑expiration logic
-}
-```
-
-## Notes
-
-- All extension methods operate on the UTC representation of the input `DateTime`. If the original `DateTime.Kind` is `Local`, the methods first convert it to UTC; therefore the caller should be aware that the returned values reflect UTC time.
-- The methods are pure and stateless; they do not modify the instance on which they are invoked and have no side effects, making them thread‑safe for concurrent use.
-- `FromUnixTimestamp` will throw if the timestamp would produce a `DateTime` outside the .NET supported range (`DateTime.MinValue`/`DateTime.MaxValue`). Applications receiving timestamps from external sources should validate the range before calling this method.
-- `IsExpired` and `RemainingSeconds` rely on `DateTime.UtcNow` at the moment of invocation; frequent calls in a tight loop may observe slight variations due to clock progression.
-- The lifetime added by `AddLifetime` is immutable for the duration of the process; if the server’s configuration changes, the AppDomain must be reloaded for the new value to take effect. The method itself remains thread‑safe regardless of configuration changes.
