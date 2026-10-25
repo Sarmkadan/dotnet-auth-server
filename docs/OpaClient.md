@@ -1,49 +1,147 @@
 # OpaClient
-The `OpaClient` class is designed to interact with an Open Policy Agent (OPA) server, allowing for the evaluation of policies and the retrieval of results. It provides a simple and intuitive interface for integrating policy-based decision making into applications.
 
-## API
-* `public OpaClient`: The constructor for the `OpaClient` class, used to create a new instance.
-* `public async Task<bool?> EvaluatePolicyAsync`: Evaluates a policy against the provided input and returns the result. The method returns a `bool?` value, indicating whether the policy was evaluated successfully and the result of the evaluation. If an error occurs during evaluation, the method may throw an exception.
-* `public OpaInputDocument Input`: Gets or sets the input document used for policy evaluation.
-* `public string Subject`: Gets or sets the subject associated with the policy evaluation.
-* `public List<string> Roles`: Gets or sets the list of roles associated with the policy evaluation.
-* `public List<string> Scopes`: Gets or sets the list of scopes associated with the policy evaluation.
-* `public Dictionary<string, string> Claims`: Gets or sets the dictionary of claims associated with the policy evaluation.
-* `public bool Result`: Gets the result of the policy evaluation.
+**Namespace:** `DotnetAuthServer.Integration`
 
-## Usage
-The following examples demonstrate how to use the `OpaClient` class to evaluate policies:
+HTTP client for the Open Policy Agent (OPA) Data API. It posts a policy query for a `ClaimsPrincipal` to OPA and maps the boolean result to an allow or deny decision. The client keeps no mutable state. Its only dependencies are the constructor arguments, which it stores in readonly fields.
+
+`sealed`. It is registered only when `DotnetAuthServer:Opa:Enabled` is true, as a typed client (`AddHttpClient<OpaClient>()` in `Program.cs`). `PolicyEnforcementService` is its consumer. The options come from [`OpaOptions`](OpaOptions.md).
+
+---
+
+## Constructor
+
+### `OpaClient(HttpClient http, OpaOptions options, ILogger<OpaClient> logger)`
+
+Stores the dependencies. Throws `ArgumentNullException` if any argument is `null`.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `http` | `HttpClient` | Sends the request to OPA. In DI it comes from the HTTP client factory. |
+| `options` | `OpaOptions` | Supplies `BaseUrl`, `PolicyPath`, `TimeoutSeconds` and `FailClosedOnError`. |
+| `logger` | `ILogger<OpaClient>` | Records warnings and errors for failed evaluations. |
+
+The DI registration also sets the `HttpClient`'s `BaseAddress` and `Timeout` from `OpaOptions`. `EvaluatePolicyAsync` does not use `BaseAddress`, because it builds an absolute URL from `BaseUrl`. The class applies its own timeout as well (see [Timeout and cancellation](#timeout-and-cancellation)).
+
+---
+
+## Methods
+
+### `Task<bool?> EvaluatePolicyAsync(string policyName, ClaimsPrincipal principal, CancellationToken cancellationToken = default)`
+
+Evaluates the policy named `policyName` for `principal`. The method does not throw for OPA failures. Those are converted to a result (see below).
+
+| Parameter | Type | Description |
+|---|---|---|
+| `policyName` | `string` | Rule name appended to the policy path, for example `"allow_admin"`. Must not be null, empty or whitespace. |
+| `principal` | `ClaimsPrincipal` | The authenticated caller. Must not be `null`. |
+| `cancellationToken` | `CancellationToken` | Linked with the timeout (see below). |
+
+**Returns:** a `bool?` with three meanings:
+
+| Value | Meaning | Caller action |
+|---|---|---|
+| `true` | OPA allowed the request. | Allow. |
+| `false` | OPA denied the request, or OPA failed and `FailClosedOnError` is `true`. | Deny. |
+| `null` | OPA failed and `FailClosedOnError` is `false`. | Fall back to the built-in evaluator. |
+
+**Throws:**
+
+| Exception | When |
+|---|---|
+| `ArgumentException` | `policyName` is `null`, empty or whitespace. |
+| `ArgumentNullException` | `principal` is `null`. |
+
+These checks run before any request is sent. They are not converted to a fallback result.
+
+**Behavior:**
+
+1. Validates the arguments.
+2. Builds the OPA input from the principal:
+
+   | Input field | Source |
+   |---|---|
+   | `subject` | Value of the `sub` claim, or `""` if absent. |
+   | `roles` | Values of every `ClaimTypes.Role` claim, in order. Empty list if none. |
+   | `scopes` | The `scope` claim split on spaces, with empty entries removed. Empty list if absent. |
+   | `claims` | Every claim as type → value. If a type occurs more than once, only the first value is kept. Role claims also appear here, but only the first one. |
+
+3. Builds the URL `{BaseUrl without trailing '/'}/v1/data/{PolicyPath}/{policyName}`. `PolicyPath` may contain slashes for nested packages. Neither `PolicyPath` nor `policyName` is URL-encoded.
+4. Creates a linked cancellation token that cancels after `TimeoutSeconds` or when `cancellationToken` is cancelled.
+5. POSTs the body `{ "input": { ... } }` as JSON.
+6. If the response status is not 2xx, logs a warning with the status code and policy name, then returns the failure result.
+7. Otherwise reads the body as `{ "result": <bool> }` and returns the value. If the `result` property is missing, the method returns `false`. A body of `null` also returns `false`.
+
+**Failure handling:**
+
+| Condition | Log level | Returns |
+|---|---|---|
+| Non-2xx HTTP status | Warning | `FailClosedOnError ? false : null` |
+| `OperationCanceledException` (timeout or caller cancellation) | Warning | `FailClosedOnError ? false : null` |
+| `HttpRequestException` (connection failure) | Error | `FailClosedOnError ? false : null` |
+| Any other exception, such as a response body whose `result` is not a boolean | Error | `FailClosedOnError ? false : null` |
+
+Logs contain the policy name and, for HTTP errors, the status code. They do not contain the principal's claims or the input document.
+
+**Example:**
+
 ```csharp
-// Example 1: Evaluating a policy with a simple input
-var client = new OpaClient();
-client.Input = new OpaInputDocument { /* initialize input document */ };
-client.Subject = "user1";
-var result = await client.EvaluatePolicyAsync();
-if (result.HasValue)
-{
-    Console.WriteLine($"Policy evaluation result: {result}");
-}
-else
-{
-    Console.WriteLine("Policy evaluation failed");
-}
+var client = scope.ServiceProvider.GetRequiredService<OpaClient>();
 
-// Example 2: Evaluating a policy with roles and scopes
-var client2 = new OpaClient();
-client2.Input = new OpaInputDocument { /* initialize input document */ };
-client2.Subject = "user2";
-client2.Roles = new List<string> { "admin", "moderator" };
-client2.Scopes = new List<string> { "read:articles", "write:articles" };
-var result2 = await client2.EvaluatePolicyAsync();
-if (result2.HasValue)
+bool? decision = await client.EvaluatePolicyAsync("allow_admin", httpContext.User, cancellationToken);
+
+if (decision is null)
 {
-    Console.WriteLine($"Policy evaluation result: {result2}");
+    // OPA is unavailable and FailClosedOnError is false: use the built-in evaluator.
 }
-else
+else if (decision.Value)
 {
-    Console.WriteLine("Policy evaluation failed");
+    // Allowed.
 }
 ```
 
+With a principal that has `sub` = `user-123`, role `admin`, and scope `read:articles write:articles`, the request body is:
+
+```json
+{
+  "input": {
+    "subject": "user-123",
+    "roles": ["admin"],
+    "scopes": ["read:articles", "write:articles"],
+    "claims": {
+      "sub": "user-123",
+      "scope": "read:articles write:articles",
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/role": "admin"
+    }
+  }
+}
+```
+
+A matching Rego rule for this request:
+
+```rego
+package authz
+
+import rego.v1
+
+default allow_admin := false
+
+allow_admin if "admin" in input.roles
+```
+
+---
+
+## Timeout and cancellation
+
+The request timeout is `OpaOptions.TimeoutSeconds`, applied through a linked cancellation token. The same token covers the POST and reading the response body.
+
+The `catch (OperationCanceledException)` block does not distinguish the two causes. If the caller cancels `cancellationToken`, the method does not rethrow. It logs "OPA request timed out", then returns the failure result (`false` or `null`). Callers that need to stop on cancellation must check their own token after the call.
+
+---
+
 ## Notes
-When using the `OpaClient` class, note that the `EvaluatePolicyAsync` method may throw exceptions if errors occur during policy evaluation. Additionally, the `Result` property will only be set after a successful policy evaluation. The `OpaClient` class is designed to be thread-safe, allowing for concurrent policy evaluations. However, the `Input`, `Subject`, `Roles`, `Scopes`, and `Claims` properties should be accessed and modified in a thread-safe manner to avoid inconsistencies.
+
+- **Undefined policies deny.** When the rule is not defined, OPA returns a response without a `result` property. The method returns `false`, not `null`, so the built-in fallback is not used even when `FailClosedOnError` is `false`.
+- **No credentials are sent.** The client adds no headers. If the OPA server requires authentication, the `HttpClient` must be configured for it. The current DI registration does not do this.
+- **No caching or retries.** Each call makes one request.
+- **Synchronous callers block.** `PolicyEnforcementService.EvaluatePolicy` calls this method and waits with `GetAwaiter().GetResult()`. Prefer `EvaluatePolicyAsync` on the service.
+- **Thread safety.** The class has no mutable state, so concurrent calls are safe as long as the `HttpClient` and `OpaOptions` are safe to share. A typed `HttpClient` is.
