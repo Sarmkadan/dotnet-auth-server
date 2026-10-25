@@ -1,113 +1,152 @@
 # TokenRevocationHandler
 
-The `TokenRevocationHandler` class provides the core logic for invalidating access and refresh tokens within the `dotnet-auth-server` ecosystem. It encapsulates the asynchronous operations required to revoke individual tokens or bulk-revoke all tokens associated with a specific user identity, returning a structured result that indicates the success of the operation, whether a revocation actually occurred, or if an error prevented completion.
+**Namespace:** `DotnetAuthServer.Handlers`
 
-## API
+Implements token revocation for OAuth 2.0 Token Revocation (RFC 7009). Given a token string, it revokes a refresh token by deleting it from the refresh-token repository, or, if the string is not a known refresh token, revokes an access token (JWT) by recording its `jti` in the `RevokedTokenStore` until the token's original expiry. It also offers a bulk operation that revokes all refresh tokens of a user.
 
-### Constructors
+Per RFC 7009, `RevokeTokenAsync` never reports a failure for an unknown, expired or malformed token. Such requests return `Success = true, Revoked = false`, so the response does not reveal whether a token existed. Errors are logged, not returned to the caller.
 
-#### `public TokenRevocationHandler()`
-Initializes a new instance of the `TokenRevocationHandler` class. This constructor prepares the handler to process revocation requests using the default configuration and underlying token stores defined in the application context.
+`sealed`. Stateless apart from its constructor-time dependencies. It is registered as scoped in DI (`Program.cs`), so it is normally resolved per request.
 
-### Methods
+---
 
-#### `public async Task<RevocationResult> RevokeTokenAsync(string token)`
-Attempts to locate and invalidate a specific token identified by its string value.
+## Constructor
 
-*   **Parameters**:
-    *   `token`: The string representation of the access or refresh token to be revoked.
-*   **Return Value**:
-    *   Returns a `Task<RevocationResult>` containing the outcome of the operation. The result indicates if the token was found and successfully marked as revoked.
-*   **Exceptions**:
-    *   Throws an exception if the underlying token store is unavailable or if the provided token string format is invalid according to server policies.
+### `TokenRevocationHandler(IRefreshTokenRepository refreshTokenRepository, IAuthorizationGrantRepository grantRepository, RevokedTokenStore revokedTokenStore, AuthServerOptions options, ILogger<TokenRevocationHandler> logger)`
 
-#### `public async Task<RevocationResult> RevokeUserTokensAsync(string userId)`
-Invalidates all active tokens issued to a specific user, effectively forcing a global logout for that identity.
+Stores the dependencies. The constructor performs no null checks.
 
-*   **Parameters**:
-    *   `userId`: The unique identifier of the user whose tokens should be revoked.
-*   **Return Value**:
-    *   Returns a `Task<RevocationResult>` summarizing the bulk operation. The `Revoked` property in the result typically reflects whether at least one token was invalidated during the process.
-*   **Exceptions**:
-    *   Throws an exception if the user ID is null or empty, or if a database connectivity issue prevents scanning the user's token set.
+| Parameter | Type | Description |
+|---|---|---|
+| `refreshTokenRepository` | `IRefreshTokenRepository` | Finds and deletes refresh tokens, and revokes all refresh tokens of a user. |
+| `grantRepository` | `IAuthorizationGrantRepository` | Stored in a field but not used by any method in this class. |
+| `revokedTokenStore` | `RevokedTokenStore` | Records revoked access-token `jti` values. |
+| `options` | `AuthServerOptions` | Supplies `JwtSigningKey` and `IssuerUrl` for access-token validation. |
+| `logger` | `ILogger<TokenRevocationHandler>` | Logger for revocation events. |
 
-### Properties
+---
 
-The following properties are typically inspected on the `RevocationResult` returned by the methods above, or exposed by the handler context depending on implementation specifics:
+## Methods
 
-#### `public bool Success`
-Indicates whether the revocation request was processed without encountering a system-level error. A value of `true` means the operation completed logically, regardless of whether a matching token was found.
+### `Task<RevocationResult> RevokeTokenAsync(string? token, string? tokenTypeHint, CancellationToken cancellationToken = default)`
 
-#### `public bool Revoked`
-Specifies whether a token was actually found and invalidated. This may be `false` even if `Success` is `true` (e.g., if the token was already expired or previously revoked).
+Revokes a single token. Never throws; any exception is caught and logged.
 
-#### `public string? Error`
-Contains a descriptive error message if the operation failed (`Success` is `false`). If the operation succeeded, this property is `null`.
+| Parameter | Type | Description |
+|---|---|---|
+| `token` | `string?` | The token presented for revocation. |
+| `tokenTypeHint` | `string?` | RFC 7009 `token_type_hint`. Accepted but not read: the handler always tries the refresh-token path first, then the access-token path. |
+| `cancellationToken` | `CancellationToken` | Passed to the refresh-token repository. |
 
-## Usage
+**Returns:** A `RevocationResult`. On success or on any non-error outcome, `Success` is `true`.
 
-### Example 1: Revoking a Single Refresh Token
-This example demonstrates handling a logout request where a specific refresh token is presented by the client.
+**Behavior, in order:**
+
+1. If `token` is `null`, empty or whitespace, logs a warning and returns `Success = true, Revoked = false`.
+2. Computes the SHA-256 hash of the UTF-8 bytes of `token` and encodes it as Base64. This is the same scheme used when refresh tokens are stored.
+3. Looks up a refresh token by that hash. If one is found, deletes it with `DeleteAsync` (a hard delete; the record is removed, not marked as revoked) and returns `Success = true, Revoked = true`.
+4. Otherwise tries to read the token as a JWT access token (see [Access-token validation](#access-token-validation)). If it yields a non-empty `jti`, calls `RevokedTokenStore.Revoke(jti, expiresAt)` and returns `Success = true, Revoked = true`.
+5. Otherwise logs at debug level and returns `Success = true, Revoked = false`.
+6. Any exception from steps 2 to 4 is logged at error level and results in `Success = true, Revoked = false`. This includes `OperationCanceledException`: a cancelled request is reported as a successful no-op, not as an error.
+
+**Access-token validation:**
+
+The access-token path validates the JWT with `JwtSecurityTokenHandler.ValidateToken` using these parameters:
+
+| Setting | Value |
+|---|---|
+| Signing key | HS256 `SymmetricSecurityKey` from the UTF-8 bytes of `options.JwtSigningKey` |
+| `ValidateIssuerSigningKey` | `true` |
+| `ValidateIssuer` | `true`, expected issuer is `options.IssuerUrl` |
+| `ValidateAudience` | `false` |
+| `ValidateLifetime` | `false`, so already-expired tokens can still be revoked |
+
+Only tokens signed by this server and issued by `IssuerUrl` are recorded. Malformed or untrusted input is caught and skipped; it does not produce an error.
+
+**Example:**
 
 ```csharp
-using DotNetAuthServer.Handlers;
-using DotNetAuthServer.Models;
+var handler = scope.ServiceProvider.GetRequiredService<TokenRevocationHandler>();
+RevocationResult result = await handler.RevokeTokenAsync(token, "refresh_token", cancellationToken);
 
-public async Task<IActionResult> Logout(string refreshToken)
+// RFC 7009: respond 200 OK whatever the result. Use Revoked only for internal metrics or logging.
+```
+
+---
+
+### `Task<RevocationResult> RevokeUserTokensAsync(string userId, CancellationToken cancellationToken = default)`
+
+Revokes all refresh tokens of one user. Never throws; repository exceptions are caught and logged.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `userId` | `string` | Identifier of the user whose refresh tokens should be revoked. |
+| `cancellationToken` | `CancellationToken` | Accepted for the signature, but not passed to the repository call. |
+
+**Returns:** A `RevocationResult`.
+
+**Behavior:**
+
+- If `userId` is `null`, empty or whitespace, returns `Success = false, Error = "User ID required"`.
+- Otherwise calls `IRefreshTokenRepository.RevokeAllUserTokensAsync(userId, "All tokens revoked for user", ...)`. The repository marks each of the user's refresh tokens as revoked (the records stay in storage). On success, returns `Success = true, Revoked = true`.
+- `Revoked` is `true` after a successful call even if the user had no refresh tokens. It does not mean that any token was affected.
+- If the repository throws, logs at error level and returns `Success = false, Error = "Internal server error"`.
+- Access tokens are not affected. Only refresh tokens are revoked by this method; no `jti` is recorded in `RevokedTokenStore`, so an issued access token stays valid until it expires unless it is revoked individually.
+
+At the time of writing, nothing in `src/` calls this method.
+
+**Example:**
+
+```csharp
+var handler = scope.ServiceProvider.GetRequiredService<TokenRevocationHandler>();
+RevocationResult result = await handler.RevokeUserTokensAsync(userId);
+
+if (!result.Success)
 {
-    var handler = new TokenRevocationHandler();
-    
-    // Attempt to revoke the specific token
-    var result = await handler.RevokeTokenAsync(refreshToken);
-
-    if (!result.Success)
-    {
-        // Log system error: result.Error contains details
-        return StatusCode(500, "Unable to process revocation request.");
-    }
-
-    if (result.Revoked)
-    {
-        return Ok("Token successfully revoked.");
-    }
-    
-    // Token was not found or already invalid, but no system error occurred
-    return Ok("Token is no longer active.");
+    logger.LogError("Bulk revocation failed for {UserId}: {Error}", userId, result.Error);
 }
 ```
 
-### Example 2: Bulk Revocation for Security Events
-This example illustrates revoking all tokens for a user following a password change or suspected compromise.
+---
 
-```csharp
-using DotNetAuthServer.Handlers;
-using DotNetAuthServer.Models;
+## Related Types
 
-public async Task ForceLogoutUser(string userId)
-{
-    var handler = new TokenRevocationHandler();
+### `RevocationResult`
 
-    // Revoke all sessions for the user
-    var result = await handler.RevokeUserTokensAsync(userId);
+**Namespace:** `DotnetAuthServer.Handlers` (declared in the same file as the handler)
 
-    if (!result.Success)
-    {
-        throw new InvalidOperationException(
-            $"Failed to revoke tokens for user {userId}: {result.Error}"
-        );
-    }
+Result model returned by both methods. Mutable POCO with `get; set;` properties.
 
-    // Audit log: result.Revoked indicates if there were active sessions to kill
-    if (result.Revoked)
-    {
-        Console.WriteLine($"Active sessions terminated for user {userId}");
-    }
-}
-```
+| Property | Type | Description |
+|---|---|---|
+| `Success` | `bool` | `true` if the request was processed without a system error. `false` only for `RevokeUserTokensAsync` failures. A token that was not found still gives `true`. |
+| `Revoked` | `bool` | `true` if a refresh token was deleted, an access token `jti` was recorded, or (for `RevokeUserTokensAsync`) the bulk revocation completed. |
+| `Error` | `string?` | Error message when `Success` is `false`; otherwise `null`. |
 
-## Notes
+The parameterless constructor sets `Success = false`, `Revoked = false` and `Error = null`. The handler always sets `Success` explicitly.
 
-*   **Idempotency**: The `RevokeTokenAsync` method is idempotent. Calling it multiple times with the same valid token string will return `Success = true`, but `Revoked` will only be `true` on the first invocation where the token was actually active. Subsequent calls will return `Revoked = false`.
-*   **Null Safety**: The `Error` property is nullable (`string?`). Consumers must check the `Success` property before reading `Error` to avoid assuming an error state when the operation completed successfully.
-*   **Thread Safety**: The `TokenRevocationHandler` instance itself should be treated as stateless regarding request data, but the underlying asynchronous operations rely on external token stores. While the handler methods are `async` and non-blocking, creating a new instance per request is recommended to avoid any potential state leakage between concurrent user operations.
-*   **Race Conditions**: In high-concurrency scenarios between `RevokeTokenAsync` and `RevokeUserTokensAsync` for the same user, the `Revoked` flag reflects the state at the exact moment of execution. It is possible for a bulk revocation to report `Revoked = true` while a simultaneous single-token revocation reports `Revoked = false` if the bulk operation completed first.
+#### `override string ToString()`
+
+Returns a single-line representation, for example `TokenRevocationHandler { Success = True, Revoked = False, Error =  }`. The prefix names the handler, not `RevocationResult`. Intended for logging and debugging; do not rely on its exact format.
+
+---
+
+## Usage Notes
+
+- The handler does not authenticate the caller. RFC 7009 requires the revocation endpoint to authenticate the client. Do that before calling `RevokeTokenAsync`. `TokenController` calls the handler directly (around line 175); `TokenValidator.RevokeTokenAsync` wraps it.
+- Revoking a refresh token deletes it. A second call with the same refresh token finds nothing and returns `Revoked = false`.
+- Revoking an access token records its `jti` until the token's expiry. The `RevokedTokenStore` lookup is what makes [TokenIntrospectionHandler](TokenIntrospectionHandler.md) report the token as inactive. The handler does not check whether a `jti` is already recorded, so a second call with the same access token returns `Revoked = true` again.
+- `tokenTypeHint` is ignored. A refresh token is tried first even when the hint says `access_token`, and vice versa.
+- Tokens that are neither a known refresh token nor a valid JWT from this server are reported as `Success = true, Revoked = false`. Clients cannot distinguish these from successful revocations, which is the intended RFC 7009 behavior.
+- Logs never contain the token value. Access-token revocations log the `jti`; bulk revocations log the `userId`.
+
+---
+
+## See Also
+
+- [TokenIntrospectionHandler](TokenIntrospectionHandler.md): reads the revocation state this handler writes.
+- [RevokedTokenStore](RevokedTokenStore.md): stores revoked access-token `jti` values.
+- [IRefreshTokenRepository](IRefreshTokenRepository.md): repository used for refresh-token lookup, deletion and bulk revocation.
+- [TokenController](TokenController.md): exposes the revocation endpoint.
+- [TokenValidator](TokenValidator.md): wraps this handler for internal use.
+- [docs/ARCHITECTURE.md](ARCHITECTURE.md): design overview and known limitations.
