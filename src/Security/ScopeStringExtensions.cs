@@ -44,6 +44,18 @@ public static class ScopeStringExtensions
     }
 
     /// <summary>
+    /// Determines whether a space-delimited scope string contains at least one of the given scopes.
+    /// </summary>
+    /// <param name="scopeString">Space-delimited scope string.</param>
+    /// <param name="scopes">Scopes of which at least one must be present.</param>
+    /// <returns>true if any scope is present; otherwise false.</returns>
+    public static bool HasAnyScope(this string scopeString, params string[] scopes)
+    {
+        var scopeSet = ToScopeSet(scopeString);
+        return scopeSet.Overlaps(scopes);
+    }
+
+    /// <summary>
     /// Joins a collection of scopes into a space-delimited scope string.
     /// </summary>
     /// <param name="scopes">Scopes to join.</param>
