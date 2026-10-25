@@ -23,4 +23,8 @@ public class KeyRotationOptions
     /// Seconds component of the signing key rotation interval. Added to the other components to form the total interval.
     /// </summary>
     public int KeyRotationInSeconds { get; set; }
+
+    /// <inheritdoc />
+    public override string ToString() =>
+        $"KeyRotationOptions {{ KeyRotationInDays = {KeyRotationInDays}, KeyRotationInHours = {KeyRotationInHours}, KeyRotationInMinutes = {KeyRotationInMinutes}, KeyRotationInSeconds = {KeyRotationInSeconds} }}";
 }
