@@ -1,131 +1,104 @@
 # ScopeMetadataHandler
 
-`ScopeMetadataHandler` manages the metadata associated with OAuth 2.0 scopes in the authorization server. It provides retrieval of individual and collective scope metadata, identification of scopes that require explicit user consent, and registration of custom application-defined scopes. The type serves as the central registry for scope definitions, exposing both built-in and custom scope information to the authorization and consent flows.
+Scoped handler that resolves OAuth 2.0 / OpenID Connect scope metadata (display name, description, consent requirement) for consent screens and scope handling. It holds a registry of six built-in OIDC scopes and lets the application register its own scopes at runtime. Lookups go through `ICacheService` for the async methods.
+
+The class is `public sealed` in namespace `DotnetAuthServer.Handlers` (`src/Handlers/ScopeMetadataHandler.cs`). `ScopeMetadata` is a `public sealed` class defined in the same file. It is registered as a scoped service in `Program.cs`.
+
+## Behavior notes
+
+- **Shared registry.** The built-in and custom scopes live in a `private static` dictionary. Every `ScopeMetadataHandler` instance in the process sees the same registry, and a registration made through one instance is visible through all of them.
+- **Lookup is exact.** Scope names are matched with the dictionary's default string comparer, so lookups are case-sensitive and do not trim whitespace.
+- **Caching.** `GetScopeMetadataAsync` checks `ICacheService` first, using the key `scope_metadata:{scopeName}`. On a miss, it looks up the registry and caches a found entry for 24 hours. Unknown names are not cached.
+- **Stale cache after registration.** `RegisterCustomScope` does not invalidate cache entries. If a name was already resolved and cached, a later registration that replaces it is not seen until the cache entry expires (up to 24 hours).
+- **Returned objects are shared.** The `ScopeMetadata` instances returned from the registry, and from the cache, are the same objects. Changes a caller makes to them, including to `RelatedScopes`, affect later lookups.
+- **Logging.** `GetScopeMetadataAsync` writes an `Information` entry on every call and another on a cache hit. `RegisterCustomScope` writes `Information` on success and `Warning` when it skips a scope with no name.
+- **Thread safety.** The registry is a plain `Dictionary<string, ScopeMetadata>`, not a concurrent collection, and `RegisterCustomScope` writes to it without a lock. Register all custom scopes during startup, before requests are served. The read methods are safe to call concurrently once registration is finished.
+
+## Built-in scopes
+
+| Name | Display name | Requires consent |
+|---|---|---|
+| `openid` | OpenID Connect | no |
+| `profile` | Profile | yes |
+| `email` | Email | yes |
+| `phone` | Phone | yes |
+| `address` | Address | yes |
+| `offline_access` | Offline Access | yes |
+
+Built-in entries set `Name`, `DisplayName`, `Description`, and `RequiresConsent`. They leave `Icon` as `null` and `RelatedScopes` empty.
 
 ## API
 
-### public ScopeMetadataHandler
+### Constructor
 
-Constructor. Initializes a new instance of the handler with the default set of known scopes and an empty custom scope registry. No parameters are required.
+#### `ScopeMetadataHandler(ICacheService cacheService, ILogger<ScopeMetadataHandler> logger)`
+Creates the handler. Throws `ArgumentNullException` if either argument is null.
 
-### public async Task<ScopeMetadata?> GetScopeMetadataAsync
+### Methods
 
-Retrieves metadata for a single scope by its name.
+#### `Task<ScopeMetadata?> GetScopeMetadataAsync(string scopeName, CancellationToken cancellationToken = default)`
+Returns the metadata for one scope, or `null` if the name is not registered.
 
-- **Parameters**: `string name` — the scope identifier to look up.
-- **Returns**: A `ScopeMetadata` instance if the scope is registered; `null` if the scope name is not found in either built-in or custom scopes.
-- **Exceptions**: Throws `ArgumentException` when `name` is null or whitespace.
+- Throws `ArgumentNullException` when `scopeName` is null.
+- Throws `ArgumentException` when `scopeName` is an empty string.
+- Returns `null` without an error when `scopeName` is whitespace only.
+- Checks the cache first, then the registry. A registry hit is cached for 24 hours.
 
-### public async Task<IEnumerable<ScopeMetadata>> GetScopesMetadataAsync
+#### `Task<IEnumerable<ScopeMetadata>> GetScopesMetadataAsync(IEnumerable<string> scopeNames, CancellationToken cancellationToken = default)`
+Resolves each name with `GetScopeMetadataAsync` and returns the results as a `List<ScopeMetadata>`.
 
-Retrieves metadata for a specific set of requested scope names.
+- Throws `ArgumentNullException` when `scopeNames` is null.
+- Unknown and whitespace-only names are skipped without error. The result has no placeholder for them, so compare counts or names to detect what was dropped.
+- Throws the same exceptions as `GetScopeMetadataAsync` for a null or empty element.
+- The result keeps input order and includes duplicates.
 
-- **Parameters**: `IEnumerable<string> scopeNames` — the collection of scope identifiers to resolve.
-- **Returns**: A collection of `ScopeMetadata` objects corresponding to the requested names. Scopes that are not registered are silently omitted from the result.
-- **Exceptions**: Throws `ArgumentNullException` when `scopeNames` is null.
+#### `Task<IEnumerable<ScopeMetadata>> GetAllScopesAsync(CancellationToken cancellationToken = default)`
+Returns metadata for every registered scope, built-in and custom, as a `List<ScopeMetadata>`. Each entry is resolved through `GetScopeMetadataAsync`, so the cache is used. The order is the registry's insertion order, which is not guaranteed by the dictionary contract.
 
-### public async Task<IEnumerable<ScopeMetadata>> GetAllScopesAsync
+#### `IEnumerable<ScopeMetadata> GetScopesRequiringConsent(IEnumerable<string> scopeNames)`
+Filters the given names to those whose registry entry has `RequiresConsent == true`. This method is synchronous and does not use the cache.
 
-Returns metadata for every registered scope, both built-in and custom.
+- Throws `ArgumentNullException` immediately when `scopeNames` is null.
+- The result is deferred. It is evaluated each time it is enumerated, against the current registry.
+- Unknown names are skipped. A null element throws `ArgumentNullException` during enumeration.
+- The result keeps input order and includes duplicates.
 
-- **Parameters**: None.
-- **Returns**: A collection containing all `ScopeMetadata` instances currently known to the handler.
-- **Exceptions**: None thrown under normal operation.
+#### `void RegisterCustomScope(ScopeMetadata metadata)`
+Adds or replaces a scope in the registry.
 
-### public IEnumerable<ScopeMetadata> GetScopesRequiringConsent
+- Throws `ArgumentNullException` when `metadata` is null.
+- When `metadata.Name` is null, empty, or whitespace, logs a `Warning` and returns without changing the registry.
+- Otherwise stores `metadata` under `metadata.Name`. An existing entry with the same name is replaced without error. This includes built-in names, so registering `openid` replaces the built-in definition.
+- Does not invalidate cached entries (see Behavior notes).
 
-Returns only those registered scopes where `RequiresConsent` is `true`.
+## `ScopeMetadata` properties
 
-- **Parameters**: None.
-- **Returns**: A filtered collection of `ScopeMetadata` instances that must be presented to the user for explicit approval.
-- **Exceptions**: None thrown.
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `Name` | `string` | `string.Empty` | Scope identifier as sent in OAuth requests. Also the registry key. |
+| `DisplayName` | `string` | `string.Empty` | Human-readable name shown to the user. |
+| `Description` | `string` | `string.Empty` | Description of what the scope grants, shown to the user. |
+| `RequiresConsent` | `bool` | `false` | Whether the user must explicitly consent to the scope. |
+| `Icon` | `string?` | `null` | Optional icon identifier or URL. |
+| `RelatedScopes` | `List<string>` | empty list | Names of other scopes related to this one. |
 
-### public void RegisterCustomScope
+`RegisterCustomScope` stores the object you pass in, not a copy. Later changes to that object change the registry entry.
 
-Adds a new custom scope definition to the handler at runtime.
-
-- **Parameters**: `ScopeMetadata scopeMetadata` — the fully populated metadata object for the custom scope.
-- **Returns**: Void.
-- **Exceptions**: Throws `ArgumentNullException` when `scopeMetadata` is null. Throws `InvalidOperationException` when a scope with the same `Name` is already registered (built-in or custom).
-
-### public string Name
-
-Gets the unique identifier for the scope (e.g., `"openid"`, `"profile"`, `"read:orders"`). This is the value used in OAuth scope parameters and tokens.
-
-### public string DisplayName
-
-Gets the human-readable title for the scope, intended for display on consent screens (e.g., `"Read your profile information"`).
-
-### public string Description
-
-Gets the longer-form explanation of what access the scope grants, used in consent descriptions and documentation.
-
-### public bool RequiresConsent
-
-Gets whether the scope must be explicitly approved by the resource owner. Scopes marked `true` trigger a consent prompt; those marked `false` may be granted silently when policy allows.
-
-### public string? Icon
-
-Gets an optional URI or identifier for an icon associated with the scope, used in consent UI rendering. Returns `null` when no icon is defined.
-
-### public List<string> RelatedScopes
-
-Gets the list of other scope names that are semantically related to this scope. Used to suggest bundled scopes during authorization or to display context on consent screens.
-
-## Usage
-
-### Example 1: Resolving requested scopes and determining consent requirements
+## Example
 
 ```csharp
-var handler = new ScopeMetadataHandler();
+// Resolved through the scoped instance from DI
+var metadata = await scopeMetadataHandler.GetScopesMetadataAsync(["openid", "profile", "read:orders"]);
 
-// Scopes requested by a client application
-var requestedScopes = new[] { "openid", "profile", "read:orders", "admin:users" };
+// Only scopes that need a consent prompt
+var consentScopes = scopeMetadataHandler.GetScopesRequiringConsent(["openid", "profile", "read:orders"]);
 
-// Resolve metadata for the requested scopes
-var resolvedMetadata = await handler.GetScopesMetadataAsync(requestedScopes);
-
-// Separate scopes requiring consent from those that can be granted silently
-var consentRequired = resolvedMetadata
-    .Where(m => m.RequiresConsent)
-    .Select(m => m.Name);
-
-foreach (var scopeName in consentRequired)
+// Custom scope, registered once at startup
+scopeMetadataHandler.RegisterCustomScope(new ScopeMetadata
 {
-    Console.WriteLine($"Consent required for: {scopeName}");
-}
+    Name = "read:orders",
+    DisplayName = "Orders",
+    Description = "Read your order history.",
+    RequiresConsent = true
+});
 ```
-
-### Example 2: Registering a custom scope and verifying registration
-
-```csharp
-var handler = new ScopeMetadataHandler();
-
-var customScope = new ScopeMetadata
-{
-    Name = "export:data",
-    DisplayName = "Export your data",
-    Description = "Allows the application to export your account data in portable formats.",
-    RequiresConsent = true,
-    Icon = "https://example.com/icons/export.svg",
-    RelatedScopes = new List<string> { "read:orders", "profile" }
-};
-
-// Register the custom scope
-handler.RegisterCustomScope(customScope);
-
-// Verify it appears in the full registry
-var allScopes = await handler.GetAllScopesAsync();
-var registered = allScopes.Any(s => s.Name == "export:data");
-Console.WriteLine($"Custom scope registered: {registered}");
-```
-
-## Notes
-
-- **Scope name uniqueness**: `RegisterCustomScope` enforces uniqueness across both built-in and custom scopes. Attempting to register a scope whose `Name` collides with an existing entry throws `InvalidOperationException`. Check for existence via `GetScopeMetadataAsync` before registering if collisions are possible.
-- **Async resolution**: `GetScopeMetadataAsync` and `GetScopesMetadataAsync` are asynchronous to accommodate potential backend lookups (e.g., database-stored custom scopes). Implementations may involve I/O; callers should avoid synchronous blocking.
-- **Missing scopes**: `GetScopesMetadataAsync` silently drops unknown scope names from its result set. Callers comparing requested scopes against resolved metadata should account for this by detecting discrepancies in count or presence.
-- **Consent calculation**: `GetScopesRequiringConsent` returns a live-filtered view based on the current state of the registry. If custom scopes are registered after this method is called, subsequent calls will include them if `RequiresConsent` is `true`.
-- **Thread safety**: The handler is not designed for concurrent mutation. `RegisterCustomScope` modifies internal collections without synchronization. In multi-threaded scenarios, scope registration should be performed during application startup before the handler is exposed to request-processing threads. Read operations (`GetScopeMetadataAsync`, `GetAllScopesAsync`, `GetScopesRequiringConsent`) are safe to call concurrently once registration is complete.
-- **Null and whitespace handling**: `GetScopeMetadataAsync` rejects null or whitespace-only scope names with `ArgumentException`. Empty strings are treated as whitespace and rejected. Valid scope names must contain at least one non-whitespace character.
-- **Icon property**: The `Icon` property is nullable. Consumers rendering consent UI must handle `null` gracefully, falling back to a default icon or omitting the icon entirely.
