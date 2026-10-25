@@ -1,79 +1,109 @@
 # EnumExtensions
 
-Provides utility methods for working with enumerations, including conversion to and from human-readable description strings, retrieval of all defined values, and validation of enum members. The methods rely on the presence of a `DescriptionAttribute` on enum fields to supply the string representations used by `ToDescriptionString` and `FromString`.
+The `EnumExtensions` class is a public static class in the `DotnetAuthServer.Extensions` namespace. It provides four helpers for enum types: one extension method that returns a display string for an enum value, two static parsers that take a `string` and resolve it to an enum member by name or number, and one method that lists the members of an enum type. Only `ToDescriptionString` is an extension method (it has `this`); the other three are called as `EnumExtensions.<Method><T>(...)`.
+
+The class has no private members and no state. All methods are stateless and safe to call from multiple threads.
 
 ## API
 
-### ToDescriptionString\<T\>
+| Method | Kind | Returns | Purpose |
+|---|---|---|---|
+| [`ToDescriptionString`](#todescriptionstring) | extension on `T` | `string` | Display text: `DescriptionAttribute` value, or the name, or the number |
+| [`FromString`](#fromstring) | static | `T` | Parse a name or number; throws on failure |
+| [`GetValues`](#getvalues) | static | `IEnumerable<T>` | All named constants of `T` |
+| [`IsValidValue`](#isvalidvalue) | static | `bool` | Whether a string parses to a value of `T` |
+
+### ToDescriptionString
+
 ```csharp
-public static string ToDescriptionString<T>(this T value) where T : Enum
+public static string ToDescriptionString<T>(this T @enum) where T : Enum
 ```
-Returns the description string associated with the given enum value. The description is obtained from the `DescriptionAttribute` applied to the enum field. If no such attribute is present, the method falls back to the enum field's name.
 
-**Parameters:**
-- `value` — The enum value whose description is to be retrieved.
+Gets the text to show for an enum value. The method takes `ToString()` of the value and looks up a public static field with that name on the value's runtime type. If the field has a `System.ComponentModel.DescriptionAttribute`, its `Description` is returned. Otherwise the `ToString()` text is returned.
 
-**Returns:**
-- The content of the `DescriptionAttribute` on the enum field, or the field's name if the attribute is absent.
+Because the lookup is by the text of `ToString()`, a value that is not a named constant (for example `(Status)99`) or a flags combination (for example `Read | Write`) has no matching field. In those cases the `ToString()` text is returned: `"99"` or `"Read, Write"`. The method does not throw for these values.
 
-**Throws:**
-- `ArgumentNullException` — when `value` is `null`.
-- `InvalidOperationException` — when the supplied value is not a defined enum member (e.g., an out-of-range integer cast to the enum type).
+**Parameters**
 
----
+- `enum`: The enum value to convert.
 
-### FromString\<T\>
+**Returns**
+
+The `DescriptionAttribute.Description` of the matching field, or `ToString()` of the value when there is no description.
+
+**Exceptions**
+
+- `ArgumentNullException`: `enum` is `null`. The check is effectively unreachable for a non-nullable enum argument, because the value is boxed and cannot be `null`.
+
+### FromString
+
 ```csharp
-public static T? FromString<T>(this string description) where T : struct, Enum
+public static T FromString<T>(string value) where T : struct, Enum
 ```
-Parses a description string and returns the corresponding enum value of type `T`. Matching is performed against the `DescriptionAttribute` values of all defined enum fields. The comparison is case-sensitive.
 
-**Parameters:**
-- `description` — The description string to match against enum field descriptions.
+Parses a string into a member of `T`. It calls `Enum.TryParse<T>` with `ignoreCase: true`. Parsing accepts member names, numeric values, and comma-separated flag names. Leading and trailing whitespace is ignored. `DescriptionAttribute` values are **not** used for matching.
 
-**Returns:**
-- The enum value whose `DescriptionAttribute` matches the input string, or `null` if no match is found or if the input is `null` or whitespace.
+Because `Enum.TryParse` accepts any number, a numeric string that is not a named constant (for example `"99"`) parses successfully and returns that value cast to `T`.
 
-**Throws:**
-- This method does not throw exceptions; it returns `null` for any input that cannot be resolved.
+**Parameters**
 
----
+- `value`: The name, number, or flag-name list to parse.
 
-### GetValues\<T\>
+**Returns**
+
+The parsed value of type `T`.
+
+**Exceptions**
+
+- `ArgumentNullException`: `value` is `null`. The exception's parameter name is `value`.
+- `ArgumentException`: `value` is empty, whitespace, or cannot be parsed as `T`. The message is `Value '<value>' is not a valid value for enum type <TypeName>.`
+
+### GetValues
+
 ```csharp
 public static IEnumerable<T> GetValues<T>() where T : Enum
 ```
-Enumerates all defined values of the enum type `T`.
 
-**Parameters:**
-- None (generic type parameter only).
+Gets the values of `T` by calling `Enum.GetValues(typeof(T))` and casting each element to `T`. The result has one entry per named constant, in ascending order of the underlying value. Aliases (two names with the same value) therefore appear once for each name. Each entry is rendered with the canonical name of its value, so an alias prints as the first name declared for that value.
 
-**Returns:**
-- An `IEnumerable<T>` containing every named constant of the enum, in declaration order.
+**Parameters**
 
-**Throws:**
-- No exceptions are thrown under normal circumstances. The method relies on `Enum.GetValues`, which may throw `ArgumentException` if `T` is not an enum type at runtime, but the generic constraint prevents this at compile time.
+None. `T` is the only type argument, and it is supplied explicitly, for example `GetValues<Status>()`.
 
----
+**Returns**
 
-### IsValidValue\<T\>
+An `IEnumerable<T>` containing every named constant of `T`.
+
+**Exceptions**
+
+None. The `where T : Enum` constraint prevents non-enum types at compile time.
+
+### IsValidValue
+
 ```csharp
-public static bool IsValidValue<T>(this T value) where T : Enum
+public static bool IsValidValue<T>(string value) where T : struct, Enum
 ```
-Determines whether the provided value is a defined member of the enum type `T`. This validates against named constants only; numeric combinations of flags are considered invalid unless they correspond exactly to a named field.
 
-**Parameters:**
-- `value` — The enum value to validate.
+Checks whether a string parses to a value of `T`. It uses the same rules as [`FromString`](#fromstring): case-insensitive, whitespace-trimmed, names and numbers accepted, and `DescriptionAttribute` values ignored. The check does not require the parsed number to be a named constant.
 
-**Returns:**
-- `true` if the value is one of the named constants of `T`; otherwise `false`.
+**Parameters**
 
-**Throws:**
-- `ArgumentNullException` — when `value` is `null`.
+- `value`: The string to check.
+
+**Returns**
+
+`true` if the string parses to a value of `T`; otherwise `false`. Empty and whitespace-only strings return `false`.
+
+**Exceptions**
+
+- `ArgumentNullException`: `value` is `null`.
 
 ## Usage
 
-### Example 1: Converting an enum to a user-facing string and back
+### Example 1: Round-tripping names
+
+`ToDescriptionString` is for display. `FromString` parses names and numbers, so a description only round-trips through `FromString` if it equals the field name.
+
 ```csharp
 public enum OrderStatus
 {
@@ -87,40 +117,36 @@ public enum OrderStatus
     Delivered
 }
 
-// Convert enum to display string
 OrderStatus status = OrderStatus.Shipped;
-string displayText = status.ToDescriptionString(); // "Shipped"
+string label = status.ToDescriptionString();          // "Shipped"
 
-// Parse display string back to enum
-OrderStatus? parsed = displayText.FromString<OrderStatus>();
-Console.WriteLine(parsed == OrderStatus.Shipped); // True
+OrderStatus parsed = EnumExtensions.FromString<OrderStatus>("shipped");
+Console.WriteLine(parsed == OrderStatus.Shipped);     // True
+
+// Descriptions are not parsed:
+EnumExtensions.IsValidValue<OrderStatus>("Pending Approval"); // False
 ```
 
 ### Example 2: Populating a dropdown and validating input
+
 ```csharp
-// Populate dropdown with all enum values using their descriptions
 var options = EnumExtensions.GetValues<OrderStatus>()
-    .Select(v => new { Value = v, Label = v.ToDescriptionString() })
+    .Select(v => new { Value = v.ToString(), Label = v.ToDescriptionString() })
     .ToList();
 
-// Validate a raw integer received from an API
-int rawValue = 2;
-OrderStatus candidate = (OrderStatus)rawValue;
-if (candidate.IsValidValue())
+string raw = "99";
+if (EnumExtensions.IsValidValue<OrderStatus>(raw))
 {
-    Console.WriteLine($"Valid status: {candidate.ToDescriptionString()}");
-}
-else
-{
-    Console.WriteLine("Invalid status value.");
+    // Returns true for "99" even though no member has that value.
+    // Check the parsed value against the defined members if that matters.
 }
 ```
 
 ## Notes
 
-- **DescriptionAttribute dependency:** `ToDescriptionString` and `FromString` depend entirely on `DescriptionAttribute` annotations. Enum fields without this attribute expose their raw field name via `ToDescriptionString` and are matched by field name in `FromString`.
-- **Case sensitivity:** `FromString` performs an exact, case-sensitive comparison. Input strings that differ in casing from the attribute value will not match.
-- **Null and whitespace handling:** `FromString` returns `null` for `null`, empty, or whitespace-only input strings without throwing.
-- **Undefined enum values:** `ToDescriptionString` throws `InvalidOperationException` when called on a value that is not a named constant (e.g., `(OrderStatus)99`). Callers should guard with `IsValidValue` when the source of the value is untrusted.
-- **Flags enums:** `IsValidValue` checks for exact match against named constants. Combined flag values (e.g., `Read | Write`) return `false` unless the combination itself is a named field. `GetValues` returns only the individually declared fields, not all possible combinations.
-- **Thread safety:** All methods are stateless and operate on immutable reflection data. They are safe to call concurrently from multiple threads without external synchronization.
+- **Descriptions are not parsed.** `ToDescriptionString` reads `DescriptionAttribute`. `FromString` and `IsValidValue` match only member names and numbers, so a value must be parsed from its name (or number) to round-trip.
+- **Case and whitespace.** `FromString` and `IsValidValue` ignore case and leading or trailing whitespace. `"shipped"`, `" Shipped "` and `"SHIPPED"` all parse to `Shipped`.
+- **Undefined numeric values.** Numeric strings are accepted even when they are not named constants. `IsValidValue<OrderStatus>("99")` returns `true`, and `FromString<OrderStatus>("99")` returns `(OrderStatus)99`. Validate the parsed value against `GetValues<T>()` when the input is untrusted.
+- **Flags.** `FromString` and `IsValidValue` accept comma-separated flag names such as `"Read, Write"`. `ToDescriptionString` does not look up descriptions for combined values; it returns the `ToString()` text.
+- **Aliases.** `GetValues` returns an entry for each name, so aliased values appear more than once. `FromString` returns the same value for any alias.
+- **Exceptions differ.** `FromString` throws on failure. `IsValidValue` returns `false` for unparseable input and only throws for `null`. `ToDescriptionString` does not throw for undefined values.
