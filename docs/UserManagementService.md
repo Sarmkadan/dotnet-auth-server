@@ -1,159 +1,188 @@
 # UserManagementService
 
-The `UserManagementService` class provides the core business logic for managing user accounts, roles, and account status within the `dotnet-auth-server` application. It encapsulates operations such as creating, retrieving, updating, deleting users, assigning and removing roles, and locking or unlocking user accounts. All public methods are asynchronous and return `UserResponse` objects (or collections thereof) that represent the user data exposed to callers.
+`UserManagementService` is the administrative facade over user accounts. It serves privileged, server-side callers such as an admin API or background jobs: listing, searching, creating, updating, deleting, role management, and lock/unlock. End-user self-service operations (authentication, password change, self-registration flows) live in `UserService`.
 
-## API
+The class is `public sealed` and lives in `src/Services/UserManagementService.cs`, namespace `DotnetAuthServer.Services`. It has no interface. Register and inject the concrete type, as with the other services.
 
-### `public UserManagementService(/* dependencies */)`
+## Role in the system
 
-Initializes a new instance of the service. The constructor typically accepts dependencies such as a database context, a user store, and an authorization service. The exact parameters are implementation‑specific and are resolved by dependency injection.
+- Reads and writes go through `IUserRepository`. Account creation and role changes are delegated to a `UserService` built per call, so the same validation and password hashing rules apply.
+- Deleting an account also revokes its refresh tokens (`IRefreshTokenRepository`) and sessions (`IUserSessionRepository`).
+- Lock and unlock events are written to the security log through `SecurityEventLog`. Other operations are written to the regular logger at `Information`.
+- Every method that takes a `userId` throws the same not-found error if the user does not exist (see [Errors](#errors)).
 
-### `public async Task<IEnumerable<UserResponse>> GetAllUsersAsync()`
+## Constructor
 
-Retrieves all users in the system.
+### `public UserManagementService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository, IUserSessionRepository sessionRepository, ILogger<UserManagementService> logger, ILoggerFactory loggerFactory, AuthServerOptions options)`
 
-- **Returns**: A collection of `UserResponse` objects representing every registered user.
-- **Throws**: `UnauthorizedAccessException` if the caller does not have the required permission to list users.
-
-### `public async Task<UserResponse> GetUserByIdAsync(string userId)`
-
-Retrieves a single user by its unique identifier.
+Creates the service from its collaborators.
 
 - **Parameters**:
-  - `userId` – The identifier of the user to retrieve.
-- **Returns**: A `UserResponse` for the specified user.
-- **Throws**: `ArgumentNullException` if `userId` is `null` or empty.  
-  `KeyNotFoundException` if no user with the given identifier exists.
+  - `userRepository`: Persistence for `User` entities.
+  - `refreshTokenRepository`: Used to revoke all refresh tokens when a user is deleted, and passed to the internal `UserService`.
+  - `sessionRepository`: Used to revoke all sessions when a user is deleted.
+  - `logger`: Logger for administrative actions.
+  - `loggerFactory`: Creates the logger for the internal `UserService` each time one is built.
+  - `options`: Server options. `options.PasswordPolicy` configures the password validator.
+- **Throws**: The constructor does not null-check its arguments.
 
-### `public async Task<IEnumerable<UserResponse>> SearchUsersAsync(string query)`
+## Methods
 
-Searches for users whose properties (e.g., username, email) match the provided query string.
+### `public async Task<IEnumerable<UserResponse>> GetAllUsersAsync(CancellationToken cancellationToken = default)`
 
-- **Parameters**:
-  - `query` – A search term used to filter users. May be `null` or empty, in which case all users are returned.
-- **Returns**: A collection of matching `UserResponse` objects.
-- **Throws**: `UnauthorizedAccessException` if the caller lacks search permissions.
-
-### `public async Task<UserResponse> CreateUserAsync(CreateUserRequest request)`
-
-Creates a new user account based on the provided request data.
+Returns every registered user.
 
 - **Parameters**:
-  - `request` – A `CreateUserRequest` object containing required fields (e.g., username, email, password).
-- **Returns**: A `UserResponse` representing the newly created user.
-- **Throws**: `ArgumentNullException` if `request` is `null`.  
-  `ArgumentException` if the request data is invalid (e.g., missing required fields, invalid email format).  
-  `InvalidOperationException` if a user with the same username or email already exists.
+  - `cancellationToken`: Cancels the repository call.
+- **Return value**: The users as `UserResponse` projections. The projection is lazy (`Select`), so mapping runs when the sequence is enumerated.
+- **Throws**: `OperationCanceledException` if cancelled.
 
-### `public async Task<UserResponse> UpdateUserAsync(string userId, UpdateUserRequest request)`
+### `public async Task<UserResponse> GetUserByIdAsync(string userId, CancellationToken cancellationToken = default)`
 
-Updates an existing user’s profile information.
+Returns one user by ID.
 
 - **Parameters**:
-  - `userId` – The identifier of the user to update.
-  - `request` – An `UpdateUserRequest` containing the fields to modify.
-- **Returns**: A `UserResponse` reflecting the updated state.
-- **Throws**: `ArgumentNullException` if `userId` or `request` is `null`.  
-  `KeyNotFoundException` if the user does not exist.  
-  `ArgumentException` if the update data is invalid.
+  - `userId`: The user's ID.
+  - `cancellationToken`: Cancels the repository call.
+- **Return value**: The matching `UserResponse`.
+- **Throws**: `AuthServerException` with status `404` if no user has that ID.
 
-### `public async Task DeleteUserAsync(string userId)`
+### `public async Task<IEnumerable<UserResponse>> SearchUsersAsync(string query, CancellationToken cancellationToken = default)`
 
-Permanently removes a user account from the system.
+Searches users by username, email, or full name.
 
 - **Parameters**:
-  - `userId` – The identifier of the user to delete.
-- **Returns**: A `Task` representing the asynchronous operation.
-- **Throws**: `ArgumentNullException` if `userId` is `null` or empty.  
-  `KeyNotFoundException` if the user does not exist.
+  - `query`: The search text. If it is `null`, empty, or whitespace, the method returns all users (same as `GetAllUsersAsync`).
+  - `cancellationToken`: Cancels the repository call.
+- **Return value**: The matching users as `UserResponse` projections.
+- **Throws**: `OperationCanceledException` if cancelled.
 
-### `public async Task AssignRoleAsync(string userId, string roleName)`
+### `public async Task<UserResponse> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)`
 
-Assigns a role to the specified user.
-
-- **Parameters**:
-  - `userId` – The identifier of the user.
-  - `roleName` – The name of the role to assign.
-- **Returns**: A `Task` representing the asynchronous operation.
-- **Throws**: `ArgumentNullException` if either parameter is `null` or empty.  
-  `KeyNotFoundException` if the user or the role does not exist.  
-  `InvalidOperationException` if the user already has the specified role.
-
-### `public async Task RemoveRoleAsync(string userId, string roleName)`
-
-Removes a role from the specified user.
+Creates a user account and assigns its initial roles.
 
 - **Parameters**:
-  - `userId` – The identifier of the user.
-  - `roleName` – The name of the role to remove.
-- **Returns**: A `Task` representing the asynchronous operation.
-- **Throws**: `ArgumentNullException` if either parameter is `null` or empty.  
-  `KeyNotFoundException` if the user or the role does not exist.  
-  `InvalidOperationException` if the user does not currently have the specified role.
+  - `request`: The account data. `Username`, `Email`, and `Password` are required. `FullName` is optional. `Roles` lists initial roles and may be empty.
+  - `cancellationToken`: Cancels the call.
+- **Return value**: The created user as a `UserResponse`.
+- **Behavior**:
+  - The account is created active, with a new GUID `UserId`.
+  - The username must be 3-50 characters of allowed characters and must be unique. The email must be well formed and unique.
+  - The password must satisfy the configured password policy. The policy check uses the username.
+  - Each entry in `Roles` is assigned in order. Role matching is case-insensitive, so duplicates that differ only by case are assigned once.
+  - The account is saved before roles are assigned. If a role assignment fails, the account remains, with the roles assigned up to that point. There is no rollback.
+- **Throws**:
+  - `AuthServerException` with status `400` (`invalid_request`) for an invalid username or email, a duplicate username or email, or a password that breaks the policy.
+  - `AuthServerException` with status `500` (`server_error`) for an unexpected failure during creation or role assignment.
+  - `ArgumentException` if `Username`, `Email`, or `Password` is `null`, empty, or whitespace.
 
-### `public async Task LockUserAsync(string userId)`
+### `public async Task<UserResponse> UpdateUserAsync(string userId, UpdateUserRequest request, CancellationToken cancellationToken = default)`
 
-Locks the user account, preventing the user from signing in.
-
-- **Parameters**:
-  - `userId` – The identifier of the user to lock.
-- **Returns**: A `Task` representing the asynchronous operation.
-- **Throws**: `ArgumentNullException` if `userId` is `null` or empty.  
-  `KeyNotFoundException` if the user does not exist.  
-  `InvalidOperationException` if the account is already locked.
-
-### `public async Task UnlockUserAsync(string userId)`
-
-Unlocks a previously locked user account, restoring sign‑in capability.
+Updates the mutable profile fields of an existing user. Only the fields set in the request are changed.
 
 - **Parameters**:
-  - `userId` – The identifier of the user to unlock.
-- **Returns**: A `Task` representing the asynchronous operation.
-- **Throws**: `ArgumentNullException` if `userId` is `null` or empty.  
-  `KeyNotFoundException` if the user does not exist.  
-  `InvalidOperationException` if the account is not currently locked.
+  - `userId`: The user to update.
+  - `request`: The changes to apply. See the rules below.
+  - `cancellationToken`: Cancels the call.
+- **Return value**: The updated user as a `UserResponse`.
+- **Behavior**:
+  - `FullName` is changed only when it is not `null`, empty, or whitespace.
+  - `IsActive` is changed only when it has a value. Setting it to `false` deactivates the account. It does not revoke existing tokens.
+  - `Attributes` is merged into the existing attribute bag. Keys in the request overwrite existing keys. Keys not in the request are kept. Nothing is removed.
+- **Throws**: `AuthServerException` with status `404` if the user does not exist. `OperationCanceledException` if cancelled.
 
-## Usage
+### `public async Task DeleteUserAsync(string userId, CancellationToken cancellationToken = default)`
 
-### Example 1: Creating a user and assigning a role
+Permanently deletes a user account.
+
+- **Parameters**:
+  - `userId`: The user to delete.
+  - `cancellationToken`: Cancels the call.
+- **Behavior**: Revokes all of the user's refresh tokens and sessions with the reason `Account deleted`, then removes the user. The steps run in that order and are not wrapped in a transaction. If a later step fails, earlier revocations are not undone.
+- **Throws**: `AuthServerException` with status `404` if the user does not exist. `OperationCanceledException` if cancelled.
+
+### `public async Task AssignRoleAsync(string userId, string role, CancellationToken cancellationToken = default)`
+
+Assigns a role to a user.
+
+- **Parameters**:
+  - `userId`: The user to change.
+  - `role`: The role name. Matching is case-insensitive.
+  - `cancellationToken`: Cancels the call.
+- **Behavior**: Idempotent. If the role is already present, nothing is saved. The administrative log entry is written either way.
+- **Throws**: `AuthServerException` with status `404` if the user does not exist. `ArgumentException` if `role` is `null`, empty, or whitespace. `AuthServerException` with status `500` on an unexpected storage failure.
+
+### `public async Task RemoveRoleAsync(string userId, string role, CancellationToken cancellationToken = default)`
+
+Removes a role from a user.
+
+- **Parameters**:
+  - `userId`: The user to change.
+  - `role`: The role name to remove.
+  - `cancellationToken`: Cancels the call.
+- **Behavior**: Idempotent. If the user does not have the role, the user is still saved and the log entry is still written.
+- **Throws**: `AuthServerException` with status `404` if the user does not exist. `ArgumentException` if `role` is `null`, empty, or whitespace. `AuthServerException` with status `500` on an unexpected storage failure.
+
+### `public async Task LockUserAsync(string userId, TimeSpan duration, CancellationToken cancellationToken = default)`
+
+Locks a user account for a fixed duration.
+
+- **Parameters**:
+  - `userId`: The user to lock.
+  - `duration`: How long the lock lasts from now (UTC).
+  - `cancellationToken`: Cancels the call.
+- **Behavior**: Sets the lock expiry to now plus `duration` and resets the failed-login counter to `0`. Logs an account-locked security event with the expiry time.
+- **Throws**: `AuthServerException` with status `404` if the user does not exist. `OperationCanceledException` if cancelled.
+
+### `public async Task UnlockUserAsync(string userId, CancellationToken cancellationToken = default)`
+
+Unlocks a user account.
+
+- **Parameters**:
+  - `userId`: The user to unlock.
+  - `cancellationToken`: Cancels the call.
+- **Behavior**: Clears the lock expiry and resets the failed-login counter to `0`. Logs an account-unlocked security event. Unlocking an account that is not locked is allowed.
+- **Throws**: `AuthServerException` with status `404` if the user does not exist. `OperationCanceledException` if cancelled.
+
+## Errors
+
+Errors use `AuthServerException` with the codes below. `ErrorHandlingMiddleware` converts them into the OAuth `{"error","error_description"}` JSON response.
+
+| Condition | Error code | Status |
+|---|---|---|
+| User ID not found | `invalid_request` | `404` |
+| Invalid username/email, duplicate username/email, password policy failure | `invalid_request` | `400` |
+| Unexpected failure during account creation or role assignment | `server_error` | `500` |
+
+`ArgumentException` (and not `AuthServerException`) is thrown for blank required string arguments. Cancellation surfaces as `OperationCanceledException` and is not wrapped.
+
+## Returned data
+
+Methods return `UserResponse`, a read-only projection of `User`. The password hash and TOTP secret are never included. The fields are `UserId`, `Username`, `Email`, `FullName`, `IsActive`, `EmailVerified`, `Roles`, `Attributes`, `CreatedAt`, `UpdatedAt`, `LastLoginAt`, `IsLocked`, and `LockedUntil`.
+
+`IsLocked` is computed when the response is built. An expired lock reads as not locked.
+
+## Example
 
 ```csharp
-public async Task<UserResponse> CreateAdminUserAsync(UserManagementService userService)
+var request = new CreateUserRequest
 {
-    var createRequest = new CreateUserRequest
-    {
-        Username = "jdoe",
-        Email = "jdoe@example.com",
-        Password = "SecureP@ss1"
-    };
+    Username = "jdoe",
+    Email = "jdoe@example.com",
+    Password = "a-long-initial-password",
+    FullName = "Jane Doe",
+    Roles = ["user"]
+};
 
-    UserResponse newUser = await userService.CreateUserAsync(createRequest);
-    await userService.AssignRoleAsync(newUser.Id, "Administrator");
-    return newUser;
-}
+var created = await userManagement.CreateUserAsync(request, cancellationToken);
+
+await userManagement.AssignRoleAsync(created.UserId, "auditor", cancellationToken);
+await userManagement.LockUserAsync(created.UserId, TimeSpan.FromMinutes(30), cancellationToken);
 ```
 
-### Example 2: Searching for users and locking an account
+## Known limitations
 
-```csharp
-public async Task LockInactiveUsersAsync(UserManagementService userService, string searchPattern)
-{
-    IEnumerable<UserResponse> users = await userService.SearchUsersAsync(searchPattern);
-    foreach (var user in users)
-    {
-        if (user.LastLoginDate < DateTime.UtcNow.AddMonths(-6))
-        {
-            await userService.LockUserAsync(user.Id);
-        }
-    }
-}
-```
-
-## Notes
-
-- **Parameter validation**: All methods that accept a user identifier or role name throw `ArgumentNullException` when the value is `null` or empty. Callers should validate inputs before invoking these methods.
-- **Duplicate detection**: `CreateUserAsync` throws `InvalidOperationException` if a user with the same username or email already exists. The exact uniqueness constraints depend on the underlying identity store.
-- **Role existence**: `AssignRoleAsync` and `RemoveRoleAsync` throw `KeyNotFoundException` if the specified role does not exist in the system. Roles must be created separately before they can be assigned.
-- **Account state transitions**: `LockUserAsync` and `UnlockUserAsync` throw `InvalidOperationException` if the account is already in the requested state. Check the current lock status via `GetUserByIdAsync` if needed.
-- **Thread safety**: This service is not guaranteed to be thread‑safe. It relies on shared dependencies (e.g., an Entity Framework `DbContext`) that are not designed for concurrent use. In an ASP.NET Core application, register the service as **scoped** to ensure a single instance per request. Avoid sharing the same instance across multiple threads or long‑running background operations without proper synchronization.
-- **Authorization**: Several methods (e.g., `GetAllUsersAsync`, `SearchUsersAsync`) may throw `UnauthorizedAccessException` if the caller lacks the required permission. The exact authorization policy is configured externally and is not enforced by the service itself.
+- Account creation is not transactional. A failed role assignment leaves a partially set-up account behind.
+- `DeleteUserAsync` is not transactional. Revocation can succeed and the deletion can fail, leaving the user present with no active tokens or sessions.
+- `UpdateUserAsync` cannot remove attribute keys. Use the attribute bag to overwrite values only.
+- The service does not check whether the caller is authorized. Access control must be enforced by the caller (admin API or job).
