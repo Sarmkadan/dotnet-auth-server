@@ -1,175 +1,131 @@
 # TokenIntrospectionHandler
 
-Handles OAuth 2.0 token introspection requests as defined in RFC 7662. It receives an incoming token, validates it against the authorization server's token store, and produces an `IntrospectionResponse` indicating whether the token is currently active along with its associated metadata such as scope, client identifier, and subject claims.
+**Namespace:** `DotnetAuthServer.Handlers`
 
-## API
+Implements the token introspection logic of OAuth 2.0 Token Introspection (RFC 7662). Given a token string, it validates the JWT's signature, issuer and lifetime, checks the token's `jti` against the revoked-token store, and returns an `IntrospectionResponse` describing whether the token is active and, if so, its scope, client, subject and timing claims.
 
-### TokenIntrospectionHandler
+The handler never throws for an invalid token. Any failure (missing token, malformed JWT, bad signature, expired token, revoked `jti`, unexpected exception) produces an inactive response, so the response does not reveal why a token was rejected. Details are written to the log instead.
 
-```csharp
-public TokenIntrospectionHandler
-```
+`sealed`. Stateless apart from its constructor-time configuration, so a single instance can be shared across requests. Services and handlers are registered as scoped in DI, so it is normally resolved per request.
 
-Default constructor. Creates a new handler instance. The handler does not maintain internal state between invocations; each call to `IntrospectToken` operates independently.
+---
 
-### IntrospectToken
+## Constructor
 
-```csharp
-public IntrospectionResponse IntrospectToken(string token)
-```
+### `TokenIntrospectionHandler(AuthServerOptions options, RevokedTokenStore revokedTokenStore, ILogger<TokenIntrospectionHandler> logger)`
 
-Processes a token introspection request.
+Creates the handler and builds its validation configuration:
 
-**Parameters:**
-- `token` — The token string to introspect. Must not be null.
+| Setting | Value | Source |
+|---|---|---|
+| Signing key | `SymmetricSecurityKey` from the UTF-8 bytes of `options.JwtSigningKey` (HS256) | `AuthServerOptions.JwtSigningKey` |
+| `ValidateIssuerSigningKey` | `true` | - |
+| `ValidateIssuer` | `true`, expected issuer is `options.IssuerUrl` | `AuthServerOptions.IssuerUrl` |
+| `ValidateAudience` | `false` (audience varies by client) | - |
+| `ValidateLifetime` | `true` | - |
+| `ClockSkew` | 5 seconds | - |
 
-**Returns:**
-An `IntrospectionResponse` whose `Active` property indicates validity. When active, the response carries the associated claims; when inactive, metadata fields are absent or null.
+| Parameter | Type | Description |
+|---|---|---|
+| `options` | `AuthServerOptions` | Server options supplying the signing key and issuer URL. |
+| `revokedTokenStore` | `RevokedTokenStore` | Store consulted for revoked `jti` values. |
+| `logger` | `ILogger<TokenIntrospectionHandler>` | Logger for introspection events. |
 
-**Throws:**
-- `ArgumentNullException` — if `token` is null.
-- `FormatException` — if the token is malformed and cannot be parsed.
-- `CryptographicException` — if signature validation fails for a signed token.
+**Throws:** `ArgumentNullException` if `options`, `revokedTokenStore` or `logger` is `null`.
 
-### Active
+---
 
-```csharp
-public bool Active { get; }
-```
+## Methods
 
-Indicates whether the introspected token is currently valid. `true` if the token exists in the store, has not expired, and has not been revoked; `false` otherwise.
+### `IntrospectionResponse IntrospectToken(string? token)`
 
-### Scope
+Introspects a token. Never throws for bad input; see the behavior list below.
 
-```csharp
-public string? Scope { get; }
-```
+| Parameter | Type | Description |
+|---|---|---|
+| `token` | `string?` | The raw token string (typically the access token from a request). |
 
-The space-delimited scope values associated with the token. Null when the token is inactive or no scopes were originally granted.
+**Returns:** An `IntrospectionResponse`. Active responses carry claim data; inactive responses have `Active = false` and every other property `null`.
 
-### ClientId
+**Behavior, in order:**
 
-```csharp
-public string? ClientId { get; }
-```
+1. Logs the token length at debug level. The token value itself is not logged.
+2. If `token` is `null`, empty or whitespace, logs a warning and returns `Active = false`.
+3. Validates the token with `JwtSecurityTokenHandler.ValidateToken` using the parameters set in the constructor.
+4. If the validated token is a `JwtSecurityToken` with a non-empty `jti` that `RevokedTokenStore.IsRevoked` reports as revoked, logs the `jti` and returns `Active = false`.
+5. Otherwise builds an active response from the claims (see mapping below) and returns it.
+6. Any exception from steps 3 to 5 is logged at error level and results in `Active = false`. A validated token that is not a `JwtSecurityToken` also results in `Active = false`.
 
-The OAuth 2.0 client identifier for which the token was issued. Null when the token is inactive.
+**Claim mapping for active responses:**
 
-### Username
+| `IntrospectionResponse` property | Source |
+|---|---|
+| `Active` | `true` |
+| `Scope` | Value of the first `scope` claim, or `null`. |
+| `ClientId` | Value of the first `aud` claim, or `null`. |
+| `Username` | Value of the first `sub` claim, or `null`. |
+| `TokenType` | Always `"Bearer"`. |
+| `Exp` | `ValidTo` converted to Unix seconds (UTC). |
+| `Iat` | `IssuedAt` converted to Unix seconds (UTC). |
+| `Sub` | Value of the first `sub` claim, or `null`. |
 
-```csharp
-public string? Username { get; }
-```
+Because lifetime validation is enabled, an active response always has an `exp` claim. `iat` is not required by validation; if it is absent, `Iat` holds the converted value of the default `DateTime`, not a meaningful timestamp.
 
-The resource owner username tied to the token, typically present for password grant tokens. Null when the token is inactive or the grant type did not involve a user.
-
-### TokenType
-
-```csharp
-public string? TokenType { get; }
-```
-
-The type of the token, e.g. `"access_token"` or `"refresh_token"`. Null when the token is inactive.
-
-### Exp
-
-```csharp
-public long? Exp { get; }
-```
-
-The expiration time of the token as a Unix timestamp (seconds since epoch). Null when the token is inactive or has no explicit expiration.
-
-### Iat
+**Example:**
 
 ```csharp
-public long? Iat { get; }
-```
+var handler = scope.ServiceProvider.GetRequiredService<TokenIntrospectionHandler>();
+IntrospectionResponse result = handler.IntrospectToken(accessToken);
 
-The issued-at time of the token as a Unix timestamp. Null when the token is inactive.
-
-### Sub
-
-```csharp
-public string? Sub { get; }
-```
-
-The subject identifier — typically the user or principal the token represents. Null when the token is inactive.
-
-## Usage
-
-### Example 1: Basic introspection of an access token
-
-```csharp
-var handler = new TokenIntrospectionHandler();
-
-try
+if (result.Active)
 {
-    IntrospectionResponse response = handler.IntrospectToken(accessToken);
-
-    if (response.Active)
-    {
-        Console.WriteLine($"Token is active for client '{response.ClientId}'");
-        Console.WriteLine($"Scopes: {response.Scope}");
-        Console.WriteLine($"Expires at Unix timestamp: {response.Exp}");
-
-        // Authorize the request based on scopes
-        if (response.Scope?.Contains("read") == true)
-        {
-            GrantReadAccess(response.Sub);
-        }
-    }
-    else
-    {
-        Console.WriteLine("Token is inactive — reject the request.");
-    }
-}
-catch (FormatException)
-{
-    Console.WriteLine("Token is malformed.");
-}
-catch (CryptographicException)
-{
-    Console.WriteLine("Token signature is invalid.");
+    Console.WriteLine($"{result.Sub} via {result.ClientId}: {result.Scope}");
 }
 ```
 
-### Example 2: Resource server middleware guard
+---
 
-```csharp
-public bool AuthenticateRequest(string authorizationHeader, string requiredScope)
-{
-    if (string.IsNullOrEmpty(authorizationHeader) ||
-        !authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-    {
-        return false;
-    }
+## Related Types
 
-    string token = authorizationHeader["Bearer ".Length..];
-    var handler = new TokenIntrospectionHandler();
-    IntrospectionResponse response = handler.IntrospectToken(token);
+### `IntrospectionResponse`
 
-    if (!response.Active)
-    {
-        return false;
-    }
+**Namespace:** `DotnetAuthServer.Handlers` (declared in the same file as the handler)
 
-    // Verify the token type is an access token
-    if (response.TokenType != "access_token")
-    {
-        return false;
-    }
+Response model for the introspection endpoint. Mutable POCO with `get; set;` properties. Every property except `Active` is nullable.
 
-    // Check required scope
-    var grantedScopes = response.Scope?.Split(' ') ?? Array.Empty<string>();
-    return grantedScopes.Contains(requiredScope);
-}
-```
+| Property | Type | Description |
+|---|---|---|
+| `Active` | `bool` | `true` if the token is valid, unexpired and not revoked. |
+| `Scope` | `string?` | Space-separated scopes from the `scope` claim. |
+| `ClientId` | `string?` | Client identifier, taken from the `aud` claim. |
+| `Username` | `string?` | Human-readable resource owner identifier. Currently populated from `sub`. |
+| `TokenType` | `string?` | Token type; always `"Bearer"` for active responses. |
+| `Exp` | `long?` | Expiration time, seconds since the Unix epoch. |
+| `Iat` | `long?` | Issue time, seconds since the Unix epoch. |
+| `Sub` | `string?` | Subject identifier from the `sub` claim. |
 
-## Notes
+#### `override string ToString()`
 
-- **Stateless handler:** `TokenIntrospectionHandler` holds no mutable fields. A single instance can be reused concurrently across multiple threads without synchronization.
-- **Null metadata on inactive tokens:** When `Active` is `false`, all metadata properties (`Scope`, `ClientId`, `Username`, `TokenType`, `Exp`, `Iat`, `Sub`) return `null`. Always check `Active` before consuming these values.
-- **Expired tokens:** A token past its `Exp` timestamp is considered inactive. The `Exp` value itself may still be populated in the response for diagnostic purposes, but `Active` will be `false`.
-- **Revoked tokens:** If the token has been explicitly revoked in the store, `Active` returns `false` regardless of the expiration timestamp.
-- **Token format detection:** The handler internally distinguishes between reference tokens (opaque identifiers looked up in storage) and self-contained JWT tokens (validated via signature and claims). Malformed tokens that match neither pattern throw `FormatException`.
-- **Unix timestamps:** `Exp` and `Iat` are expressed in seconds since the Unix epoch. Convert with `DateTimeOffset.FromUnixTimeSeconds` when a CLR `DateTime` representation is needed.
+Returns a single-line representation listing every property, for example `IntrospectionResponse { Active = True, Scope = read, ClientId = client-1, ... }`. Intended for logging and debugging; do not rely on its exact format.
+
+---
+
+## Usage Notes
+
+- Call `IntrospectToken` from the introspection endpoint after authenticating the calling client. The handler does not authenticate the caller.
+- Callers should check `Active` first. Inactive responses are deliberately uninformative.
+- `Username` and `Sub` currently hold the same value.
+- `ClientId` comes from `aud`, which is the client identifier only when tokens are issued with the client as their audience.
+- Audience is not checked, so a token issued for a different resource server is still reported as active unless it is expired, revoked or badly signed.
+- Revocation is checked only by `jti`. Tokens without a `jti` cannot be revoked through this path.
+- Logs never contain the token value. They include its length, and the `jti` for revoked tokens.
+
+---
+
+## See Also
+
+- [RevokedTokenStore](RevokedTokenStore.md): source of revocation state checked during introspection.
+- [TokenRevocationHandler](TokenRevocationHandler.md): records the revocations this handler enforces.
+- [TokenValidator](TokenValidator.md): wraps this handler for internal token validation.
+- [TokenController](TokenController.md): exposes the introspection endpoint.
+- [docs/ARCHITECTURE.md](ARCHITECTURE.md): design overview and known limitations.
