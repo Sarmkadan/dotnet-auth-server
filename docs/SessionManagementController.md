@@ -1,128 +1,197 @@
 # SessionManagementController
 
-The `SessionManagementController` provides HTTP endpoints for managing user sessions in the authentication server. It enables querying active sessions, retrieving statistics, revoking individual or bulk sessions, and cleaning up expired records.
+`SessionManagementController` exposes the session management dashboard as a REST API. It lists active sessions globally and per user, revokes single sessions or all sessions of a user, reports aggregate statistics, and removes expired sessions from storage. All routes are under `api/sessions`. The controller parses HTTP, delegates to `UserSessionService`, and wraps results in `ApiResponse`. Session state changes and expiry rules live in `UserSessionService`.
 
-## API
+The class is `public sealed`, derives from `ControllerBase`, and lives in `src/Controllers/SessionManagementController.cs`, namespace `DotnetAuthServer.Controllers`. It is attribute-routed with `[ApiController]`, `[Route("api/sessions")]`, and `[Produces("application/json")]`. It is registered by `app.MapControllers()` in `Program.cs`, and `UserSessionService` is registered as a scoped service there.
 
-### GetAllActiveSessionsAsync
-**Purpose:** Returns a collection of all currently active sessions.  
-**Parameters:** none.  
-**Return Value:** `Task<IActionResult>` yielding a JSON array of session objects (containing `SessionId`, `UserId`, `ClientId`, `IpAddress`, `UserAgent`, `GrantedScopes`, `CreatedAt`, `ExpiresAt`, `LastActivityAt`, `IsRevoked`, `RevocationReason`) with a 200 OK status, or an appropriate error status.  
-**When it throws:** May propagate exceptions from the underlying session store (e.g., `InvalidOperationException` if the store is unavailable) which are caught by the ASP.NET Core pipeline and transformed into a 500 response.
+The same file also declares the public `SessionSummary` DTO, which is the element type of the list responses described below.
 
-### GetStatsAsync
-**Purpose:** Provides aggregate statistics about sessions (e.g., total active, expired, revoked counts).  
-**Parameters:** none.  
-**Return Value:** `Task<IActionResult>` containing a JSON object with statistical data and a 200 OK status, or an error status on failure.  
-**When it throws:** Any exception from the statistics query is bubbled up and results in a 500 response.
+## Public surface
 
-### GetUserSessionsAsync
-**Purpose:** Retrieves all sessions associated with a specific user.  
-**Parameters:** none.  
-**Return Value:** `Task<IActionResult>` with a JSON array of the user’s sessions and a 200 OK status, or an error status if the user cannot be found.  
-**When it throws:** Exceptions from the data access layer are propagated and become 500 responses.
+| Method | Route | Action | Purpose |
+|---|---|---|---|
+| `GET` | `/api/sessions` | `GetAllActiveSessionsAsync` | List all active sessions across all users. |
+| `GET` | `/api/sessions/stats` | `GetStatsAsync` | Read aggregate session counts. |
+| `GET` | `/api/sessions/users/{userId}` | `GetUserSessionsAsync` | List active sessions for one user. |
+| `DELETE` | `/api/sessions/{sessionId}` | `RevokeSessionAsync` | Revoke one session. |
+| `DELETE` | `/api/sessions/users/{userId}` | `RevokeAllUserSessionsAsync` | Revoke every active session of one user. |
+| `POST` | `/api/sessions/cleanup` | `CleanupExpiredAsync` | Delete expired sessions from storage. |
 
-### RevokeSessionAsync
-**Purpose:** Marks a single session as revoked, preventing further use of its tokens.  
-**Parameters:** none.  
-**Return Value:** `Task<IActionResult>` returning 200 OK on successful revocation, 404 if the session does not exist, or 500 on unexpected errors.  
-**When it throws:** Errors accessing the store are propagated as 500 responses.
+All responses are `application/json`. The controller sets no authorization attribute. Access control for these routes is not defined in this class.
 
-### RevokeAllUserSessionsAsync
-**Purpose:** Revokes every session belonging to a given user.  
-**Parameters:** none.  
-**Return Value:** `Task<IActionResult>` yielding 200 OK when all sessions are revoked, or an error status on failure.  
-**When it throws:** Store‑related exceptions become 500 responses.
+## Constructor
 
-### CleanupExpiredAsync
-**Purpose:** Deletes sessions whose `ExpiresAt` timestamp is in the past.  
-**Parameters:** none.  
-**Return Value:** `Task<IActionResult>` returning 200 OK with a count of removed sessions, or an error status.  
-**When it throws:** Exceptions from the cleanup operation are propagated as 500 responses.
+### `public SessionManagementController(UserSessionService sessionService, ILogger<SessionManagementController> logger)`
 
-### SessionId
-**Type:** `string`  
-**Purpose:** Unique identifier for the session.  
+Creates the controller. The container injects both parameters.
 
-### UserId
-**Type:** `string`  
-**Purpose:** Identifier of the user to whom the session belongs.  
+**Parameters:**
+- `sessionService` – required. Performs all session reads, revocations, statistics, and cleanup.
+- `logger` – required. Logs unhandled exceptions as errors.
 
-### ClientId
-**Type:** `string`  
-**Purpose:** Identifier of the client application that requested the session.  
+## Response envelope
 
-### IpAddress
-**Type:** `string?`  
-**Purpose:** IP address from which the session was initiated; may be null if not recorded.  
+Responses use `ApiResponse<T>` or `ApiResponse` (`src/Domain/Models/ApiResponse.cs`). Fields the controller sets:
 
-### UserAgent
-**Type:** `string?`  
-**Purpose:** User‑agent string of the client device; may be null.  
+| Field | Set on | Value |
+|---|---|---|
+| `success` | all | `true` on success, `false` on error. |
+| `data` | list and stats responses, bulk revoke, cleanup | Payload. Omitted on single-session revoke and on errors. |
+| `message` | success responses | Human-readable text. |
+| `error` | error responses | An error code (see [Error handling](#error-handling)). |
+| `timestamp` | all | UTC time the response was created. |
 
-### GrantedScopes
-**Type:** `string`  
-**Purpose:** Space‑separated list of OAuth scopes granted to the session.  
+The controller never sets `code` or `traceId`. The app's default MVC JSON settings produce camelCase property names. This is not configured anywhere in `Program.cs`.
 
-### CreatedAt
-**Type:** `DateTime`  
-**Purpose:** Timestamp when the session was created.  
+## Session payload
 
-### ExpiresAt
-**Type:** `DateTime`  
-**Purpose:** Timestamp when the session will expire if not renewed or revoked.  
+List responses return `SessionSummary` objects in `data`. Each object has these fields:
 
-### LastActivityAt
-**Type:** `DateTime?`  
-**Purpose:** Timestamp of the last request made using the session; null if no activity has been recorded.  
+| Field | Type | Meaning |
+|---|---|---|
+| `sessionId` | string | Unique session identifier. |
+| `userId` | string | Subject that owns the session. |
+| `clientId` | string | OAuth2 client that opened the session. |
+| `ipAddress` | string or `null` | Client IP at session creation. |
+| `userAgent` | string or `null` | `User-Agent` header at session creation. |
+| `grantedScopes` | string | Space-separated granted scopes. |
+| `createdAt` | UTC datetime | Session creation time. |
+| `expiresAt` | UTC datetime | Session expiry time. |
+| `lastActivityAt` | UTC datetime or `null` | Last activity time. |
+| `isRevoked` | bool | Whether the session has been revoked. |
+| `revocationReason` | string or `null` | Reason passed when the session was revoked. |
 
-### IsRevoked
-**Type:** `bool`  
-**Purpose:** Indicates whether the session has been revoked (`true`) or is still valid (`false`).  
+## Endpoints
 
-### RevocationReason
-**Type:** `string?`  
-**Purpose:** Optional description explaining why the session was revoked; null if not revoked or reason not supplied.  
+### `GET /api/sessions`
 
-## Usage
+`public async Task<IActionResult> GetAllActiveSessionsAsync(CancellationToken cancellationToken)`
 
-```csharp
-// Example 1: Retrieving all active sessions via dependency injection
-[ApiController]
-[Route("api/[controller]")]
-public class SessionManagementController : ControllerBase
-{
-    private readonly ISessionService _sessionService;
+Returns the active sessions of all users. Intended for admin dashboards and security monitoring.
 
-    public SessionManagementController(ISessionService sessionService)
-    {
-        _sessionService = sessionService;
-    }
+- **Success:** `200 OK`, body `ApiResponse<IEnumerable<SessionSummary>>`, with `data` set to the list. `message` is not set.
+- **Failure:** `500` with `error: "server_error"`. See [Error handling](#error-handling).
 
-    [HttpGet("active")]
-    public async Task<IActionResult> GetAllActiveSessionsAsync()
-    {
-        var sessions = await _sessionService.GetAllActiveSessionsAsync();
-        return Ok(sessions);
-    }
-}
+### `GET /api/sessions/stats`
 
-// Example 2: Revoking a specific session
-[HttpPost("revoke/{sessionId}")]
-public async Task<IActionResult> RevokeSessionAsync(string sessionId)
-{
-    var result = await _sessionService.RevokeSessionAsync(sessionId);
-    if (!result.Success)
-        return NotFound(new { Error = result.ErrorMessage });
+`public async Task<IActionResult> GetStatsAsync(CancellationToken cancellationToken)`
 
-    return Ok();
-}
-```
+Returns aggregate counts across all stored sessions.
 
-## Notes
-- The controller itself is stateless and thread‑safe; concurrent requests are safe as long as the injected `ISessionService` implementation handles concurrency correctly.
-- `IpAddress` and `UserAgent` may be null; consumers should guard against null reference when logging or displaying these values.
-- `LastActivityAt` being null indicates that no activity has been recorded since session creation; treat it as equivalent to `CreatedAt` for idle‑timeout calculations.
-- Revoking a session that is already revoked is idempotent – the operation will succeed without error.
-- The `CleanupExpiredAsync` endpoint should be called periodically (e.g., via a hosted background service) to prevent unbounded growth of the session store.
-- Exception handling is deliberately minimal in the controller; all unexpected errors are allowed to bubble up to the ASP.NET Core exception middleware, which returns a 500 Internal Server Error response. This keeps the controller focused on request/response translation.
+- **Success:** `200 OK`, body `ApiResponse<SessionStats>`. `data` contains:
+
+  | Field | Meaning |
+  |---|---|
+  | `totalSessions` | Number of stored sessions. |
+  | `activeSessions` | Sessions that are active. |
+  | `revokedSessions` | Sessions that have been revoked. |
+  | `expiredSessions` | Sessions that are not revoked and whose expiry has passed. |
+  | `uniqueUsers` | Distinct user IDs (case-insensitive) across all stored sessions. |
+  | `computedAt` | UTC time the statistics were computed. |
+
+- **Failure:** `500` with `error: "server_error"`.
+
+### `GET /api/sessions/users/{userId}`
+
+`public async Task<IActionResult> GetUserSessionsAsync(string userId, CancellationToken cancellationToken)`
+
+Returns the active sessions of one user. The user is not checked. An unknown `userId` returns `200` with an empty `data` list.
+
+- **Route value:** `userId` – target user ID.
+- **Success:** `200 OK`, body `ApiResponse<IEnumerable<SessionSummary>>`.
+- **Failure:** `500` with `error: "server_error"`, `message` set to the exception message.
+
+### `DELETE /api/sessions/{sessionId}`
+
+`public async Task<IActionResult> RevokeSessionAsync(string sessionId, [FromQuery] string? reason, CancellationToken cancellationToken)`
+
+Revokes one session. The session is marked revoked and kept in storage; it is not deleted.
+
+- **Route value:** `sessionId` – the session to revoke.
+- **Query:** `reason` – optional, human-readable. Stored as `revocationReason` and written to the log.
+- **Request body:** none.
+- **Success:** `200 OK`, body `ApiResponse` (non-generic), with `message` set to `"Session '<sessionId>' revoked"`. `data` is not set.
+- **Not found:** `404 Not Found`, body:
+
+  ```json
+  {
+    "success": false,
+    "error": "session_not_found",
+    "message": "Session '<sessionId>' not found",
+    "timestamp": "..."
+  }
+  ```
+
+  The `404` is raised by `UserSessionService.RevokeSessionAsync` as an `AuthServerException` and mapped by this action. Note that the `error` value here is `session_not_found`, not the `invalid_request` code carried by the exception.
+- **Failure:** `500` with `error: "server_error"`.
+
+### `DELETE /api/sessions/users/{userId}`
+
+`public async Task<IActionResult> RevokeAllUserSessionsAsync(string userId, [FromQuery] string? reason, CancellationToken cancellationToken)`
+
+Revokes every active session of one user. Sessions are marked revoked, not deleted.
+
+- **Route value:** `userId` – target user ID.
+- **Query:** `reason` – optional. Applied to every revoked session.
+- **Request body:** none.
+- **Success:** `200 OK`, body `ApiResponse<object>`:
+
+  ```json
+  {
+    "success": true,
+    "data": { "revokedCount": 2 },
+    "message": "Revoked 2 session(s) for user 'alice'",
+    "timestamp": "..."
+  }
+  ```
+
+  A user with no active sessions returns `200` with `revokedCount: 0`. The user is not checked.
+- **Failure:** `500` with `error: "server_error"`.
+
+### `POST /api/sessions/cleanup`
+
+`public async Task<IActionResult> CleanupExpiredAsync(CancellationToken cancellationToken)`
+
+Deletes expired sessions from storage to free memory. Sessions that are expired and revoked are included.
+
+- **Request body:** none.
+- **Success:** `200 OK`, body `ApiResponse<object>`:
+
+  ```json
+  {
+    "success": true,
+    "data": { "removedCount": 5 },
+    "message": "Removed 5 expired session(s)",
+    "timestamp": "..."
+  }
+  ```
+
+- **Failure:** `500` with `error: "server_error"`.
+
+## Error handling
+
+The controller catches exceptions in each action and returns the body shape `ApiResponse` with `success: false`. It does not rely on `ErrorHandlingMiddleware` for these routes.
+
+| Status | `error` | When |
+|---|---|---|
+| `404` | `session_not_found` | `DELETE /{sessionId}` where the session does not exist. |
+| `500` | `server_error` | Any other exception in the service or repository. |
+
+For `500`, `message` is set to the exception's `Message`. Service failures raised as `AuthServerException` carry a generic text such as `"Failed to retrieve active sessions"`, and other exceptions are passed through as-is. The controller logs the full exception at error level.
+
+The `[ApiController]` attribute and the route constraints make the `ArgumentException.ThrowIfNullOrEmpty` checks on `userId` and `sessionId` effectively unreachable for routed requests, since ASP.NET Core does not match an empty segment. Those checks run outside the `try` block. If they ever fire, the exception is handled by `ErrorHandlingMiddleware`, which returns `500` with the OAuth-style `server_error` body, not an `ApiResponse`.
+
+## Behavior notes
+
+- **Revocation is soft.** `DELETE` routes set the revoked flag and the revocation reason; the records remain and are counted in `revokedSessions` until `POST /cleanup` removes expired ones.
+- **Unknown IDs and users.** `DELETE /{sessionId}` is the only action that returns `404`. Per-user endpoints return `200` for unknown users with an empty list or `revokedCount: 0`.
+- **Lists are not paginated.** `GET /api/sessions` and `GET /api/sessions/users/{userId}` return every matching session in one response.
+- **Session data is in memory.** Storage is in-memory only, per the repository design described in `docs/ARCHITECTURE.md`. Sessions are lost on restart.
+
+## Related types
+
+- `UserSessionService` (`src/Services/UserSessionService.cs`) – session operations used by every action.
+- `SessionStats` (`src/Services/UserSessionService.cs`) – payload of `GET /stats`.
+- `SessionSummary` (`src/Controllers/SessionManagementController.cs`) – payload of the list endpoints.
+- `ApiResponse`, `ApiResponse<T>` (`src/Domain/Models/ApiResponse.cs`) – response envelope.
+- `AuthServerException` (`src/Exceptions/`) – source of the `404` for single-session revocation.
