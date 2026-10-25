@@ -1,135 +1,170 @@
 # HttpRequestExtensions
 
-Provides a set of extension methods for the ASP.NET Core `HttpRequest` class, simplifying common authentication-related tasks such as extracting OAuth parameters, client credentials, client IP addresses, bearer tokens, and checking transport security. These methods are designed for use in middleware, controllers, or authorization handlers within the `dotnet-auth-server` project.
+The `HttpRequestExtensions` class is a static class of extension methods on ASP.NET Core's `HttpRequest`. It reads OAuth 2.0 parameters from the query string and form body, extracts client credentials (HTTP Basic or form), resolves the client IP address, reads the bearer token, and reports whether the request arrived over a secure transport. The methods are used by the controllers, handlers, and middleware in this project. All methods are read-oriented: they do not write headers or change the request, but reading the form body has side effects described in [Remarks](#remarks).
+
+The class lives in the `DotnetAuthServer.Extensions` namespace and is declared `public static`. Its only private member is the helper `ExtractBasicAuthCredentials`, which is not part of the public API.
 
 ## API
 
-### `GetOAuthParameter`
+| Method | Returns | Reads |
+|---|---|---|
+| [`GetOAuthParameter`](#getoauthparameter) | `string?` | Query string, then form body |
+| [`ExtractClientCredentials`](#extractclientcredentials) | `(string? ClientId, string? ClientSecret)` | `Authorization` header, then query/form |
+| [`GetClientIpAddress`](#getclientipaddress) | `string?` | `X-Forwarded-For`, then connection |
+| [`IsSecureTransport`](#issecuretransport) | `bool` | `IsHttps`, then `X-Forwarded-Proto` |
+| [`GetBearerToken`](#getbearertoken) | `string?` | `Authorization` header |
+
+### GetOAuthParameter
 
 ```csharp
 public static string? GetOAuthParameter(this HttpRequest request, string parameterName)
 ```
 
-Retrieves the value of an OAuth parameter from the request. The method first checks the query string, then the `Content-Type` form data (if applicable), and finally the request headers. Returns `null` if the parameter is not found.
+Gets the value of an OAuth parameter. The query string is checked first. If the parameter is not there and the request has a form content type, the form body is checked. Headers are not searched.
 
-- **Parameters**  
-  - `request`: The HTTP request to inspect.  
-  - `parameterName`: The name of the OAuth parameter (e.g., `"client_id"`, `"response_type"`).
+**Parameters**
 
-- **Returns**  
-  `string?` – The parameter value, or `null` if not present.
+- `request`: The HTTP request to read.
+- `parameterName`: The parameter name to look up.
 
-- **Throws**  
-  `ArgumentNullException` if `request` is `null`.  
-  `ArgumentException` if `parameterName` is `null` or empty.
+**Returns**
 
-### `ExtractClientCredentials`
+The first value found, as a string, or `null` if the parameter is in neither location. When the parameter is present but empty (for example `?state=`), the empty string is returned, not `null`. If the parameter repeats, only the first value is returned.
+
+**Exceptions**
+
+- `ArgumentNullException`: `request` or `parameterName` is `null`.
+
+### ExtractClientCredentials
 
 ```csharp
 public static (string? ClientId, string? ClientSecret) ExtractClientCredentials(this HttpRequest request)
 ```
 
-Extracts client credentials from the request. The method attempts to read credentials from the `Authorization` header (Basic authentication scheme) first; if that fails, it falls back to the request body (form-encoded `client_id` and `client_secret` parameters).
+Gets the client ID and client secret. The values are first read from the `client_id` and `client_secret` query or form parameters, using the same lookup as `GetOAuthParameter`. If the `Authorization` header starts with `Basic ` (case-insensitive) and decodes, the values from the header replace both form values, even when the form values were present.
 
-- **Parameters**  
-  - `request`: The HTTP request to inspect.
+If the header is malformed (for example, the Base64 is invalid), the exception is swallowed and the form values are kept. An `Authorization` header with a non-Basic scheme, such as `Bearer`, is ignored.
 
-- **Returns**  
-  `(string? ClientId, string? ClientSecret)` – A tuple containing the client ID and client secret, each possibly `null` if not found.
+**Parameters**
 
-- **Throws**  
-  `ArgumentNullException` if `request` is `null`.
+- `request`: The HTTP request to read.
 
-### `GetClientIpAddress`
+**Returns**
+
+A tuple `(ClientId, ClientSecret)`. Each element is `null` if no value was found. A decoded Basic header with no colon produces the whole decoded string as `ClientId` and an empty string as `ClientSecret`, not `null`.
+
+**Exceptions**
+
+- `ArgumentNullException`: `request` is `null`.
+
+### GetClientIpAddress
 
 ```csharp
 public static string? GetClientIpAddress(this HttpRequest request)
 ```
 
-Returns the client’s IP address as a string. The method checks the `X-Forwarded-For` header first (if present), then falls back to `HttpContext.Connection.RemoteIpAddress`. Returns `null` if the IP address cannot be determined.
+Gets the client's IP address. If the `X-Forwarded-For` header is present, the value is split on commas, trimmed, and the first non-empty entry is returned. If the header is absent, the method returns `HttpContext.Connection.RemoteIpAddress` as a string.
 
-- **Parameters**  
-  - `request`: The HTTP request to inspect.
+If `X-Forwarded-For` is present but contains no non-empty entries (for example, an empty header value), the method returns `null` and does not fall back to the connection address.
 
-- **Returns**  
-  `string?` – The client IP address, or `null`.
+**Parameters**
 
-- **Throws**  
-  `ArgumentNullException` if `request` is `null`.
+- `request`: The HTTP request to read.
 
-### `IsSecureTransport`
+**Returns**
+
+The IP address as a string, or `null` if it cannot be determined. IPv6 addresses are returned in the form produced by `IPAddress.ToString()`.
+
+**Exceptions**
+
+- `ArgumentNullException`: `request` is `null`.
+
+### IsSecureTransport
 
 ```csharp
 public static bool IsSecureTransport(this HttpRequest request)
 ```
 
-Determines whether the request was made over a secure transport (HTTPS). The method checks `request.IsHttps` and, if behind a reverse proxy, also inspects the `X-Forwarded-Proto` header.
+Determines whether the request is secure. It returns `true` if `request.IsHttps` is `true`. Otherwise, if the `X-Forwarded-Proto` header is present, the result is `true` only when that header's value equals `https` (case-insensitive). If the header is absent, the result is `false`.
 
-- **Parameters**  
-  - `request`: The HTTP request to inspect.
+When `X-Forwarded-Proto` is present, its value decides the result even if `IsHttps` is `false`. A comma-separated list such as `https,http` does not match, so the method returns `false`.
 
-- **Returns**  
-  `bool` – `true` if the request is considered secure; otherwise `false`.
+**Parameters**
 
-- **Throws**  
-  `ArgumentNullException` if `request` is `null`.
+- `request`: The HTTP request to read.
 
-### `GetBearerToken`
+**Returns**
+
+`true` if the request is considered HTTPS; otherwise `false`.
+
+**Exceptions**
+
+- `ArgumentNullException`: `request` is `null`.
+
+### GetBearerToken
 
 ```csharp
 public static string? GetBearerToken(this HttpRequest request)
 ```
 
-Extracts a Bearer token from the `Authorization` header. The header value must start with `"Bearer "` (case-insensitive). Returns the token portion, or `null` if the header is missing or malformed.
+Gets the bearer token from the `Authorization` header. The value must start with `Bearer ` (case-insensitive). The token is everything after the first seven characters, with no trimming, so extra spaces after the scheme stay in the result.
 
-- **Parameters**  
-  - `request`: The HTTP request to inspect.
+**Parameters**
 
-- **Returns**  
-  `string?` – The Bearer token, or `null`.
+- `request`: The HTTP request to read.
 
-- **Throws**  
-  `ArgumentNullException` if `request` is `null`.
+**Returns**
+
+The token, or `null` if the header is missing or does not start with `Bearer `. A header of exactly `Bearer ` returns an empty string.
+
+**Exceptions**
+
+- `ArgumentNullException`: `request` is `null`.
 
 ## Usage
 
-### Example 1: Validating a Bearer token and extracting client credentials
+### Reading an OAuth parameter
 
 ```csharp
-public async Task<IActionResult> TokenEndpoint(HttpRequest request)
+public IActionResult Authorize()
 {
-    var bearerToken = request.GetBearerToken();
-    if (bearerToken == null)
-        return Unauthorized("Missing Bearer token.");
+    var responseType = Request.GetOAuthParameter("response_type");
+    if (string.IsNullOrEmpty(responseType))
+        return BadRequest("response_type is required.");
 
-    var (clientId, clientSecret) = request.ExtractClientCredentials();
-    if (clientId == null || clientSecret == null)
-        return BadRequest("Client credentials are required.");
-
-    // Validate token and credentials...
-    return Ok(new { access_token = "..." });
+    return Ok();
 }
 ```
 
-### Example 2: Logging client IP and transport security
+### Authenticating a client at the token endpoint
 
 ```csharp
-public void LogRequestInfo(HttpRequest request)
+public IActionResult Token()
+{
+    var (clientId, clientSecret) = Request.ExtractClientCredentials();
+    if (string.IsNullOrEmpty(clientId) || clientSecret is null)
+        return Unauthorized();
+
+    return Ok();
+}
+```
+
+### Logging the caller and transport
+
+```csharp
+public void LogRequest(HttpRequest request)
 {
     var ip = request.GetClientIpAddress() ?? "unknown";
-    var secure = request.IsSecureTransport() ? "HTTPS" : "HTTP";
-    var oauthParam = request.GetOAuthParameter("response_type");
+    var scheme = request.IsSecureTransport() ? "HTTPS" : "HTTP";
 
-    Console.WriteLine($"[{secure}] Request from {ip}, response_type={oauthParam ?? "N/A"}");
+    _logger.LogInformation("{Scheme} request from {Ip}", scheme, ip);
 }
 ```
 
-## Notes
+## Remarks
 
-- All methods throw `ArgumentNullException` if the `request` parameter is `null`. Ensure the request object is not null before calling.
-- `GetOAuthParameter` searches multiple locations (query, form, header). If the same parameter name appears in more than one location, the first match wins (query > form > header).
-- `ExtractClientCredentials` prioritizes the `Authorization` Basic header over form parameters. If both are present, the header value is used.
-- `GetClientIpAddress` relies on `X-Forwarded-For` headers. In production, ensure your reverse proxy is configured to forward trusted headers to avoid IP spoofing.
-- `IsSecureTransport` respects the `X-Forwarded-Proto` header, which should only be trusted when the proxy is known and configured correctly.
-- `GetBearerToken` expects exactly one `Authorization` header. Multiple headers with the same name may cause undefined behavior.
-- All extension methods are stateless and thread-safe. They do not modify the `HttpRequest` object and can be called concurrently from multiple threads on the same request instance.
+- **Trust of forwarded headers.** `GetClientIpAddress` and `IsSecureTransport` trust `X-Forwarded-For` and `X-Forwarded-Proto` as sent. Any client can set them. Use them only behind a proxy that overwrites these headers, or the returned values can be spoofed.
+- **Form body side effects.** `GetOAuthParameter` and `ExtractClientCredentials` read `request.Form` when the content type is a form. ASP.NET Core caches the parsed form on the request, but the underlying body stream is consumed if it was not buffered. Exceptions from that read are not caught by these methods.
+- **No percent-decoding of Basic credentials.** `ExtractClientCredentials` does not URL-decode the client ID and secret from a Basic header, as RFC 6749 section 2.3.1 would require for characters that were form-encoded. Credentials containing reserved characters may not match what was registered.
+- **Basic credentials split on the first colon.** The client ID is everything before the first `:`, and the secret is everything after it, so a client ID cannot contain a colon.
+- **Null checks.** Every method throws `ArgumentNullException` for a `null` request. `GetClientIpAddress` also reads `request.HttpContext`, which is always set for requests in the ASP.NET Core pipeline.
