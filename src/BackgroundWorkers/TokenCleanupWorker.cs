@@ -17,6 +17,9 @@ using DotnetAuthServer.Security;
 /// </summary>
 public sealed class TokenCleanupWorker : BackgroundService
 {
+    private static readonly TimeSpan DefaultCleanupInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan StartupDelay = TimeSpan.FromMinutes(5);
+
     private readonly ILogger<TokenCleanupWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly RevokedTokenStore _revokedTokenStore;
@@ -40,7 +43,7 @@ public sealed class TokenCleanupWorker : BackgroundService
         _logger = logger;
         _serviceProvider = serviceProvider;
         _revokedTokenStore = revokedTokenStore;
-        _cleanupInterval = TimeSpan.FromHours(1); // Run cleanup hourly
+        _cleanupInterval = DefaultCleanupInterval;
     }
 
     /// <summary>
@@ -52,7 +55,7 @@ public sealed class TokenCleanupWorker : BackgroundService
         _logger.LogInformation("Token cleanup worker started");
 
         // Initial delay to allow server startup
-        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        await Task.Delay(StartupDelay, stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {
