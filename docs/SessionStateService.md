@@ -1,165 +1,183 @@
 # SessionStateService
 
-The `SessionStateService` class manages the lifecycle and persistence of OAuth 2.0 and OpenID Connect authorization session states within the `dotnet-auth-server` project. It serves as both a data model representing a specific session instance and a service interface for creating, retrieving, updating, and validating sessions. This component ensures that transient authorization data, such as nonces, requested scopes, and user identifiers, is maintained securely between the initial authorization request and the final callback, while providing mechanisms for expiration management and cleanup.
+`SessionStateService` holds short-lived OAuth 2.0 / OpenID Connect authorization state between the authorization request and its completion: the state id, client, redirect URI, requested and granted scopes, nonce, and user id. Entries are kept in an in-memory `ConcurrentDictionary<string, SessionState>` and expire 10 minutes after creation.
 
-## API
+The class is `public sealed` and lives in `src/Services/SessionStateService.cs`, namespace `DotnetAuthServer.Services`. It has no interface. The same file defines the public `SessionState` class, which `GetSession` returns.
 
-### Constructor
+## Registration
 
-**`public SessionStateService()`**
-Initializes a new instance of the `SessionStateService`. This constructor typically prepares the internal storage mechanisms required to track session states.
+`Program.cs` registers the service with `AddScoped<SessionStateService>()`.
 
-### Methods
+> **Caveat:** the session dictionary is an instance field. With a scoped registration, each request gets a new instance and therefore a new, empty store. A session created in one request is not visible to later requests. Cross-request use needs a singleton registration or an external store. This document describes the class as it is written.
 
-**`public string CreateSession(string clientId, string redirectUri, string requestedScopes, string? nonce, string? userId, TimeSpan expiration)`**
-Creates a new session state record and persists it.
-*   **Parameters**:
-    *   `clientId`: The identifier of the client application initiating the request.
-    *   `redirectUri`: The URI to which the response will be sent.
-    *   `requestedScopes`: A space-separated string of scopes requested by the client.
-    *   `nonce`: An optional string value used to mitigate replay attacks.
-    *   `userId`: An optional identifier for the authenticated user, if available at creation time.
-    *   `expiration`: The duration for which the session remains valid.
-*   **Returns**: A unique string identifier (`StateId`) for the newly created session.
-*   **Throws**: May throw an exception if the underlying storage mechanism fails or if input parameters violate validation rules (e.g., invalid URI format).
+## Role in the system
 
-**`public SessionState? GetSession(string stateId)`**
-Retrieves an existing session state by its unique identifier.
-*   **Parameters**:
-    *   `stateId`: The unique identifier of the session to retrieve.
-*   **Returns**: A `SessionState` object if the session exists and has not expired; otherwise, `null`.
-*   **Throws**: Generally does not throw for missing sessions (returns `null`), but may throw if the data store is inaccessible.
+- Creates state when an authorization request starts.
+- Reads state at the callback or consent step.
+- Records the authenticated user and the granted scopes.
+- Removes state on completion, to prevent replay.
+- Removes expired entries on demand.
 
-**`public bool CompleteSession(string stateId, string? grantedScopes)`**
-Finalizes a session, typically called after successful user authentication and consent.
-*   **Parameters**:
-    *   `stateId`: The unique identifier of the session to complete.
-    *   `grantedScopes`: The final list of scopes granted by the user, which may differ from the requested scopes.
-*   **Returns**: `true` if the session was successfully found, validated, and marked as completed; `false` if the session does not exist, has already expired, or was already completed.
-*   **Throws**: Unlikely to throw exceptions; failures are indicated by the boolean return value.
+Logging goes through `ILogger<SessionStateService>`. Informational events are logged for creation, completion, and cleanup. Warnings are logged for unknown and expired state ids. The state id is logged in full, so treat these logs as sensitive.
 
-**`public bool UpdateSession(string stateId, Action<SessionState> updateAction)`**
-Applies specific updates to an existing session state.
-*   **Parameters**:
-    *   `stateId`: The unique identifier of the session to update.
-    *   `updateAction`: A delegate defining the modifications to apply to the session object.
-*   **Returns**: `true` if the update was applied successfully; `false` if the session could not be found or is invalid.
-*   **Throws**: May throw if the `updateAction` delegate causes an internal error or if concurrency checks fail.
+## Constructor
 
-**`public int CleanupExpiredSessions()`**
-Removes all session records that have passed their `ExpiresAt` timestamp.
-*   **Parameters**: None.
-*   **Returns**: The number of sessions removed from the storage.
-*   **Throws**: May throw if the storage backend encounters an error during deletion.
+### `public SessionStateService(ILogger<SessionStateService> logger)`
 
-**`public int GetActiveSessionCount()`**
-Counts the number of currently valid (non-expired) sessions.
-*   **Parameters**: None.
-*   **Returns**: An integer representing the count of active sessions.
-*   **Throws**: May throw if the storage backend is unavailable.
+Creates the service.
 
-### Properties
+**Parameters:**
+- `logger` – logger for session events.
 
-The following properties represent the state of a specific session instance when retrieved via `GetSession` or within the context of the service:
+**Exceptions:** `ArgumentNullException` if `logger` is `null`.
 
-*   **`public string StateId`**: The unique identifier for this session.
-*   **`public string ClientId`**: The ID of the client associated with this session.
-*   **`public string RedirectUri`**: The registered redirect URI for this flow.
-*   **`public string RequestedScopes`**: The original scopes requested by the client.
-*   **`public string? GrantedScopes`**: The scopes actually granted by the resource owner; null until the session is completed.
-*   **`public string? Nonce`**: The cryptographic nonce associated with the request, if provided.
-*   **`public string? UserId`**: The identifier of the user associated with the session, if authenticated.
-*   **`public DateTime CreatedAt`**: The UTC timestamp when the session was created.
-*   **`public DateTime ExpiresAt`**: The UTC timestamp when the session becomes invalid.
-*   **`public DateTime? LastUpdatedAt`**: The UTC timestamp of the last modification, if any.
-*   **`public bool IsValid`**: A computed property indicating whether the session is currently within its valid time window and has not been revoked.
+## Session lifetime
 
-## Usage
+The lifetime is fixed at 10 minutes from creation. It is not configurable. The three places that check expiry use different thresholds:
 
-### Example 1: Creating and Retrieving a Session
-This example demonstrates initiating an authorization flow by creating a session and subsequently retrieving it to validate the state parameter.
+| Check | Treated as expired when | Used by |
+|---|---|---|
+| `GetSession` | `ExpiresAt` is within 5 seconds of now or past (`DateTime.IsExpired()`) | `GetSession` |
+| `SessionState.IsValid()` | `ExpiresAt <= UtcNow` | Callers that hold a `SessionState` |
+| Cleanup | `ExpiresAt <= UtcNow` | `CleanupExpiredSessions` |
+
+In the last 5 seconds of its life, a session still passes `IsValid()` but `GetSession` returns `null`.
+
+## Methods
+
+### `public string CreateSession(string clientId, string redirectUri, string scopes, string? nonce = null)`
+
+Creates a session and returns its state id. The id is `Guid.NewGuid().ToString("N")`: 32 lowercase hex characters with no dashes. The session stores `CreatedAt` as the current UTC time and `ExpiresAt` as 10 minutes later. `scopes` is stored as `RequestedScopes` without parsing or validation. The OAuth convention is a space-separated list. `redirectUri` is not checked for URI format.
+
+**Parameters:**
+- `clientId` – ID of the client that started the flow. Must not be `null` or empty.
+- `redirectUri` – redirect URI for the response. Must not be `null` or empty.
+- `scopes` – requested scopes. Must not be `null` or empty.
+- `nonce` – OpenID Connect nonce, stored as given. Optional.
+
+**Return value:** the state id to send with the authorization request.
+
+**Exceptions:**
+- `ArgumentNullException` if `clientId`, `redirectUri`, or `scopes` is `null`.
+- `ArgumentException` if one of them is an empty string. Whitespace-only values are accepted.
+
+### `public SessionState? GetSession(string stateId)`
+
+Returns the live session for `stateId`, or `null`. The returned object is the stored instance, not a copy, so changes to its properties are visible to later calls.
+
+- `null` or whitespace `stateId`: returns `null` with no log entry.
+- Unknown id: logs a warning and returns `null`.
+- Expired (see [Session lifetime](#session-lifetime)): logs a warning, removes the entry, and returns `null`.
+- Otherwise: returns the session.
+
+**Parameters:**
+- `stateId` – the state id from `CreateSession`.
+
+**Exceptions:** none. Invalid input returns `null`.
+
+### `public bool CompleteSession(string stateId)`
+
+Removes the session from the store, so its state id cannot be used again. Call it after the token exchange.
+
+Expiry is not checked. An expired session that has not yet been cleaned up is removed, and the method returns `true`. The session's contents are not returned.
+
+**Parameters:**
+- `stateId` – the state id to remove.
+
+**Return value:**
+- `true` if an entry was removed. An info entry is logged.
+- `false` if `stateId` is `null`, whitespace, or unknown.
+
+**Exceptions:** none.
+
+### `public bool UpdateSession(string stateId, string? userId = null, string? grantedScopes = null)`
+
+Records the user and granted scopes on an existing session. It does not change `ExpiresAt`.
+
+- A `userId` or `grantedScopes` that is `null` or whitespace leaves the current value unchanged. This method cannot clear a value.
+- `LastUpdatedAt` is set to the current UTC time on every successful call.
+- Expiry is not checked. An expired session that has not yet been removed can still be updated.
+- No locking is done. Concurrent calls on the same session are last-write-wins for each field.
+- Nothing is logged.
+
+**Parameters:**
+- `stateId` – the state id to update. Must not be `null` or empty.
+- `userId` – ID of the authenticated user. Optional.
+- `grantedScopes` – scopes the user granted. Optional.
+
+**Return value:**
+- `true` if the session was found and updated.
+- `false` if no session has that id.
+
+**Exceptions:**
+- `ArgumentNullException` if `stateId` is `null`.
+- `ArgumentException` if `stateId` is an empty string. Whitespace-only values are not rejected; they simply return `false`.
+
+### `public int CleanupExpiredSessions()`
+
+Removes every entry whose `ExpiresAt` is at or before the current UTC time. The method takes a snapshot of the expired ids and removes each one, so the count reflects only entries that this call removed. Logs an info entry when at least one entry is removed.
+
+The class does not run cleanup itself, and nothing in `src/` calls this method. Entries that are never looked up stay in memory until something calls it.
+
+**Parameters:** none.
+
+**Return value:** the number of entries removed.
+
+**Exceptions:** none.
+
+### `public int GetActiveSessionCount()`
+
+Returns the number of entries in the store, which is the raw dictionary count.
+
+Despite the name, the result includes expired entries that have not yet been removed by `GetSession`, `CompleteSession`, or `CleanupExpiredSessions`. It is an upper bound on the number of valid sessions. Call `CleanupExpiredSessions` first if an exact count of unexpired sessions is needed.
+
+**Parameters:** none.
+
+**Return value:** the current entry count.
+
+**Exceptions:** none.
+
+## SessionState
+
+`public sealed class SessionState` is the value stored and returned by this service. All properties have public setters. Setting a property on an object returned by `GetSession` changes the stored session directly. That bypasses `UpdateSession` and does not set `LastUpdatedAt`.
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `StateId` | `string` | `string.Empty` | Unique state id |
+| `ClientId` | `string` | `string.Empty` | Client that started the flow |
+| `RedirectUri` | `string` | `string.Empty` | Redirect URI for the response |
+| `RequestedScopes` | `string` | `string.Empty` | Scopes requested by the client |
+| `GrantedScopes` | `string?` | `null` | Scopes granted to the client |
+| `Nonce` | `string?` | `null` | OpenID Connect nonce, if provided |
+| `UserId` | `string?` | `null` | ID of the authenticated user |
+| `CreatedAt` | `DateTime` | `default` | Creation time (UTC) |
+| `ExpiresAt` | `DateTime` | `default` | Expiry time (UTC) |
+| `LastUpdatedAt` | `DateTime?` | `null` | Time of the last `UpdateSession` call |
+
+### `public bool IsValid()`
+
+Returns `true` when `ExpiresAt` is later than the current UTC time. It does not check whether the session is still in the store. See [Session lifetime](#session-lifetime) for how this differs from `GetSession`.
+
+## Example
 
 ```csharp
-using System;
-using DotNetAuthServer.Services;
+var stateId = sessionState.CreateSession(clientId, redirectUri, "openid profile", nonce);
 
-public class AuthorizationFlow
+// The user signs in and consents. The callback then uses the state id.
+sessionState.UpdateSession(stateId, userId: user.Id, grantedScopes: "openid profile");
+
+var session = sessionState.GetSession(stateId);
+if (session is null)
 {
-    private readonly SessionStateService _sessionService;
-
-    public AuthorizationFlow(SessionStateService sessionService)
-    {
-        _sessionService = sessionService;
-    }
-
-    public string InitiateLogin(string clientId, string redirectUri)
-    {
-        // Create a new session with a 15-minute expiration
-        string stateId = _sessionService.CreateSession(
-            clientId: clientId,
-            redirectUri: redirectUri,
-            requestedScopes: "openid profile email",
-            nonce: Guid.NewGuid().ToString(),
-            userId: null,
-            expiration: TimeSpan.FromMinutes(15)
-        );
-
-        // Retrieve to verify creation
-        var session = _sessionService.GetSession(stateId);
-        
-        if (session != null && session.IsValid)
-        {
-            return stateId; // Return stateId to be included in the authorize URL
-        }
-
-        throw new InvalidOperationException("Failed to initialize session state.");
-    }
+    // Unknown or expired: reject the callback.
+    return;
 }
+
+// ... exchange the code, issue tokens ...
+
+sessionState.CompleteSession(stateId);
 ```
 
-### Example 2: Completing a Session and Cleanup
-This example shows how to finalize a session after user consent and perform routine maintenance to remove expired entries.
+## Thread safety
 
-```csharp
-using System;
-using DotNetAuthServer.Services;
-
-public class CallbackHandler
-{
-    private readonly SessionStateService _sessionService;
-
-    public CallbackHandler(SessionStateService sessionService)
-    {
-        _sessionService = sessionService;
-    }
-
-    public bool HandleCallback(string stateId, string[] userGrantedScopes)
-    {
-        // Attempt to complete the session with the granted scopes
-        bool success = _sessionService.CompleteSession(
-            stateId: stateId,
-            grantedScopes: string.Join(" ", userGrantedScopes)
-        );
-
-        if (!success)
-        {
-            // Session might be expired, already completed, or invalid
-            return false;
-        }
-
-        // Perform periodic cleanup of expired sessions
-        int removedCount = _sessionService.CleanupExpiredSessions();
-        Console.WriteLine($"Cleanup removed {removedCount} expired sessions.");
-
-        return true;
-    }
-}
-```
-
-## Notes
-
-*   **Expiration Logic**: The `IsValid` property is strictly time-bound based on `CreatedAt` and `ExpiresAt`. Once `DateTime.UtcNow` exceeds `ExpiresAt`, `IsValid` returns `false`, and operations like `CompleteSession` will fail for that ID.
-*   **Thread Safety**: While individual method calls are designed to be atomic, the `SessionStateService` does not guarantee thread safety for complex multi-step operations performed externally (e.g., checking `IsValid` then calling `UpdateSession`). Consumers should implement appropriate locking if race conditions on specific session IDs are a concern in high-concurrency environments.
-*   **Null Handling**: Properties such as `GrantedScopes`, `Nonce`, and `UserId` are nullable. Consumers must check for null values before accessing members or performing string operations on these fields, particularly before a session is completed.
-*   **Cleanup Strategy**: The `CleanupExpiredSessions` method is a manual trigger. It is the responsibility of the hosting application to call this method periodically (e.g., via a background hosted service) to prevent storage bloat, as sessions are not automatically deleted upon expiration.
-*   **Immutability of Keys**: Core identifiers like `StateId`, `ClientId`, and `RedirectUri` are set at creation time and should not be modified via `UpdateSession`. Changing these values would invalidate the cryptographic binding of the authorization request.
+Adding, looking up, and removing entries is safe to call concurrently, because the store is a `ConcurrentDictionary`. `SessionState` objects are not synchronized. Concurrent updates to one session's fields are last-write-wins.
